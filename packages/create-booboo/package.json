@@ -1,0 +1,17 @@
+{
+  "name": "create-booboo",
+  "version": "0.0.0",
+  "description": "Scaffold a new Booboo brain — `npx create-booboo my-brain`. Zero deps.",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "create-booboo": "./dist/cli.js" },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/cli.ts --format esm --clean"
+  },
+  "devDependencies": {
+    "tsup": "^8",
+    "typescript": "^5"
+  },
+  "keywords": ["booboo", "scaffold", "create", "knowledge-graph", "mcp"]
+}

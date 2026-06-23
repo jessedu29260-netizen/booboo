@@ -33,6 +33,15 @@ importers:
         specifier: ^2
         version: 2.1.9(@types/node@26.0.0)
 
+  packages/create-booboo:
+    devDependencies:
+      tsup:
+        specifier: ^8
+        version: 8.5.1(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
   packages/serve:
     dependencies:
       '@booboo/spec':

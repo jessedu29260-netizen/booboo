@@ -6,7 +6,7 @@ Named after a dachshund who never forgets where the treats are buried. Fitting, 
 
 Most tools show you *one* slice: a knowledge graph, an agent flow chart, a memory store, a trace viewer. Booboo fuses all of them into **one graph rooted at a single point**, so you can see — and query — how the whole system actually hangs together.
 
-> **Status:** alpha — four packages build green and are tested: `@booboo/spec` (the contract), `@booboo/viewer` (million-node 3D render), `@booboo/build` (config-driven postgres/json adapters), `@booboo/serve` (REST + MCP query layer). The `create-booboo` wizard and published npm releases are next (see `BLUEPRINT.md` → Roadmap). MIT.
+> **Status:** alpha — five packages build green: `@booboo/spec` (the contract), `@booboo/viewer` (million-node 3D render), `@booboo/build` (config-driven postgres/json adapters), `@booboo/serve` (REST + MCP query layer), and `create-booboo` (project scaffolder). Published npm releases are next (see [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md)). MIT.
 
 ---
 
@@ -23,24 +23,22 @@ Booboo is a tiny **JSON spec** at the center, with **adapters** that feed it and
 
 Emit the JSON → get the viewer, the API, and the MCP server **for free**. Weird data → a ~50-line adapter, not a fork. See `SPEC.md`.
 
-## Quickstart (target UX)
+## Quickstart
 
 ```bash
-npx create-booboo my-brain       # wizard: pick a source (json / postgres / supabase), map layers
+npx create-booboo my-brain       # scaffold a project (json starter + postgres upgrade path)
 cd my-brain
-booboo serve                     # builds the graph → 3D viewer :3000 + REST /api + MCP endpoint
+npm install
+npm run build                    # booboo.config.yaml → brain.json (the snapshot)
+npm run serve                    # REST API on http://localhost:8787
+npm run mcp                      # MCP over stdio — point Claude / Cursor / Claude Code at it
 ```
 
-Point any MCP client (Claude Desktop, Cursor, Claude Code) at `booboo mcp` and your agents can `boot · recall · resolve` the brain.
+Edit `booboo.config.yaml` to point at your own Postgres/Supabase (a commented example ships in the scaffold). Full reference: [docs/CONFIG.md](docs/CONFIG.md) · stuck? [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
-**Zero-setup demo** (no database, no signup):
+> The headline flex: **Booboo renders a million-node brain at 60fps in your browser.** Today that lives in the viewer playground — `pnpm -F @booboo/viewer dev`, then open with `?n=1000000`. See `SCALE.md` for how (instanced GPU field + tier-LOD).
 
-```bash
-npx create-booboo --demo                 # the sample brain
-npx create-booboo --demo --nodes 1000000 # ...or a MILLION-node industrial brain at 60fps
-```
-
-> The headline flex: **Booboo renders a million-node brain at 60fps in your browser.** See `SCALE.md` for how (instanced GPU field + tier-LOD), and why a fake-but-coherent mega-graph is the forcing function that keeps the engine honest.
+> **Roadmap:** a single `booboo serve` bundling build + REST + MCP + the 3D viewer in one command, an interactive scaffold wizard, and a `--demo` mega-graph generator — tracked in [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
 
 ## What works today
 

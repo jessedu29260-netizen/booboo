@@ -1,19 +1,37 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { BoobooGraph, BNode, BLink } from "@booboo/spec";
 import { Booboo, defaultCfg, type BoobooCfg } from "./Booboo";
 import { usePersisted } from "./usePersisted";
 
-const PANEL = "#0a0d14f2";
-const LINE = "#2a2f3a";
+/* ── design tokens ─────────────────────────────────────────────── */
+const T = {
+  bg: "#06080e",
+  panel: "rgba(11,14,21,0.92)",
+  panelSolid: "#0b0e15",
+  line: "#222734",
+  lineStrong: "#323a4a",
+  text: "#E8DCC4", // parchment
+  dim: "#8a8268",
+  faint: "#585240",
+  gold: "#c9a04a",
+  goldHi: "#E8C877",
+  sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif",
+  mono: "ui-monospace, SFMono-Regular, 'JetBrains Mono', monospace",
+};
+const copy = (text: string) => {
+  try {
+    void navigator.clipboard?.writeText(text);
+  } catch {
+    /* clipboard unavailable */
+  }
+};
 
-// deep-merge a saved/URL cfg over the defaults so newly-added nested keys (sizes, layers) always resolve.
 const mergeCfg = (initial: BoobooCfg, s: Partial<BoobooCfg>): BoobooCfg => ({
   ...initial,
   ...s,
   sizes: { ...initial.sizes, ...(s.sizes ?? {}) },
   layers: { ...initial.layers, ...(s.layers ?? {}) },
 });
-// ?cfg=<urlencoded-json> pins exact settings (wallpaper link) — wins over localStorage. Independent of ?file=.
 function urlCfg(): Partial<BoobooCfg> | null {
   if (typeof window === "undefined") return null;
   try {
@@ -25,21 +43,23 @@ function urlCfg(): Partial<BoobooCfg> | null {
   return null;
 }
 
-/** Booboo + the full instrument: HUD · click→dossier · a PERSISTENT control panel.
- *  Toggle changes are saved to localStorage (per `persistKey`) and survive reload.
- *  Pass persist={false} for a kiosk/wallpaper surface (always uses the fixed defaults). */
+/** Booboo + the full instrument: HUD · click→dossier · a collapsible control drawer.
+ *  Controls live on the LEFT, the dossier on the RIGHT — they never overlap.
+ *  Toggle changes persist to localStorage (per `persistKey`). persist={false} = kiosk/wallpaper. */
 export function BoobooView({
   data,
-  persistKey = "booboo-cfg-v2", // bumped: orbit boolean→number is a breaking shape change
+  persistKey = "booboo-cfg-v2",
   persist = true,
+  initialSel = null,
 }: {
   data: BoobooGraph;
   persistKey?: string;
   persist?: boolean;
+  initialSel?: string | null;
 }) {
   const initial = useMemo(() => defaultCfg(data), [data]);
   const [cfg, setCfg, resetCfg] = usePersisted<BoobooCfg>(persistKey, initial, persist, mergeCfg, urlCfg());
-  const [sel, setSel] = useState<string | null>(null);
+  const [sel, setSel] = useState<string | null>(initialSel);
 
   const byId = useMemo(() => new Map(data.nodes.map((n) => [n.id, n])), [data]);
   const counts = useMemo(() => {
@@ -47,75 +67,139 @@ export function BoobooView({
     for (const n of data.nodes) c[n.layer] = (c[n.layer] ?? 0) + 1;
     return c;
   }, [data]);
+  const layerColor = useMemo(() => {
+    const m: Record<string, string> = {};
+    data.meta.layers.forEach((l) => (m[l.name] = l.color ?? "#9aa"));
+    return m;
+  }, [data]);
   const node = sel ? byId.get(sel) ?? null : null;
-  const layerVisible = (name: string) => cfg.layers[name] !== false;
-  const toggleLayer = (name: string) => setCfg((p) => ({ ...p, layers: { ...p.layers, [name]: !layerVisible(name) } }));
-  const setSize = (name: string, v: number) => setCfg((p) => ({ ...p, sizes: { ...p.sizes, [name]: v } }));
-  const copyWallpaper = () => {
-    try {
-      void navigator.clipboard?.writeText(`${location.origin}${location.pathname}?cfg=${encodeURIComponent(JSON.stringify(cfg))}`);
-    } catch {
-      /* clipboard unavailable */
-    }
-  };
 
   return (
-    <div style={{ position: "absolute", inset: 0, background: "#06080e", fontFamily: "ui-monospace, SFMono-Regular, monospace" }}>
+    <div style={{ position: "absolute", inset: 0, background: T.bg, fontFamily: T.sans }}>
       <Booboo data={data} cfg={cfg} onSelect={setSel} />
 
-      {/* HUD */}
-      <div style={{ position: "absolute", top: 16, left: 18, pointerEvents: "none" }}>
-        <div style={{ color: "#c9a04a", fontSize: 13, letterSpacing: 3, fontWeight: 700 }}>🐾 {data.meta.title ?? "BOOBOO"}</div>
-        <div style={{ color: "#6b6451", fontSize: 10, letterSpacing: 1, marginTop: 2 }}>
+      {/* HUD — top-left */}
+      <div style={{ position: "absolute", top: 18, left: 20, pointerEvents: "none" }}>
+        <div style={{ color: T.gold, fontSize: 13, letterSpacing: 2.5, fontWeight: 700, fontFamily: T.mono }}>🐾 {data.meta.title ?? "BOOBOO"}</div>
+        <div style={{ color: T.faint, fontSize: 10.5, letterSpacing: 0.6, marginTop: 3 }}>
           {data.nodes.length.toLocaleString()} nodes · {data.links.length.toLocaleString()} links · {data.meta.layers.length} layers
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8, fontSize: 11 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "5px 12px", marginTop: 9, fontSize: 11 }}>
           {data.meta.layers.map((l) => (
-            <span key={l.name} style={{ color: l.color ?? "#aaa", opacity: layerVisible(l.name) ? 1 : 0.35 }}>
-              ● {l.label ?? l.name} {(counts[l.name] ?? 0).toLocaleString()}
+            <span key={l.name} style={{ color: l.color ?? "#aaa", opacity: cfg.layers[l.name] !== false ? 1 : 0.32, display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <span style={{ width: 7, height: 7, borderRadius: 7, background: l.color ?? "#aaa", display: "inline-block" }} />
+              {l.label ?? l.name} <b style={{ color: T.dim, fontWeight: 600 }}>{(counts[l.name] ?? 0).toLocaleString()}</b>
             </span>
           ))}
         </div>
       </div>
 
-      {node && <Dossier n={node} byId={byId} links={data.links} onClose={() => setSel(null)} onJump={setSel} />}
+      <Controls data={data} cfg={cfg} setCfg={setCfg} resetCfg={resetCfg} dossierOpen={!!node} />
 
-      {/* PERSISTENT CONTROL PANEL */}
-      <div
+      {node && <Dossier n={node} byId={byId} links={data.links} accent={layerColor[node.layer] ?? T.gold} onClose={() => setSel(null)} onJump={setSel} />}
+
+      <div style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", fontSize: 10, color: T.faint, pointerEvents: "none", letterSpacing: 0.4 }}>
+        drag to rotate · scroll to zoom · click a node
+      </div>
+    </div>
+  );
+}
+
+/* ── Controls: collapsible left drawer (never collides with the right dossier) ── */
+function Controls({
+  data,
+  cfg,
+  setCfg,
+  resetCfg,
+  dossierOpen,
+}: {
+  data: BoobooGraph;
+  cfg: BoobooCfg;
+  setCfg: (patch: Partial<BoobooCfg> | ((p: BoobooCfg) => BoobooCfg)) => void;
+  resetCfg: () => void;
+  dossierOpen: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const layerVisible = (name: string) => cfg.layers[name] !== false;
+  const toggleLayer = (name: string) => setCfg((p) => ({ ...p, layers: { ...p.layers, [name]: !layerVisible(name) } }));
+  const setSize = (name: string, v: number) => setCfg((p) => ({ ...p, sizes: { ...p.sizes, [name]: v } }));
+  const copyWallpaper = () => copy(`${location.origin}${location.pathname}?cfg=${encodeURIComponent(JSON.stringify(cfg))}`);
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        title="display controls"
         style={{
           position: "absolute",
-          bottom: 30,
-          right: 22,
-          width: 224,
-          background: "#0a0d14ec",
-          border: `1px solid ${LINE}`,
-          borderRadius: 6,
-          padding: "10px 12px",
+          bottom: 22,
+          left: 20,
+          background: T.panel,
+          border: `1px solid ${T.line}`,
+          color: T.dim,
+          borderRadius: 8,
+          padding: "8px 12px",
+          cursor: "pointer",
+          fontFamily: T.sans,
+          fontSize: 11,
+          letterSpacing: 0.5,
+          backdropFilter: "blur(8px)",
           display: "flex",
-          flexDirection: "column",
+          alignItems: "center",
           gap: 7,
-          fontSize: 10,
-          color: "#6b6451",
-          maxHeight: "calc(100vh - 60px)",
-          overflowY: "auto",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ color: "#8a8268", letterSpacing: 1 }}>controls · saved</span>
-          <button
-            onClick={resetCfg}
-            style={{ background: "transparent", border: `1px solid ${LINE}`, color: "#6b6451", borderRadius: 3, padding: "2px 7px", cursor: "pointer", fontFamily: "inherit", fontSize: 9 }}
-          >
+        <span style={{ fontSize: 13 }}>⚙</span> Controls
+      </button>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: 22,
+        left: 20,
+        width: 236,
+        maxHeight: "calc(100vh - 44px)",
+        overflowY: "auto",
+        background: T.panel,
+        border: `1px solid ${T.line}`,
+        borderRadius: 10,
+        padding: 14,
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        fontSize: 11,
+        color: T.dim,
+        backdropFilter: "blur(10px)",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.45)",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ color: T.text, letterSpacing: 1, fontSize: 11, fontWeight: 600 }}>Controls</span>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={resetCfg} style={btn(T)}>
             reset
           </button>
+          <button onClick={() => setOpen(false)} title="hide" style={{ ...btn(T), padding: "3px 8px" }}>
+            ✕
+          </button>
         </div>
-        <Toggle on={cfg.lines} onClick={() => setCfg({ lines: !cfg.lines })} label="lines" />
-        <Toggle on={cfg.orbit > 0} onClick={() => setCfg({ orbit: cfg.orbit > 0 ? 0 : 1 })} label="✦ spin" />
-        <Slider label="◎ spin speed" v={cfg.orbit} min={0} max={2.5} step={0.05} on={(v) => setCfg({ orbit: v })} />
+      </div>
+
+      <Section T={T} label="scene">
+        <div style={{ display: "flex", gap: 7 }}>
+          <Toggle on={cfg.lines} onClick={() => setCfg({ lines: !cfg.lines })} label="links" tone="gold" />
+          <Toggle on={cfg.orbit > 0} onClick={() => setCfg({ orbit: cfg.orbit > 0 ? 0 : 1 })} label="✦ spin" tone="green" />
+        </div>
+        <Slider label="spin" v={cfg.orbit} min={0} max={2.5} step={0.05} on={(v) => setCfg({ orbit: v })} />
         <Slider label="link" v={cfg.lineOpacity} min={0} max={0.4} step={0.01} on={(v) => setCfg({ lineOpacity: v })} />
-        <Slider label="nodes" v={cfg.nodeScale} min={0.3} max={2.5} step={0.05} on={(v) => setCfg({ nodeScale: v })} />
-        <div style={{ color: "#4a4438", marginTop: 2 }}>isolate layers</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+        <Slider label="size" v={cfg.nodeScale} min={0.3} max={2.5} step={0.05} on={(v) => setCfg({ nodeScale: v })} />
+      </Section>
+
+      <Section T={T} label="isolate layers">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {data.meta.layers.map((l) => {
             const on = layerVisible(l.name);
             return (
@@ -124,55 +208,264 @@ export function BoobooView({
                 onClick={() => toggleLayer(l.name)}
                 style={{
                   flex: "1 0 44%",
-                  background: on ? "#161922" : "transparent",
-                  border: `1px solid ${on ? l.color ?? "#888" : LINE}`,
-                  color: on ? l.color ?? "#ccc" : "#4a4438",
-                  borderRadius: 3,
-                  padding: "3px 4px",
+                  background: on ? "#161a24" : "transparent",
+                  border: `1px solid ${on ? l.color ?? "#888" : T.line}`,
+                  color: on ? l.color ?? "#ccc" : T.faint,
+                  borderRadius: 5,
+                  padding: "4px 5px",
                   cursor: "pointer",
-                  fontFamily: "inherit",
-                  fontSize: 9,
-                  letterSpacing: 0.4,
+                  fontFamily: T.sans,
+                  fontSize: 10,
+                  letterSpacing: 0.3,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 5,
                 }}
               >
+                <span style={{ width: 6, height: 6, borderRadius: 6, background: on ? l.color ?? "#888" : T.faint }} />
                 {l.label ?? l.name}
               </button>
             );
           })}
         </div>
-        <div style={{ color: "#4a4438", marginTop: 2 }}>node sizes</div>
+      </Section>
+
+      <Section T={T} label="node sizes">
         {data.meta.layers.map((l) => (
           <Slider key={l.name} label={l.label ?? l.name} v={cfg.sizes[l.name] ?? 1} min={0.2} max={3} step={0.05} on={(v) => setSize(l.name, v)} />
         ))}
-        <button
-          onClick={copyWallpaper}
-          title="copy a link that opens this view with these exact settings"
-          style={{ marginTop: 5, background: "transparent", border: `1px solid ${LINE}`, color: "#8a8268", borderRadius: 4, padding: "5px 6px", cursor: "pointer", fontFamily: "inherit", fontSize: 9.5, letterSpacing: 0.5 }}
-        >
-          ⊕ copy wallpaper link
-        </button>
-      </div>
+      </Section>
 
-      <div style={{ position: "absolute", bottom: 12, left: 18, fontSize: 10, color: "#4a4438", pointerEvents: "none" }}>drag-rotate · scroll zoom · click a node</div>
+      <button onClick={copyWallpaper} title="copy a link that reopens this exact view" style={{ ...btn(T), padding: "7px", marginTop: 2, color: T.dim }}>
+        ⊕ copy wallpaper link
+      </button>
     </div>
   );
 }
 
-function Toggle({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
+/* ── Dossier: the redesigned report / node panel ── */
+function Dossier({
+  n,
+  byId,
+  links,
+  accent,
+  onClose,
+  onJump,
+}: {
+  n: BNode;
+  byId: Map<string, BNode>;
+  links: BLink[];
+  accent: string;
+  onClose: () => void;
+  onJump: (id: string) => void;
+}) {
+  const rels = useMemo(() => links.filter((l) => l.source === n.id || l.target === n.id).slice(0, 60), [n.id, links]);
+  const stats: [string, string][] = [
+    ["weight", n.weight != null ? n.weight.toFixed(2) : "—"],
+    ["tier", n.tier != null ? String(n.tier) : "—"],
+    ["cluster", n.cluster ?? "—"],
+    ["parent", n.parent ?? "—"],
+  ];
+  const dataEntries = n.data ? Object.entries(n.data) : [];
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        right: 0,
+        width: 392,
+        maxWidth: "92%",
+        height: "100%",
+        background: T.panel,
+        borderLeft: `1px solid ${T.line}`,
+        backdropFilter: "blur(12px)",
+        color: T.text,
+        overflowY: "auto",
+        fontSize: 12,
+        boxShadow: "-18px 0 50px rgba(0,0,0,0.4)",
+      }}
+    >
+      {/* accent strip = layer colour */}
+      <div style={{ position: "sticky", top: 0, zIndex: 2, background: T.panelSolid, borderBottom: `1px solid ${T.line}`, padding: "16px 18px 14px", borderLeft: `3px solid ${accent}` }}>
+        <button onClick={onClose} title="close" style={{ position: "absolute", top: 12, right: 14, background: "none", border: "none", color: T.dim, cursor: "pointer", fontSize: 18, lineHeight: 1 }}>
+          ×
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", color: T.dim }}>
+          <span style={{ width: 8, height: 8, borderRadius: 8, background: accent }} />
+          {n.type} · {n.layer}
+        </div>
+        <div style={{ fontSize: 19, marginTop: 8, color: "#f5ebd4", wordBreak: "break-word", fontWeight: 600, lineHeight: 1.25 }}>
+          {n.icon ? n.icon + " " : ""}
+          {n.label}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+          <code style={{ fontFamily: T.mono, fontSize: 11, color: T.dim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.id}</code>
+          <button onClick={() => copy(n.id)} title="copy id" style={{ ...btn(T), padding: "2px 7px", fontSize: 9, flex: "0 0 auto" }}>
+            copy
+          </button>
+        </div>
+      </div>
+
+      <div style={{ padding: "14px 18px 28px" }}>
+        {/* stats grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {stats.map(([k, v]) => (
+            <div key={k} style={{ background: "#0f131c", border: `1px solid ${T.line}`, borderRadius: 7, padding: "8px 10px" }}>
+              <div style={{ color: T.faint, fontSize: 9.5, letterSpacing: 1, textTransform: "uppercase" }}>{k}</div>
+              <div style={{ color: T.text, fontSize: 13, marginTop: 3, fontFamily: T.mono, wordBreak: "break-word" }}>{v}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* data */}
+        {dataEntries.length > 0 && (
+          <>
+            <Head T={T}>data</Head>
+            {dataEntries.map(([k, v]) => {
+              const isString = typeof v === "string";
+              const str = isString ? (v as string) : JSON.stringify(v, null, 2);
+              const long = str.includes("\n") || str.length > 70;
+              return long ? <EditableBlock key={k} label={k} value={str} accent={accent} /> : <Row key={k} k={k} v={str} />;
+            })}
+          </>
+        )}
+
+        {/* relations */}
+        {rels.length > 0 && (
+          <>
+            <Head T={T}>
+              relations <span style={{ color: T.faint }}>· {rels.length}</span>
+            </Head>
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {rels.map((l, i) => {
+                const other = l.source === n.id ? l.target : l.source;
+                const o = byId.get(other);
+                const out = l.source === n.id;
+                return (
+                  <div
+                    key={i}
+                    onClick={() => onJump(other)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", cursor: "pointer", borderRadius: 6 }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#12161f")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <span title={out ? "outgoing" : "incoming"} style={{ color: T.faint, flex: "0 0 auto", fontFamily: T.mono, fontSize: 12 }}>
+                      {out ? "→" : "←"}
+                    </span>
+                    <span style={{ color: T.faint, fontSize: 10, flex: "0 0 auto", padding: "1px 6px", border: `1px solid ${T.line}`, borderRadius: 4, letterSpacing: 0.3 }}>{l.type}</span>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: T.text }}>{o?.label ?? other}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── small editable, copy-pasteable block for prompts / long text ── */
+function EditableBlock({ label, value, accent }: { label: string; value: string; accent: string }) {
+  const [text, setText] = useState(value);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    setText(value);
+    setCopied(false);
+  }, [value]);
+  const edited = text !== value;
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+        <span style={{ color: accent, fontSize: 10, letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>{label}</span>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {edited && (
+            <button onClick={() => setText(value)} title="revert edits" style={{ ...btn(T), padding: "2px 7px", fontSize: 9 }}>
+              revert
+            </button>
+          )}
+          <button
+            onClick={() => {
+              copy(text);
+              setCopied(true);
+            }}
+            style={{ ...btn(T), padding: "2px 9px", fontSize: 9, color: copied ? "#9ed3b0" : T.dim, borderColor: copied ? "#3a5a44" : T.line }}
+          >
+            {copied ? "✓ copied" : "copy"}
+          </button>
+        </div>
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          setCopied(false);
+        }}
+        spellCheck={false}
+        rows={Math.min(16, Math.max(4, text.split("\n").length + 1))}
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          background: "#0d111a",
+          border: `1px solid ${edited ? accent : T.line}`,
+          borderRadius: 7,
+          color: T.text,
+          fontFamily: T.mono,
+          fontSize: 11.5,
+          lineHeight: 1.5,
+          padding: "9px 11px",
+          resize: "vertical",
+          outline: "none",
+        }}
+      />
+    </div>
+  );
+}
+
+function Row({ k, v }: { k: string; v: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 14, padding: "6px 0", borderBottom: `1px solid ${T.line}` }}>
+      <span style={{ color: T.dim, flex: "0 0 auto" }}>{k}</span>
+      <span style={{ textAlign: "right", wordBreak: "break-word", color: T.text, fontFamily: T.mono, fontSize: 11.5 }}>{v}</span>
+    </div>
+  );
+}
+
+function Head({ T: t, children }: { T: typeof T; children: React.ReactNode }) {
+  return <div style={{ marginTop: 18, marginBottom: 2, color: t.dim, fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 600 }}>{children}</div>;
+}
+
+function Section({ T: t, label, children }: { T: typeof T; label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      <div style={{ color: t.faint, fontSize: 9.5, letterSpacing: 1, textTransform: "uppercase" }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function btn(t: typeof T): React.CSSProperties {
+  return { background: "transparent", border: `1px solid ${t.line}`, color: t.dim, borderRadius: 5, padding: "3px 9px", cursor: "pointer", fontFamily: t.sans, fontSize: 10, letterSpacing: 0.3 };
+}
+
+function Toggle({ on, onClick, label, tone }: { on: boolean; onClick: () => void; label: string; tone: "gold" | "green" }) {
+  const c = tone === "green" ? { bg: "#16241a", bd: "#3a5a44", fg: "#9ed3b0" } : { bg: "#221c10", bd: "#5a4a28", fg: T.goldHi };
   return (
     <button
       onClick={onClick}
       style={{
         flex: 1,
-        background: on ? "#1e2a16" : "transparent",
-        border: `1px solid ${on ? "#5d8a6e" : LINE}`,
-        color: on ? "#9ed3b0" : "#6b6451",
-        borderRadius: 4,
-        padding: "4px 6px",
+        background: on ? c.bg : "transparent",
+        border: `1px solid ${on ? c.bd : T.line}`,
+        color: on ? c.fg : T.faint,
+        borderRadius: 6,
+        padding: "5px 6px",
         cursor: "pointer",
-        fontFamily: "inherit",
-        fontSize: 10,
-        letterSpacing: 0.5,
+        fontFamily: T.sans,
+        fontSize: 10.5,
+        letterSpacing: 0.4,
       }}
     >
       {label}
@@ -182,101 +475,10 @@ function Toggle({ on, onClick, label }: { on: boolean; onClick: () => void; labe
 
 function Slider({ label, v, min, max, step, on }: { label: string; v: number; min: number; max: number; step: number; on: (v: number) => void }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-      <span style={{ width: 36 }}>{label}</span>
-      <input type="range" min={min} max={max} step={step} value={v} onChange={(e) => on(parseFloat(e.target.value))} style={{ flex: 1, accentColor: "#c9a04a" }} />
-      <span style={{ color: "#E8DCC4", width: 26, textAlign: "right" }}>{v.toFixed(2)}</span>
-    </div>
-  );
-}
-
-function Dossier({
-  n,
-  byId,
-  links,
-  onClose,
-  onJump,
-}: {
-  n: BNode;
-  byId: Map<string, BNode>;
-  links: BLink[];
-  onClose: () => void;
-  onJump: (id: string) => void;
-}) {
-  const rels = useMemo(() => links.filter((l) => l.source === n.id || l.target === n.id).slice(0, 50), [n.id, links]);
-  const dataRows = n.data ? Object.entries(n.data).map(([k, v]) => [k, typeof v === "string" ? v : JSON.stringify(v)] as [string, string]) : [];
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        right: 0,
-        width: 340,
-        maxWidth: "85%",
-        height: "100%",
-        background: PANEL,
-        borderLeft: `1px solid ${LINE}`,
-        backdropFilter: "blur(8px)",
-        color: "#E8DCC4",
-        padding: "20px 16px",
-        overflowY: "auto",
-        fontSize: 12,
-      }}
-    >
-      <button onClick={onClose} style={{ position: "absolute", top: 10, right: 12, background: "none", border: "none", color: "#6b6451", cursor: "pointer", fontSize: 16 }}>
-        ×
-      </button>
-      <div style={{ color: "#6b6451", fontSize: 10, letterSpacing: 2, textTransform: "uppercase" }}>
-        {n.type} · {n.layer}
-      </div>
-      <div style={{ fontSize: 17, marginTop: 6, color: "#f5ebd4", wordBreak: "break-word" }}>
-        {n.icon ? n.icon + " " : ""}
-        {n.label}
-      </div>
-      <Rows rows={[["id", n.id], ["weight", String(n.weight ?? "—")], ["tier", String(n.tier ?? "—")], ["cluster", n.cluster ?? "—"], ["parent", n.parent ?? "—"]]} />
-      {dataRows.length > 0 && (
-        <>
-          <Head>data</Head>
-          <Rows rows={dataRows} />
-        </>
-      )}
-      {rels.length > 0 && (
-        <>
-          <Head>relations · {rels.length}</Head>
-          {rels.map((l, i) => {
-            const other = l.source === n.id ? l.target : l.source;
-            const o = byId.get(other);
-            return (
-              <div
-                key={i}
-                onClick={() => onJump(other)}
-                style={{ display: "flex", gap: 8, padding: "3px 0", cursor: "pointer" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#f5ebd4")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#E8DCC4")}
-              >
-                <span style={{ color: "#6b6451", width: 64, flex: "0 0 auto" }}>{l.type}</span>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o?.label ?? other}</span>
-              </div>
-            );
-          })}
-        </>
-      )}
-    </div>
-  );
-}
-
-function Head({ children }: { children: React.ReactNode }) {
-  return <div style={{ marginTop: 14, color: "#6b6451", fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase" }}>{children}</div>;
-}
-function Rows({ rows }: { rows: [string, string][] }) {
-  return (
-    <div style={{ marginTop: 8 }}>
-      {rows.map(([k, v]) => (
-        <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "4px 0" }}>
-          <span style={{ color: "#6b6451" }}>{k}</span>
-          <span style={{ textAlign: "right", wordBreak: "break-word", maxWidth: 220 }}>{v}</span>
-        </div>
-      ))}
+    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+      <span style={{ width: 38, color: T.dim, fontSize: 10, flex: "0 0 auto" }}>{label}</span>
+      <input type="range" min={min} max={max} step={step} value={v} onChange={(e) => on(parseFloat(e.target.value))} style={{ flex: 1, accentColor: T.gold, minWidth: 0 }} />
+      <span style={{ color: T.text, width: 30, textAlign: "right", fontFamily: T.mono, fontSize: 10.5, flex: "0 0 auto" }}>{v.toFixed(2)}</span>
     </div>
   );
 }

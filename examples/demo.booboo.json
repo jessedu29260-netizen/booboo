@@ -12,7 +12,7 @@
   },
   "nodes": [
     { "id": "core", "type": "root", "layer": "agents", "label": "DEMO SYSTEM", "weight": 1.0, "tier": 0, "parent": null, "icon": "◈" },
-    { "id": "agent:writer", "type": "agent", "layer": "agents", "label": "Writer", "weight": 0.6, "tier": 1, "parent": "core", "icon": "✍", "data": { "role": "drafts content", "last": "shipped v1" } },
+    { "id": "agent:writer", "type": "agent", "layer": "agents", "label": "Writer", "weight": 0.6, "tier": 1, "parent": "core", "icon": "✍", "data": { "role": "drafts content", "last": "shipped v1", "prompt": "You are the Writer agent.\n\nVoice: clear, concrete, builder-to-builder — no fluff.\nProcess: draft → self-edit for length → cite the source node before shipping.\nNever invent facts; pull from the knowledge layer (kb:*) and link what you used." } },
     { "id": "agent:researcher", "type": "agent", "layer": "agents", "label": "Researcher", "weight": 0.6, "tier": 1, "parent": "core", "icon": "🔎", "data": { "role": "gathers sources" } },
     { "id": "mem:1", "type": "memory", "layer": "memory", "label": "shipped v1 of the landing page", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "writer" },
     { "id": "mem:2", "type": "memory", "layer": "memory", "label": "found 3 primary sources on RAG", "weight": 0.2, "tier": 2, "parent": "agent:researcher", "cluster": "researcher" },

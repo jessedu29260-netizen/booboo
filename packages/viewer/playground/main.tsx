@@ -74,4 +74,5 @@ async function load(): Promise<BoobooGraph> {
   return demo as unknown as BoobooGraph;
 }
 
-load().then((data) => createRoot(document.getElementById("root")!).render(<BoobooView data={data} />));
+const selParam = q.get("node"); // ?node=<id> pre-opens that node's dossier (handy for demos/screenshots)
+load().then((data) => createRoot(document.getElementById("root")!).render(<BoobooView data={data} initialSel={selParam} />));

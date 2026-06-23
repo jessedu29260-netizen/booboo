@@ -1,0 +1,9 @@
+{
+  "booboo": "1.0",
+  "meta": { "root": "core", "layers": [{ "name": "a" }, { "name": "b" }] },
+  "nodes": [
+    { "id": "n1", "type": "x", "layer": "a", "label": "N1", "parent": "core", "cluster": "open" },
+    { "id": "n2", "type": "x", "layer": "b", "label": "N2", "parent": "core", "cluster": "secret" }
+  ],
+  "links": [{ "source": "n1", "target": "ghost", "type": "rel" }]
+}

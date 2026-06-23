@@ -1,0 +1,31 @@
+{
+  "booboo": "1.0",
+  "meta": {
+    "root": "core",
+    "title": "Demo Brain",
+    "layers": [
+      { "name": "agents", "color": "#c9a04a", "label": "AGENTS" },
+      { "name": "memory", "color": "#a78bd0", "label": "MEMORY" },
+      { "name": "knowledge", "color": "#4ECDC4", "label": "KNOWLEDGE" }
+    ],
+    "counts": { "nodes": 7, "links": 7 }
+  },
+  "nodes": [
+    { "id": "core", "type": "root", "layer": "agents", "label": "DEMO SYSTEM", "weight": 1.0, "tier": 0, "parent": null, "icon": "◈" },
+    { "id": "agent:writer", "type": "agent", "layer": "agents", "label": "Writer", "weight": 0.6, "tier": 1, "parent": "core", "icon": "✍", "data": { "role": "drafts content", "last": "shipped v1" } },
+    { "id": "agent:researcher", "type": "agent", "layer": "agents", "label": "Researcher", "weight": 0.6, "tier": 1, "parent": "core", "icon": "🔎", "data": { "role": "gathers sources" } },
+    { "id": "mem:1", "type": "memory", "layer": "memory", "label": "shipped v1 of the landing page", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "writer" },
+    { "id": "mem:2", "type": "memory", "layer": "memory", "label": "found 3 primary sources on RAG", "weight": 0.2, "tier": 2, "parent": "agent:researcher", "cluster": "researcher" },
+    { "id": "kb:llm", "type": "entity", "layer": "knowledge", "label": "LLM", "weight": 0.5, "tier": 1, "parent": "core" },
+    { "id": "kb:rag", "type": "entity", "layer": "knowledge", "label": "RAG", "weight": 0.4, "tier": 2, "parent": "kb:llm" }
+  ],
+  "links": [
+    { "source": "core", "target": "agent:writer", "type": "spine" },
+    { "source": "core", "target": "agent:researcher", "type": "spine" },
+    { "source": "agent:writer", "target": "mem:1", "type": "recalls" },
+    { "source": "agent:researcher", "target": "mem:2", "type": "recalls" },
+    { "source": "agent:researcher", "target": "kb:llm", "type": "uses" },
+    { "source": "kb:llm", "target": "kb:rag", "type": "related" },
+    { "source": "agent:writer", "target": "kb:rag", "type": "uses" }
+  ]
+}

@@ -1,0 +1,24 @@
+# Live example: build a Booboo graph from the real Dionisos Supabase.
+#   DATABASE_URL=postgres://USER:PASS@HOST:PORT/postgres  booboo build --config examples/dionisos.config.yaml
+# (the password's special chars must be URL-encoded). Aegis/personal memory is walled out.
+
+title: "Dionisos · via Booboo"
+root: { id: dionisos, type: core, label: DIONISOS, layer: agents }
+
+layers:
+  - { name: agents,   color: "#c9a04a", label: AGENTS }
+  - { name: families, color: "#5d8a6e", label: CRON-FAMILIES }
+  - { name: memory,   color: "#a78bd0", label: MEMORY }
+
+walls: [aegis, personal]
+
+sources:
+  - adapter: postgres
+    url: ${DATABASE_URL}
+    nodes:
+      - { table: public.dionisos_agents, type: agent,  layer: agents,   id: agent_slug,  label: display_name, parent: dionisos, weight: 0.6, icon: emoji, color: accent_hex, cluster: project_slug }
+      - { table: public.cron_families,   type: family, layer: families, id: family_slug, label: display_name, parent: dionisos, weight: 0.5, icon: emoji, color: accent_hex }
+      - { table: public.dionisos_brain_memory, type: memory, layer: memory, id: id, label: title, cluster: project }
+
+output:
+  snapshot: ./dionisos.booboo.json

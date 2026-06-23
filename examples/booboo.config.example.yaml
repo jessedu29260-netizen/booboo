@@ -1,0 +1,33 @@
+# Booboo build config — copy to booboo.config.yaml and point it at your data.
+# Env vars (${VAR}) are read from the environment / a .env file. Nothing secret lives here.
+
+title: "My System"
+root: { id: core, type: root, label: "MY SYSTEM" }
+
+# The stacked planes. Order = Z-order (first = back). Pick whatever layers fit YOUR system.
+layers:
+  - { name: agents,    color: "#c9a04a", label: "AGENTS" }
+  - { name: memory,    color: "#a78bd0", label: "MEMORY" }
+  - { name: knowledge, color: "#4ECDC4", label: "KNOWLEDGE" }
+
+# Namespaces that must NEVER be emitted (filtered in the builder, before JSON/API/MCP).
+walls: [private, sealed]
+
+sources:
+  # --- a Postgres / Supabase database ---
+  - adapter: postgres
+    url: ${DATABASE_URL}                       # postgres://… (Supabase/Neon/local all work)
+    nodes:
+      - { table: agents,       layer: agents,    id: slug, label: name, parent: core, weight: 0.6, icon: emoji }
+      - { table: observations, layer: memory,    id: id,   label: title, cluster: project, where: "kind <> 'noise'" }
+      - { table: kg_entities,  layer: knowledge, id: id,   label: name, weight_from: degree }   # weight from a numeric column
+    links:
+      - { table: edges, source: src, target: dst, type: rel }
+
+  # --- a plain JSON file (passthrough; the universal escape hatch) ---
+  - adapter: json
+    path: ./data/extra.booboo.json
+
+output:
+  snapshot: ./build/booboo.json     # always written
+  # db_table: booboo_snapshot       # uncomment to also upsert a single-row table for a live API

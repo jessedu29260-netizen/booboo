@@ -1,0 +1,17 @@
+{
+  "name": "booboo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Booboo — the unified operational brain. Structure + knowledge + memory + agents fused into one rooted 3D graph, queryable by REST and MCP. Renders a million-node brain at 60fps.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.33.2",
+  "engines": { "node": ">=18" },
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "demo": "echo 'TODO: create-booboo --demo (P4)'"
+  },
+  "keywords": ["knowledge-graph", "3d", "visualization", "mcp", "agents", "memory", "react-three-fiber", "brain", "booboo"]
+}

@@ -21,8 +21,8 @@
 - ☑ **P1.1 · Layer union — fixed (2026-06-23).** `build` now unions every node's layer into `meta.layers` (auto-adds any missing layer + warns on stderr).
 - ☑ **P1.2 · `output.db_table` removed (2026-06-23).** Was declared-but-unimplemented; dropped from the config type + docs. A live single-row DB output is now a P5/roadmap feature (needs a proper `output.db_url` + schema).
 - ☑ **P1.3 · Dangling-link drops now warned (2026-06-23).** `build` logs `dropped N dangling link(s)` to stderr (TROUBLESHOOTING covers the prefix foot-gun).
-- ☐ **P1.4 · Postgres adapter unverified live.** Only the json path has a test; the postgres path (the "config we sell") has never run against a real DB in this audit. **Fix:** verify against a real Supabase/Neon (the Dionisos example is a ready target) + add an integration test or a documented manual check.
-- ☐ **P1.5 · CLI shape decision.** Today: `booboo` (build) + `booboo-serve` (rest/mcp). README implies one `booboo` CLI. **Decide:** unify under one `booboo <build|serve|mcp|view>` bin, or keep split + document. Lock it before publish (renaming bins post-publish is painful).
+- ☑ **P1.4 · Postgres adapter verified live (2026-06-23).** Ran `examples/dionisos.config.yaml` against the real Dionisos Supabase (pooler `:6543`) → built 4,507 nodes (agents:11 · families:11 · memory:4,485) + 21 links, walls applied, clean. (A CI integration test against a throwaway DB is still nice-to-have — see P2.4.)
+- ☐ **P1.5 · CLI shape decision.** Today: `booboo` (build) + `booboo-serve` (rest/mcp). README implies one `booboo` CLI. **Decide (Jesse):** unify under one `booboo <build|serve|mcp|view>` bin, or keep split + document. Lock it before publish (renaming bins post-publish is painful).
 
 ## P2 — packaging / OSS hygiene
 

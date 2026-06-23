@@ -16,7 +16,7 @@ sources:
   - adapter: postgres
     url: ${DATABASE_URL}
     nodes:
-      - { table: public.dionisos_agents, type: agent,  layer: agents,   id: agent_slug,  label: display_name, parent: dionisos, weight: 0.6, icon: emoji, color: accent_hex, cluster: project_slug }
+      - { table: public.booboo_agents, type: agent, layer: agents, id: agent_slug, label: display_name, parent: dionisos, weight: 0.6, icon: emoji, color: accent_hex, cluster: project_slug, data: [phase, status_pill, p0_count, last_move, next_plan, prompt] }
       - { table: public.cron_families,   type: family, layer: families, id: family_slug, label: display_name, parent: dionisos, weight: 0.5, icon: emoji, color: accent_hex }
       - { table: public.dionisos_brain_memory, type: memory, layer: memory, id: id, label: title, cluster: project }
 

@@ -16,6 +16,7 @@ export async function postgresAdapter(src: { url: string; nodes?: NodeSpec[]; li
     for (const ns of src.nodes ?? []) {
       const cols = new Set<string>([ns.id, ns.label]);
       for (const c of [ns.cluster, ns.icon, ns.color, ns.weight_from]) if (c) cols.add(c);
+      for (const c of ns.data ?? []) cols.add(c);
       const sel = [...cols].map(q).join(", ");
       const sql = `SELECT ${sel} FROM ${ns.table}${ns.where ? ` WHERE ${ns.where}` : ""}`;
       const { rows } = await client.query(sql);
@@ -38,7 +39,7 @@ export async function postgresAdapter(src: { url: string; nodes?: NodeSpec[]; li
           icon: ns.icon ? (r[ns.icon] ?? undefined) : undefined,
           color: ns.color ? (r[ns.color] ?? undefined) : undefined,
           parent: ns.parent ?? null,
-          data: r as Record<string, unknown>,
+          data: ns.data ? Object.fromEntries(ns.data.map((c) => [c, (r as Record<string, unknown>)[c] ?? null])) : (r as Record<string, unknown>),
         });
       }
     }

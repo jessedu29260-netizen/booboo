@@ -16,6 +16,7 @@ export type NodeSpec = {
   color?: string; // column → hex
   parent?: string; // literal node id (e.g. "core")
   where?: string; // raw SQL WHERE (trusted config)
+  data?: string[]; // extra columns to pull verbatim into node.data (e.g. prompt, phase, last_move)
 };
 export type LinkSpec = { table: string; source: string; target: string; type?: string; where?: string };
 

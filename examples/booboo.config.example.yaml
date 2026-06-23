@@ -30,4 +30,3 @@ sources:
 
 output:
   snapshot: ./build/booboo.json     # always written
-  # db_table: booboo_snapshot       # uncomment to also upsert a single-row table for a live API

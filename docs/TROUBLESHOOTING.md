@@ -18,8 +18,8 @@ Your config has no `root.id` (or a typo). Every config needs `root: { id: <somet
 **It printed counts but wrote no file.**
 `output.snapshot` isn't set. Add `output: { snapshot: ./brain.json }`. Paths are relative to the **config file's** directory, not your shell's cwd.
 
-**`output.db_table` did nothing.**
-That option is declared in the config type but **not implemented yet** — the builder only writes `output.snapshot`. Serve from the snapshot file.
+**Where's the DB output (`output.db_table`)?**
+There isn't one — `output.snapshot` (a JSON file) is the only output target. A live single-row DB output is on the roadmap; serve from the snapshot for now.
 
 **Some links are missing / fewer links than rows in my edge table.**
 Dangling links (an endpoint id that doesn't match any node id) are dropped silently. The usual cause: you set `prefix:` on nodes (e.g. `agent:`) but the links table stores raw ids. Link `source`/`target` must equal the **final, prefixed** node id. Either prefix the link columns too, or drop the node `prefix`.

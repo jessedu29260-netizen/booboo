@@ -57,6 +57,24 @@ export async function build(config: BoobooConfig, baseDir = process.cwd()): Prom
   // drop dangling links (endpoints that don't resolve to a kept node)
   const finalLinks = links.filter((l) => seen.has(l.source) && seen.has(l.target));
 
+  // warn on silently-dropped dangling links (the #1 config foot-gun: node id prefix vs link endpoints)
+  const droppedLinks = links.length - finalLinks.length;
+  if (droppedLinks > 0)
+    console.warn(`booboo: dropped ${droppedLinks} dangling link(s) — endpoint id not found (check node id prefixes; see docs/TROUBLESHOOTING.md).`);
+
+  // union: ensure meta.layers covers every layer the nodes actually use (not just the declared ones)
+  const declared = new Set(layers.map((l) => l.name));
+  const addedLayers: string[] = [];
+  for (const n of finalNodes) {
+    if (!declared.has(n.layer)) {
+      declared.add(n.layer);
+      layers.push({ name: n.layer, label: n.layer.toUpperCase() });
+      addedLayers.push(n.layer);
+    }
+  }
+  if (addedLayers.length)
+    console.warn(`booboo: added ${addedLayers.length} layer(s) used by nodes but absent from config.layers: ${addedLayers.join(", ")}.`);
+
   const graph: BoobooGraph = {
     booboo: "1.0",
     meta: { root: config.root.id, title: config.title, layers, counts: { nodes: finalNodes.length, links: finalLinks.length } },

@@ -18,9 +18,9 @@
 
 ## P1 — correctness issues found in the audit
 
-- ☐ **P1.1 · Layer union.** `booboo build` does not merge a JSON source's layers when you've declared your own `layers[]` → nodes can reference layers absent from `meta.layers` (verified: built a graph with `agents`/`memory` nodes but only `knowledge` declared). **Fix:** union all node layers into `meta.layers` (or warn loudly).
-- ☐ **P1.2 · `output.db_table` is dead config.** Declared in the type, never implemented in `buildFromConfig`. **Fix:** implement the single-row upsert, or remove it from the type + docs.
-- ☐ **P1.3 · Silent dangling-link drops.** Prefix/endpoint mismatches drop links with no signal. **Fix:** log a `dropped N dangling links` warning at build (documented in TROUBLESHOOTING as the #1 foot-gun).
+- ☑ **P1.1 · Layer union — fixed (2026-06-23).** `build` now unions every node's layer into `meta.layers` (auto-adds any missing layer + warns on stderr).
+- ☑ **P1.2 · `output.db_table` removed (2026-06-23).** Was declared-but-unimplemented; dropped from the config type + docs. A live single-row DB output is now a P5/roadmap feature (needs a proper `output.db_url` + schema).
+- ☑ **P1.3 · Dangling-link drops now warned (2026-06-23).** `build` logs `dropped N dangling link(s)` to stderr (TROUBLESHOOTING covers the prefix foot-gun).
 - ☐ **P1.4 · Postgres adapter unverified live.** Only the json path has a test; the postgres path (the "config we sell") has never run against a real DB in this audit. **Fix:** verify against a real Supabase/Neon (the Dionisos example is a ready target) + add an integration test or a documented manual check.
 - ☐ **P1.5 · CLI shape decision.** Today: `booboo` (build) + `booboo-serve` (rest/mcp). README implies one `booboo` CLI. **Decide:** unify under one `booboo <build|serve|mcp|view>` bin, or keep split + document. Lock it before publish (renaming bins post-publish is painful).
 

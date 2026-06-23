@@ -23,7 +23,6 @@ output:
 | `walls` | — | List of `cluster` values that are dropped before emit. Sealed data never reaches the snapshot, API, or MCP. |
 | `sources` | ✅ | Array of `json` and/or `postgres` sources, merged in order. |
 | `output.snapshot` | — | Path to write the graph JSON. Relative paths resolve against the config file's directory. |
-| `output.db_table` | — | ⚠️ **Declared but not yet implemented** — the builder does not upsert a DB table today. Use `snapshot`. |
 
 ## Source: `json` (the starter / escape hatch)
 

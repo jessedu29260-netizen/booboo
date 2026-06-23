@@ -47,7 +47,6 @@ sources:
 
 output:
   snapshot: ./build/booboo.json    # always written
-  db_table: booboo_snapshot        # optional: upsert a single-row table for a live API
 ```
 
 **Layout/weighting** are computed by the builder from `parent`/`cluster`/`weight`/`tier` (sector angles per cluster, radius by tier, gentle deterministic jitter) — the user never hand-places nodes. Fixed `x/y/z` in the spec override it when needed.

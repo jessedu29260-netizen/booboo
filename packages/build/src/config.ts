@@ -29,7 +29,7 @@ export type BoobooConfig = {
   layers: { name: string; color?: string; label?: string }[];
   walls?: string[];
   sources: Source[];
-  output?: { snapshot?: string; db_table?: string };
+  output?: { snapshot?: string };
 };
 
 const envSub = (s: string): string => s.replace(/\$\{([^}]+)\}/g, (_, k) => process.env[k] ?? "");

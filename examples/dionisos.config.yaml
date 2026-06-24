@@ -3,12 +3,19 @@
 # (the password's special chars must be URL-encoded). Aegis/personal memory is walled out.
 
 title: "Dionisos · via Booboo"
-root: { id: dionisos, type: core, label: DIONISOS, layer: agents }
+root: { id: dionisos, type: core, label: DIONISOS, layer: dionisos }
 
+# Layer order = the system's tiering, apex doctrine → deep memory.
+# GOLD CONTRACT ▷ DIONISOS ▷ PROJECT ▷ SILVER CONTRACT ▷ AGENTS ▷ ENGRAM ▷ CORTEX ▷ ARGUS
 layers:
-  - { name: agents,   color: "#c9a04a", label: AGENTS }
-  - { name: families, color: "#5d8a6e", label: CRON-FAMILIES }
-  - { name: memory,   color: "#a78bd0", label: MEMORY }
+  - { name: gold,     color: "#d4af37", label: "GOLD CONTRACT" }
+  - { name: dionisos, color: "#e8e2d0", label: "DIONISOS" }
+  - { name: project,  color: "#4a90d9", label: "PROJECTS" }
+  - { name: silver,   color: "#c7ccd1", label: "SILVER CONTRACT" }
+  - { name: agents,   color: "#c9a04a", label: "AGENTS" }
+  - { name: engram,   color: "#a78bd0", label: "ENGRAM" }
+  - { name: cortex,   color: "#5d8a6e", label: "CORTEX" }
+  - { name: argus,    color: "#cf6a5a", label: "ARGUS" }
 
 walls: [aegis, personal]
 
@@ -16,9 +23,21 @@ sources:
   - adapter: postgres
     url: ${DATABASE_URL}
     nodes:
-      - { table: public.booboo_agents, type: agent, layer: agents, id: agent_slug, label: display_name, parent: dionisos, weight: 0.6, icon: emoji, color: accent_hex, cluster: project_slug, data: [phase, status_pill, p0_count, last_move, next_plan, prompt] }
-      - { table: public.cron_families,   type: family, layer: families, id: family_slug, label: display_name, parent: dionisos, weight: 0.5, icon: emoji, color: accent_hex }
-      - { table: public.dionisos_brain_memory, type: memory, layer: memory, id: id, label: title, cluster: project }
+      # GOLD — apex doctrine
+      - { table: public.dionisos_canonicals, type: contract, layer: gold, id: key, label: label, parent: dionisos, weight: 0.95, prefix: "gold:", where: "role = 'contract:gold'" }
+      # PROJECT — the active brands
+      - { table: public.dionisos_projects, type: project, layer: project, id: slug, label: slug, parent: dionisos, weight: 0.7, cluster: slug, prefix: "proj:", where: "status = 'active'" }
+      # SILVER — the cron-family operating doctrine + the 11 families it governs
+      - { table: public.dionisos_canonicals, type: contract, layer: silver, id: key, label: label, parent: dionisos, weight: 0.9, prefix: "silver:", where: "role = 'contract:cron_silver'" }
+      - { table: public.cron_families, type: family, layer: silver, id: family_slug, label: display_name, parent: "silver:contract:cron_silver", weight: 0.5, icon: emoji, color: accent_hex, prefix: "fam:" }
+      # AGENTS — the working agents
+      - { table: public.booboo_agents, type: agent, layer: agents, id: agent_slug, label: display_name, parent: dionisos, weight: 0.6, icon: emoji, color: accent_hex, cluster: project_slug, prefix: "agent:", data: [phase, status_pill, p0_count, last_move, next_plan, prompt] }
+      # ENGRAM — memory
+      - { table: public.dionisos_brain_memory, type: memory, layer: engram, id: id, label: title, cluster: project, prefix: "mem:" }
+      # CORTEX — canonical wiring (non-contract primaries)
+      - { table: public.dionisos_canonicals, type: canonical, layer: cortex, id: key, label: label, cluster: role, parent: dionisos, prefix: "canon:", where: "is_primary AND coalesce(role,'') NOT LIKE 'contract:%'" }
+      # ARGUS — recent decisions / history
+      - { table: public.dionisos_cross_decisions, type: decision, layer: argus, id: id, label: title, cluster: project, prefix: "dec:", where: "created_at > now() - interval '14 days'" }
 
 output:
   snapshot: ./dionisos.booboo.json

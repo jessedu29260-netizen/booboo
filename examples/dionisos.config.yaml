@@ -27,12 +27,11 @@ sources:
       - { table: public.dionisos_canonicals, type: contract, layer: gold, id: key, label: label, parent: dionisos, weight: 0.95, prefix: "gold:", where: "role = 'contract:gold'" }
       # PROJECT — the active brands
       - { table: public.dionisos_projects, type: project, layer: project, id: slug, label: slug, parent: dionisos, weight: 0.7, cluster: slug, prefix: "proj:", where: "status = 'active'" }
-      # SILVER — the cron-family operating doctrine: ONE master doctrine + one
-      #   instantiated overlay PER family (contract:cron_silver:<family>, carrying that
-      #   family's mandate + cadence from cron_families.silver_*) + the 11 families.
-      - { table: public.dionisos_canonicals, type: contract, layer: silver, id: key, label: label, parent: dionisos, weight: 0.9, prefix: "silver:", where: "role = 'contract:cron_silver'" }
-      - { table: public.cron_families, type: contract, layer: silver, id: family_slug, label: display_name, parent: "silver:contract:cron_silver", weight: 0.4, prefix: "silver:", data: [silver_mandate, silver_cadence_hours] }
-      - { table: public.cron_families, type: family, layer: silver, id: family_slug, label: display_name, parent: "silver:contract:cron_silver", weight: 0.5, icon: emoji, color: accent_hex, prefix: "fam:" }
+      # SILVER — one overlay per cron-family (contract:cron_silver:<family>, carrying its
+      #   mandate + cadence) + the 11 families. NO master node — the silver tier IS the
+      #   per-family set (matches the OS Atlas).
+      - { table: public.cron_families, type: contract, layer: silver, id: family_slug, label: display_name, parent: dionisos, weight: 0.4, prefix: "silver:", data: [silver_mandate, silver_cadence_hours] }
+      - { table: public.cron_families, type: family, layer: silver, id: family_slug, label: display_name, parent: dionisos, weight: 0.5, icon: emoji, color: accent_hex, prefix: "fam:" }
       # AGENTS — the working agents
       - { table: public.booboo_agents, type: agent, layer: agents, id: agent_slug, label: display_name, parent: dionisos, weight: 0.6, icon: emoji, color: accent_hex, cluster: project_slug, prefix: "agent:", data: [phase, status_pill, p0_count, last_move, next_plan, prompt] }
       # ENGRAM — memory

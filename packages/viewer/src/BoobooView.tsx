@@ -223,7 +223,7 @@ function Dossier({
   const [tab, setTab] = useState("overview");
 
   return (
-    <div style={{ position: "absolute", top: 0, right: 0, width: 420, maxWidth: "94%", height: "100%", background: T.panel, borderLeft: `1px solid ${T.line}`, backdropFilter: "blur(12px)", color: T.text, display: "flex", flexDirection: "column", boxShadow: "-18px 0 50px rgba(0,0,0,0.4)" }}>
+    <div style={{ position: "absolute", top: 0, right: 0, width: 420, maxWidth: "94%", height: "100%", background: T.panelSolid, borderLeft: `1px solid ${T.line}`, color: T.text, display: "flex", flexDirection: "column", boxShadow: "-18px 0 50px rgba(0,0,0,0.45)" }}>
       {/* fixed header + tabs */}
       <div style={{ flex: "0 0 auto", background: T.panelSolid, borderBottom: `1px solid ${T.line}`, borderLeft: `3px solid ${accent}` }}>
         <div style={{ padding: "16px 18px 12px", position: "relative" }}>

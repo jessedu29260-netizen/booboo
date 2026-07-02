@@ -4,9 +4,12 @@
 
 Named after a dachshund who never forgets where the treats are buried. Fitting, because Booboo is about exactly that: **memory and recall** — seeing the whole system at once, fetching what's buried, never losing the thread.
 
+![A real 50,000-node synthetic brain rendered by booboo view — four stacked layer rings, spines converging on a glowing root, cockpit controls](docs/assets/viewer-50k.jpg)
+*Unretouched: `booboo view --demo --nodes 50000` — 50k nodes, 4 layers, live in a browser tab, zero console errors. Try it yourself in one command.*
+
 Most tools show you *one* slice: a knowledge graph, an agent flow chart, a memory store, a trace viewer. Booboo fuses all of them into **one graph rooted at a single point**, so you can see — and query — how the whole system actually hangs together.
 
-> **Status:** alpha — six packages build green: `@booboo-brain/spec` (the contract), `@booboo-brain/build` (config-driven postgres/json adapters), `@booboo-brain/serve` (REST + MCP query layer), `@booboo-brain/viewer` (million-node 3D render), `@booboo-brain/cli` (the unified `booboo` command), and `create-booboo` (project scaffolder). Published npm releases are next (see [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md)). MIT.
+> **Status:** alpha — six packages, all published: [`@booboo-brain/spec`](https://www.npmjs.com/package/@booboo-brain/spec) (the contract), [`@booboo-brain/build`](https://www.npmjs.com/package/@booboo-brain/build) (config-driven postgres/json adapters), [`@booboo-brain/serve`](https://www.npmjs.com/package/@booboo-brain/serve) (REST + MCP query layer), [`@booboo-brain/viewer`](https://www.npmjs.com/package/@booboo-brain/viewer) (million-node 3D render), [`@booboo-brain/cli`](https://www.npmjs.com/package/@booboo-brain/cli) (the unified `booboo` command), and [`create-booboo`](https://www.npmjs.com/package/create-booboo) (project scaffolder). MIT.
 
 ---
 
@@ -55,8 +58,27 @@ privacy-walled, validated, served. See each package's README for the details.
 
 ## Why it's different
 
-The closest things on GitHub each do *one* layer: `3d-force-graph` (rendering), Obsidian/Logseq (note graphs), LangGraph (agent flows), Graphiti/Cognee (agent memory). None fuse **wiring + knowledge + episodic memory + agents + crons** into one rooted, live, **bootable** brain that's simultaneously a view, a wallpaper, an API, and an MCP source. That operational fusion is the novel part.
+The closest things on GitHub each do *one* layer — good tools, all of them, for their slice:
+
+| | Whole-system view | REST API | MCP (agents query it) | 3D at 1M nodes | Privacy walls |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Booboo** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Graph viewers (`3d-force-graph`) | render only | — | — | ✅ | — |
+| Note graphs (Obsidian, Logseq) | your notes, not your system | — | plugins | — | — |
+| Agent frameworks (LangGraph, traces) | flows & runs | ✅ | partial | — | — |
+| Memory stores (Graphiti, Cognee) | memory only | ✅ | ✅ | — | — |
+
+None fuse **wiring + knowledge + episodic memory + agents + crons** into one rooted, live, **bootable** brain that's simultaneously a view, a wallpaper, an API, and an MCP source. That operational fusion is the novel part.
+
+## Key in hand (optional — everything above stays free)
+
+Every feature is MIT and always will be. If you'd rather not do the setup yourself:
+
+- **[The Booboo Drop — £29](https://fractionalhq.uk/#tiers)** · key in hand: a folder + operator prompt you paste into Claude Code or Cursor — your agent deploys your brain end-to-end while you answer five questions.
+- **[Done-for-you](https://fractionalhq.uk/#tiers)** · we map *your* stack — custom adapters, hosted snapshot, refresh pipeline.
+
+Both are built on this repo, same config schema — never a fork, never a gate.
 
 ## License
 
-MIT — built to be forked, adapted, and shipped.
+MIT — built to be forked, adapted, and shipped. By [Fractional HQ](https://fractionalhq.uk).

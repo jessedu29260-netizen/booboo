@@ -1,17 +1,30 @@
 {
   "name": "@booboo-brain/build",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Booboo build engine — config-driven adapters (postgres, json) + merge/walls → emits a Booboo graph.",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/jessedu29260-netizen/booboo.git", "directory": "packages/build" },
-  "bugs": { "url": "https://github.com/jessedu29260-netizen/booboo/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jessedu29260-netizen/booboo.git",
+    "directory": "packages/build"
+  },
+  "bugs": {
+    "url": "https://github.com/jessedu29260-netizen/booboo/issues"
+  },
   "homepage": "https://github.com/jessedu29260-netizen/booboo#readme",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
     "test": "vitest run"

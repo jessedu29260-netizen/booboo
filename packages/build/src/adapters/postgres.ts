@@ -4,11 +4,29 @@ import type { NodeSpec, LinkSpec } from "../config.js";
 
 const q = (c: string) => `"${c.replace(/"/g, '""')}"`; // quote an identifier
 
+/** Strong DB passwords often contain URL-unsafe characters ($ # ! …) that make the
+ *  WHATWG URL parser inside pg reject the DSN with "Invalid URL". If the raw string
+ *  doesn't parse, percent-encode the password segment so users can paste their
+ *  connection string exactly as Supabase/Neon hand it out. (Found dogfooding on the
+ *  real Dionisos brain, 2026-07-02.) */
+function normalizeDsn(url: string): string {
+  try {
+    new URL(url);
+    return url;
+  } catch {
+    const m = url.match(/^(postgres(?:ql)?:\/\/)([^:/]+):(.*)@([^@]+)$/s);
+    if (!m) return url; // unexpected shape — let pg raise its own error
+    console.error("booboo: percent-encoding special characters in the connection-string password");
+    return m[1] + m[2] + ":" + encodeURIComponent(m[3]) + "@" + m[4];
+  }
+}
+
 /** Config-driven Postgres adapter. Each NodeSpec → a SELECT → BNodes; each LinkSpec → BLinks.
  *  Works with any Postgres (Supabase / Neon / local). Read-only. */
 export async function postgresAdapter(src: { url: string; nodes?: NodeSpec[]; links?: LinkSpec[] }): Promise<{ nodes: BNode[]; links: BLink[] }> {
-  const isLocal = /localhost|127\.0\.0\.1/.test(src.url);
-  const client = new pg.Client({ connectionString: src.url, ssl: isLocal ? undefined : { rejectUnauthorized: false } });
+  const url = normalizeDsn(src.url);
+  const isLocal = /localhost|127\.0\.0\.1/.test(url);
+  const client = new pg.Client({ connectionString: url, ssl: isLocal ? undefined : { rejectUnauthorized: false } });
   await client.connect();
   const nodes: BNode[] = [];
   const links: BLink[] = [];

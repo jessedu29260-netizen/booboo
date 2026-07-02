@@ -64,3 +64,10 @@ The viewer is the `@booboo-brain/viewer` React component (`<BoobooView data={gra
 ## Misc
 
 **Git: "LF will be replaced by CRLF" on Windows.** Harmless line-ending normalisation.
+
+## `booboo: Invalid URL` on a postgres source
+
+Your database password probably contains URL-special characters (`$ # ! @ &`…).
+Since v0.1.1 the build auto-percent-encodes the password segment for you (you'll
+see a one-line notice on stderr). On older versions, encode the password yourself:
+`encodeURIComponent("p@ss#word")` → paste the result into the connection string.

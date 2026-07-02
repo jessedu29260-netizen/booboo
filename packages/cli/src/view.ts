@@ -83,6 +83,14 @@ export async function view(opts: ViewOpts): Promise<void> {
   const server = createServer(async (req, res) => {
     const reqPath = decodeURIComponent((req.url ?? "/").split("?")[0]);
 
+    // Bare `/` without a query would render the app's tiny fallback sample —
+    // send the visitor to what this server is actually hosting.
+    if (reqPath === "/" && !(req.url ?? "").includes("?")) {
+      res.writeHead(302, { location: opts.snapshot ? "/?file=/snapshot.json" : `/?n=${opts.nodes ?? 100000}` });
+      res.end();
+      return;
+    }
+
     if (reqPath === "/snapshot.json") {
       if (!snapshot) {
         res.writeHead(404);

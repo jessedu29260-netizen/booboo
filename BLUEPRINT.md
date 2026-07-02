@@ -107,7 +107,7 @@ Walls aren't a filter on the way *out* — they're applied in the builder so sea
 | `OperationalAtlas.tsx` + `AtlasView.tsx` | `@booboo/viewer` | decouple from Next/OS; data via prop only; strip Dionisos types → generic |
 | `atlas_gen_v4.py` (Python, hardcoded tables) | `@booboo/build` (TS, config-driven) | **port ~400 lines to TS**, replace hardcoded reads with adapters + config |
 | `atlas_mcp/server.py` + `/api/atlas` | `@booboo/serve` | generalize verbs; drop Dionisos tables; TS rewrite |
-| `atlas_snapshot` table + walls (aegis/personal) | `output.db_table` + `config.walls` | generalize the snapshot + wall mechanism |
+| `atlas_snapshot` table + walls (aegis/personal) | `config.walls` (live DB-table output is roadmap) | generalize the snapshot + wall mechanism |
 | `/ambient` wallpaper + kiosk mode | viewer `kiosk` prop + a `serve` route | already generic in the component — lift as-is |
 
 ~80% of the value is in code we've already written and proven; the OSS work is **generalization + TS port + packaging**, not green-field.

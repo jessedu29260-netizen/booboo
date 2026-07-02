@@ -1,0 +1,21 @@
+# Throwaway registry for the clean-install dress rehearsal (stress/clean-install.sh).
+# Anonymous publish is intentional — this registry lives for one run and is never exposed.
+storage: /verdaccio/storage/data
+auth:
+  htpasswd:
+    file: /verdaccio/storage/htpasswd
+    max_users: -1
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+packages:
+  '@booboo/*':
+    access: $all
+    publish: $all
+  'create-booboo':
+    access: $all
+    publish: $all
+  '**':
+    access: $all
+    proxy: npmjs
+log: { type: stdout, format: pretty, level: warn }

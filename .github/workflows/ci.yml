@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test
+
+      - name: create-booboo smoke (scaffold → build → assert)
+        run: |
+          node packages/create-booboo/dist/cli.js /tmp/smoke --force
+          node packages/cli/dist/cli.js build --config /tmp/smoke/booboo.config.yaml
+          test -f /tmp/smoke/brain.json
+          node -e "const g=require('/tmp/smoke/brain.json'); if(!g.nodes?.length) throw new Error('empty snapshot'); console.log('smoke ok:', g.nodes.length, 'nodes')"

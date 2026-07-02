@@ -13,7 +13,7 @@ const flag = (name: string, fallback?: string): string | undefined => {
 };
 
 async function build(): Promise<void> {
-  const { buildFromConfig } = await import("@booboo/build");
+  const { buildFromConfig } = await import("@booboo-brain/build");
   const { graph, snapshotPath } = await buildFromConfig(flag("--config", "booboo.config.yaml")!);
   const by: Record<string, number> = {};
   for (const n of graph.nodes) by[n.layer] = (by[n.layer] ?? 0) + 1;
@@ -29,7 +29,7 @@ async function serve(kind: "rest" | "mcp"): Promise<void> {
     console.error(`usage: booboo ${verb} --snapshot graph.json${kind === "rest" ? " [--port 8787]" : ""}`);
     process.exit(1);
   }
-  const { loadSnapshot, BoobooIndex, createRestServer, runMcp } = await import("@booboo/serve");
+  const { loadSnapshot, BoobooIndex, createRestServer, runMcp } = await import("@booboo-brain/serve");
   const ix = new BoobooIndex(loadSnapshot(snap!));
   if (kind === "rest") {
     const port = parseInt(flag("--port", "8787")!, 10);

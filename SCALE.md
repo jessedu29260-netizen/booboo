@@ -11,14 +11,14 @@ Two shipping paths put a synthetic mega-brain on your screen — no data require
 booboo view --demo --nodes 1000000
 
 # 2) The viewer playground (from a monorepo clone)
-pnpm -F @booboo/viewer dev      # then open with ?n=1000000
+pnpm -F @booboo-brain/viewer dev      # then open with ?n=1000000
 ```
 
 Both generate the nodes client-side (`--nodes` / `?n=` is tunable from 10k up), so you can feel the LOD engine at any size before pointing Booboo at real data. The same renderer has also been proven on a real 4,469-node production brain built straight from Postgres by config alone.
 
 ## Rendering it at 60fps (the honest engineering)
 
-"Industrial grade" = smart LOD, **not** brute-forcing a million objects. The architecture, as shipped in `@booboo/viewer`:
+"Industrial grade" = smart LOD, **not** brute-forcing a million objects. The architecture, as shipped in `@booboo-brain/viewer`:
 
 1. **One GPU point field.** The whole node cloud is a *single* `<points>` geometry — one draw call for a million nodes. The CPU/React never touches per-node objects.
 2. **Typed-array data path.** Positions/colors/sizes live in flat `Float32Array`s, computed once at layout. No per-node React components, no object-per-node.

@@ -1,4 +1,4 @@
-# @booboo/serve
+# @booboo-brain/serve
 
 Query a [Booboo](../../README.md) snapshot over **REST** and **MCP**. One in-memory index
 (`BoobooIndex`) powers both: search, neighbours, shortest-path, layer stats. Read-only.
@@ -38,7 +38,7 @@ Tools: `booboo_stats` · `booboo_search` · `booboo_node` · `booboo_neighbors` 
 ## API
 
 ```ts
-import { BoobooIndex, loadSnapshot, createRestServer, runMcp } from "@booboo/serve";
+import { BoobooIndex, loadSnapshot, createRestServer, runMcp } from "@booboo-brain/serve";
 
 const ix = new BoobooIndex(loadSnapshot("my.booboo.json"));
 ix.search("invoice");           // ranked nodes

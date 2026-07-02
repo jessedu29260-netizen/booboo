@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import type { BNode, BLink, BLayer } from "@booboo/spec";
+import type { BNode, BLink, BLayer } from "@booboo-brain/spec";
 
 /** Passthrough adapter: merge a Booboo graph JSON file as-is (the universal escape hatch). */
 export function jsonAdapter(src: { path: string }, baseDir: string): { nodes: BNode[]; links: BLink[]; layers?: BLayer[] } {

@@ -4,7 +4,7 @@ import { OrbitControls, Html } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette, ToneMapping, HueSaturation, BrightnessContrast } from "@react-three/postprocessing";
 import { ToneMappingMode } from "postprocessing";
 import * as THREE from "three";
-import type { BoobooGraph } from "@booboo/spec";
+import type { BoobooGraph } from "@booboo-brain/spec";
 import { layout, planeZ, PLANE_GAP, type Laid } from "./layout";
 
 // Effect intensities are numbers (sliders): 0 = off, 1 = default, >1 = more.

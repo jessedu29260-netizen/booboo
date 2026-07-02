@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { BoobooGraph, BNode, BLink } from "@booboo/spec";
+import type { BoobooGraph, BNode, BLink } from "@booboo-brain/spec";
 import { Booboo, defaultCfg, type BoobooCfg } from "./Booboo";
 import { usePersisted } from "./usePersisted";
 

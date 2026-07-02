@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { BoobooView } from "../src/index";
-import type { BoobooGraph, BNode, BLink } from "@booboo/spec";
+import type { BoobooGraph, BNode, BLink } from "@booboo-brain/spec";
 import demo from "../../../examples/demo.booboo.json";
 
 // Deterministic 0..1 hash for coherent (non-random) synthetic structure.

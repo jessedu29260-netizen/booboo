@@ -18,8 +18,8 @@ Requires Node >= 18 and [pnpm](https://pnpm.io) (version pinned in `package.json
 Useful during development:
 
 ```bash
-pnpm -F @booboo/build test          # test one package
-pnpm -F @booboo/viewer dev          # viewer playground (open with ?n=100000)
+pnpm -F @booboo-brain/build test          # test one package
+pnpm -F @booboo-brain/viewer dev          # viewer playground (open with ?n=100000)
 node packages/cli/dist/cli.js view --demo   # run the built CLI locally
 ```
 
@@ -27,11 +27,11 @@ node packages/cli/dist/cli.js view --demo   # run the built CLI locally
 
 | Package | What it is |
 |---|---|
-| `@booboo/spec` | the JSON graph contract + validator (zero deps) |
-| `@booboo/build` | config-driven adapters (postgres, json) → snapshot |
-| `@booboo/serve` | REST + MCP query layer over a snapshot |
-| `@booboo/viewer` | the R3F 3D renderer + standalone app |
-| `@booboo/cli` | the unified `booboo` bin: build / serve / mcp / view |
+| `@booboo-brain/spec` | the JSON graph contract + validator (zero deps) |
+| `@booboo-brain/build` | config-driven adapters (postgres, json) → snapshot |
+| `@booboo-brain/serve` | REST + MCP query layer over a snapshot |
+| `@booboo-brain/viewer` | the R3F 3D renderer + standalone app |
+| `@booboo-brain/cli` | the unified `booboo` bin: build / serve / mcp / view |
 | `create-booboo` | project scaffolder (zero deps) |
 
 `SPEC.md` is the contract; `BLUEPRINT.md` is the architecture; `docs/CONFIG.md` is the
@@ -50,7 +50,7 @@ config reference.
 Match what's already there:
 
 - TypeScript, ESM only (`"type": "module"`), built with tsup, tested with vitest.
-- Standard library before dependencies — `@booboo/spec` and `create-booboo` are zero-dep
+- Standard library before dependencies — `@booboo-brain/spec` and `create-booboo` are zero-dep
   on purpose; keep them that way.
 - Small files, comment the *why* at the top, not the what.
 - The spec stays tiny. Additions to the graph contract need a strong reason.

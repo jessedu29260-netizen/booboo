@@ -4,7 +4,7 @@
 import { mkdirSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-const BOOBOO_VERSION = "^0.1.0"; // @booboo/* range the scaffolded project depends on
+const BOOBOO_VERSION = "^0.1.0"; // @booboo-brain/* range the scaffolded project depends on
 
 const args = process.argv.slice(2);
 const flags = new Set(args.filter((a) => a.startsWith("--")));
@@ -101,7 +101,7 @@ const pkgJson = JSON.stringify(
       view: "booboo view --snapshot brain.json",
     },
     dependencies: {
-      "@booboo/cli": BOOBOO_VERSION,
+      "@booboo-brain/cli": BOOBOO_VERSION,
     },
   },
   null,

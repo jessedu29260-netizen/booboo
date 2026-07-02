@@ -4,11 +4,11 @@ Symptom → cause → fix. Grounded in how the build/serve/MCP layers actually b
 
 ## Install & setup
 
-**`npm install` fails — `@booboo/build` / `@booboo/serve` not found (404).**
+**`npm install` fails — `@booboo-brain/build` / `@booboo-brain/serve` not found (404).**
 The packages aren't on the public npm registry yet (pre-release). Until they're published, run from the cloned monorepo (`pnpm install` at the repo root) rather than a scaffolded project, or link the local packages. A scaffolded `create-booboo` project becomes installable once the registry publish lands.
 
 **`booboo: command not found` after install.**
-The CLI is one bin — `booboo` (from `@booboo/cli`) — with subcommands `build` / `serve` / `mcp` / `view`. Run them via your project's npm scripts (`npm run build` / `npm run serve`) or with `npx booboo serve …`.
+The CLI is one bin — `booboo` (from `@booboo-brain/cli`) — with subcommands `build` / `serve` / `mcp` / `view`. Run them via your project's npm scripts (`npm run build` / `npm run serve`) or with `npx booboo serve …`.
 
 ## Build (`booboo build`)
 
@@ -57,7 +57,7 @@ MCP speaks JSON-RPC on **stdout**; only stderr may carry human logs (the server 
 ## Viewer (the 3D brain)
 
 **How do I actually see it today?**
-The viewer is the `@booboo/viewer` React component (`<BoobooView data={graph} />`). In the repo, run the playground: `pnpm -F @booboo/viewer dev`, then open the local Vite URL. Load data with `?file=<url-to-a-snapshot>` or a synthetic graph with `?n=100000`. A standalone, scaffold-included viewer command is on the roadmap (see `LAUNCH_CHECKLIST.md`).
+The viewer is the `@booboo-brain/viewer` React component (`<BoobooView data={graph} />`). In the repo, run the playground: `pnpm -F @booboo-brain/viewer dev`, then open the local Vite URL. Load data with `?file=<url-to-a-snapshot>` or a synthetic graph with `?n=100000`. A standalone, scaffold-included viewer command is on the roadmap (see `LAUNCH_CHECKLIST.md`).
 
 **Slow / janky on a big graph.** Drop the node count or use a machine with a real GPU; a weak-GPU 2D fallback is planned.
 

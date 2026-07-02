@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs";
 import path from "node:path";
-import type { BoobooGraph } from "@booboo/spec";
+import type { BoobooGraph } from "@booboo-brain/spec";
 import { loadConfig, type BoobooConfig } from "./config.js";
 import { build } from "./build.js";
 

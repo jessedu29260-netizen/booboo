@@ -11,7 +11,7 @@ export default defineConfig({
   base: "./",
   plugins: [react()],
   resolve: {
-    alias: { "@booboo/spec": path.resolve(__dirname, "../spec/src/index.ts") },
+    alias: { "@booboo-brain/spec": path.resolve(__dirname, "../spec/src/index.ts") },
   },
   build: {
     outDir: path.resolve(__dirname, "dist-app"),

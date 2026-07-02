@@ -1,5 +1,5 @@
 import pg from "pg";
-import type { BNode, BLink } from "@booboo/spec";
+import type { BNode, BLink } from "@booboo-brain/spec";
 import type { NodeSpec, LinkSpec } from "../config.js";
 
 const q = (c: string) => `"${c.replace(/"/g, '""')}"`; // quote an identifier

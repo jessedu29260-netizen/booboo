@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { BoobooView } from "../src/index";
-import type { BoobooGraph, BNode, BLink } from "@booboo/spec";
+import type { BoobooGraph, BNode, BLink } from "@booboo-brain/spec";
 
 // The shipped, self-contained viewer app. `booboo view` serves this and loads
 // the user's snapshot at runtime via ?file=/snapshot.json. ?n=<count> renders a

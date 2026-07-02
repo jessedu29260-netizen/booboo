@@ -1,5 +1,5 @@
 {
-  "name": "@booboo/viewer",
+  "name": "@booboo-brain/viewer",
   "version": "0.1.0",
   "description": "Booboo 3D viewer — the scale-first R3F renderer. Instanced GPU field + tier-LOD. Renders any Booboo graph.",
   "license": "MIT",
@@ -13,7 +13,7 @@
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }, "./package.json": "./package.json" },
   "files": ["dist", "dist-app"],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean --external react,react-dom,three,@react-three/fiber,@react-three/drei,@booboo/spec && vite build --config vite.app.config.ts",
+    "build": "tsup src/index.ts --format esm --dts --clean --external react,react-dom,three,@react-three/fiber,@react-three/drei,@booboo-brain/spec && vite build --config vite.app.config.ts",
     "dev": "vite"
   },
   "peerDependencies": {
@@ -21,7 +21,7 @@
     "react-dom": ">=18"
   },
   "dependencies": {
-    "@booboo/spec": "workspace:*",
+    "@booboo-brain/spec": "workspace:*",
     "three": "^0.184.0",
     "@react-three/fiber": "^9.0.0",
     "@react-three/drei": "^10.0.0",

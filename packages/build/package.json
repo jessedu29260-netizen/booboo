@@ -1,5 +1,5 @@
 {
-  "name": "@booboo/build",
+  "name": "@booboo-brain/build",
   "version": "0.1.0",
   "description": "Booboo build engine — config-driven adapters (postgres, json) + merge/walls → emits a Booboo graph.",
   "license": "MIT",
@@ -17,7 +17,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@booboo/spec": "workspace:*",
+    "@booboo-brain/spec": "workspace:*",
     "pg": "^8.13.0",
     "yaml": "^2.6.0"
   },

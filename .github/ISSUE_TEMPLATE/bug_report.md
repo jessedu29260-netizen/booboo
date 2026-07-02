@@ -25,7 +25,7 @@ What you expected instead.
 
 **Environment**
 
-- Booboo package + version (e.g. `@booboo/cli` 0.1.0):
+- Booboo package + version (e.g. `@booboo-brain/cli` 0.1.0):
 - Node version:
 - OS:
 - Browser (viewer issues only):

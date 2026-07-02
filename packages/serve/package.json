@@ -1,5 +1,5 @@
 {
-  "name": "@booboo/serve",
+  "name": "@booboo-brain/serve",
   "version": "0.1.0",
   "description": "Query a Booboo snapshot over REST + MCP. In-memory index: search, neighbors, shortest-path, layer stats.",
   "license": "MIT",
@@ -17,7 +17,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@booboo/spec": "workspace:*",
+    "@booboo-brain/spec": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.12.0",
     "zod": "^3.23.0"
   },

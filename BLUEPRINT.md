@@ -2,7 +2,7 @@
 
 Decisions locked: **full framework v1**, **TypeScript-only** (one `npx`/Node toolchain). This is the doc we build against.
 
-> **Naming:** the product is **Booboo** — packages `@booboo/*`, config `booboo.config.yaml`, spec version key `booboo`. "Atlas" refers **only** to the internal Dionisos OS component this was extracted from (see §7) — not the product.
+> **Naming:** the product is **Booboo** — packages `@booboo-brain/*`, config `booboo.config.yaml`, spec version key `booboo`. "Atlas" refers **only** to the internal Dionisos OS component this was extracted from (see §7) — not the product.
 
 ---
 
@@ -10,13 +10,13 @@ Decisions locked: **full framework v1**, **TypeScript-only** (one `npx`/Node too
 
 | Package | Responsibility | Key deps |
 |---|---|---|
-| `@booboo/spec` | The Booboo JSON types + a validator (`validate(g): Result`). Zero deps. The contract. | `zod` |
-| `@booboo/build` | Config loader + **adapters** (postgres, json) + the merge/layout/weight/wall engine → emits Booboo JSON. | `pg`, `yaml`, `@booboo/spec` |
-| `@booboo/viewer` | The R3F 3D component (`<BoobooView data={} cfg={} />`) — dossier, controls, command palette, kiosk/wallpaper mode. Framework-agnostic React. | `three`, `@react-three/fiber`, `@react-three/drei` |
-| `@booboo/serve` | REST API + **MCP server** over a Booboo JSON (static file or a live `@booboo/build` run). | `hono` (or `express`), `@modelcontextprotocol/sdk` |
-| `create-booboo` | Scaffolder/CLI: `init` (wizard), `build`, `serve`, `mcp`. Ships a **demo dataset**. | `prompts`, `@booboo/*` |
+| `@booboo-brain/spec` | The Booboo JSON types + a validator (`validate(g): Result`). Zero deps. The contract. | `zod` |
+| `@booboo-brain/build` | Config loader + **adapters** (postgres, json) + the merge/layout/weight/wall engine → emits Booboo JSON. | `pg`, `yaml`, `@booboo-brain/spec` |
+| `@booboo-brain/viewer` | The R3F 3D component (`<BoobooView data={} cfg={} />`) — dossier, controls, command palette, kiosk/wallpaper mode. Framework-agnostic React. | `three`, `@react-three/fiber`, `@react-three/drei` |
+| `@booboo-brain/serve` | REST API + **MCP server** over a Booboo JSON (static file or a live `@booboo-brain/build` run). | `hono` (or `express`), `@modelcontextprotocol/sdk` |
+| `create-booboo` | Scaffolder/CLI: `init` (wizard), `build`, `serve`, `mcp`. Ships a **demo dataset**. | `prompts`, `@booboo-brain/*` |
 
-Flow: `@booboo/build` → Booboo JSON → consumed by `@booboo/viewer` + `@booboo/serve`. `create-booboo` wires them into a one-command experience.
+Flow: `@booboo-brain/build` → Booboo JSON → consumed by `@booboo-brain/viewer` + `@booboo-brain/serve`. `create-booboo` wires them into a one-command experience.
 
 ## 2 · The config (`booboo.config.yaml`)
 
@@ -53,14 +53,14 @@ output:
 
 ## 3 · API + MCP surface (the query layer)
 
-**REST** (`@booboo/serve`):
+**REST** (`@booboo-brain/serve`):
 - `GET  /graph` → the full graph (Booboo JSON)
 - `GET  /graph/node/:id` → one node + its relations (the dossier payload)
 - `POST /graph/boot` → orientation: root + layer counts + top nodes per layer + recent (a single-call summary for agent boot)
 - `POST /graph/recall` `{ q, layer?, limit? }` → ranked node search
 - `GET  /graph/resolve?role=…` → look up a node/edge by a `data.role` key (canonical resolution)
 
-**MCP** (`@booboo/serve`, same logic, stdio + HTTP):
+**MCP** (`@booboo-brain/serve`, same logic, stdio + HTTP):
 - `boot(scope?)` · `recall(q, scope?)` · `resolve(role)` · `remember(text, kind?)` · `report(text)`
   - `boot/recall/resolve` are read-only and always available.
   - `remember/report` are **opt-in write-backs** (need a writable source + a configured sink) — off by default.
@@ -92,9 +92,9 @@ Walls aren't a filter on the way *out* — they're applied in the builder so sea
 ## 6 · Roadmap (full v1)
 
 - **P0 — Spec & demo** *(this commit)*: `SPEC.md`, `examples/demo.booboo.json`, monorepo skeleton. ✅
-- **P1 — `@booboo/spec` + `@booboo/viewer`**: types/validator; port `AtlasView`/`OperationalAtlas` out of the Dionisos app into a standalone package driven purely by Booboo JSON. Demo renders.
-- **P2 — `@booboo/build`**: config loader + json & postgres adapters + layout/weight/wall engine. `booboo build` produces the snapshot.
-- **P3 — `@booboo/serve`**: REST + MCP over a snapshot/live build. Read verbs first.
+- **P1 — `@booboo-brain/spec` + `@booboo-brain/viewer`**: types/validator; port `AtlasView`/`OperationalAtlas` out of the Dionisos app into a standalone package driven purely by Booboo JSON. Demo renders.
+- **P2 — `@booboo-brain/build`**: config loader + json & postgres adapters + layout/weight/wall engine. `booboo build` produces the snapshot.
+- **P3 — `@booboo-brain/serve`**: REST + MCP over a snapshot/live build. Read verbs first.
 - **P4 — `create-booboo`**: `init` wizard, `serve`, `mcp`, bundled demo, wallpaper route. The two-command UX.
 - **P5 — polish & dispatch**: docs site, write-back verbs (opt-in), neo4j + mcp-source adapters, LOD/label-collision, weak-GPU fallback, examples gallery, `npx` publish.
 
@@ -104,9 +104,9 @@ Walls aren't a filter on the way *out* — they're applied in the builder so sea
 
 | Have (Dionisos) | Becomes (OSS) | Work |
 |---|---|---|
-| `OperationalAtlas.tsx` + `AtlasView.tsx` | `@booboo/viewer` | decouple from Next/OS; data via prop only; strip Dionisos types → generic |
-| `atlas_gen_v4.py` (Python, hardcoded tables) | `@booboo/build` (TS, config-driven) | **port ~400 lines to TS**, replace hardcoded reads with adapters + config |
-| `atlas_mcp/server.py` + `/api/atlas` | `@booboo/serve` | generalize verbs; drop Dionisos tables; TS rewrite |
+| `OperationalAtlas.tsx` + `AtlasView.tsx` | `@booboo-brain/viewer` | decouple from Next/OS; data via prop only; strip Dionisos types → generic |
+| `atlas_gen_v4.py` (Python, hardcoded tables) | `@booboo-brain/build` (TS, config-driven) | **port ~400 lines to TS**, replace hardcoded reads with adapters + config |
+| `atlas_mcp/server.py` + `/api/atlas` | `@booboo-brain/serve` | generalize verbs; drop Dionisos tables; TS rewrite |
 | `atlas_snapshot` table + walls (aegis/personal) | `config.walls` (live DB-table output is roadmap) | generalize the snapshot + wall mechanism |
 | `/ambient` wallpaper + kiosk mode | viewer `kiosk` prop + a `serve` route | already generic in the component — lift as-is |
 

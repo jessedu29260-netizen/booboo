@@ -1,4 +1,4 @@
-# @booboo/spec
+# @booboo-brain/spec
 
 The [Booboo](https://github.com/jessedu29260-netizen/booboo) graph contract — the tiny JSON
 spec every adapter emits and every consumer reads. Types + a validator, zero runtime deps.
@@ -6,13 +6,13 @@ spec every adapter emits and every consumer reads. Types + a validator, zero run
 ## Install
 
 ```bash
-npm install @booboo/spec
+npm install @booboo-brain/spec
 ```
 
 ## Use
 
 ```ts
-import { validate, type BoobooGraph, type BNode, type BLink } from "@booboo/spec";
+import { validate, type BoobooGraph, type BNode, type BLink } from "@booboo-brain/spec";
 
 const graph: BoobooGraph = {
   booboo: "1.0",

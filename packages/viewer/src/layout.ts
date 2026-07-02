@@ -1,4 +1,4 @@
-import type { BoobooGraph } from "@booboo/spec";
+import type { BoobooGraph } from "@booboo-brain/spec";
 
 // O(n) deterministic layout → flat typed arrays. Scale-first: no per-node objects, no force sim.
 // Position = f(layer-plane, cluster-sector, tier-radius, hash(id)). Same input → same output.

@@ -1,4 +1,4 @@
-# @booboo/build
+# @booboo-brain/build
 
 Turn any database into a [Booboo](../../README.md) graph with a YAML config — no glue code.
 
@@ -10,7 +10,7 @@ booboo build --config booboo.config.yaml
 
 Each source is read through an adapter, then the engine merges them, applies privacy
 **walls**, auto-wires a spine edge for every `parent`, drops dangling links, validates
-against `@booboo/spec`, and writes the snapshot.
+against `@booboo-brain/spec`, and writes the snapshot.
 
 ## Config
 
@@ -46,10 +46,10 @@ it into `build.ts`.
 ## API
 
 ```ts
-import { buildFromConfig, build, loadConfig } from "@booboo/build";
+import { buildFromConfig, build, loadConfig } from "@booboo-brain/build";
 const { graph, snapshotPath } = await buildFromConfig("booboo.config.yaml");
 ```
 
 Layout is the viewer's job, so the emitted graph carries no positions — it stays small and
-portable. Feed the snapshot to `@booboo/viewer`, serve it over the REST/MCP layer, or commit
+portable. Feed the snapshot to `@booboo-brain/viewer`, serve it over the REST/MCP layer, or commit
 it as a fixture.

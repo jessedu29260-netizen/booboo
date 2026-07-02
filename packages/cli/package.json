@@ -1,5 +1,5 @@
 {
-  "name": "@booboo/cli",
+  "name": "@booboo-brain/cli",
   "version": "0.1.0",
   "description": "Booboo CLI — one `booboo` command: build | serve | mcp | view. Lazy-loads each subcommand so a build-only run never pulls the server or viewer.",
   "license": "MIT",
@@ -13,9 +13,9 @@
     "build": "tsup src/cli.ts src/view.ts --format esm --clean"
   },
   "dependencies": {
-    "@booboo/build": "workspace:*",
-    "@booboo/serve": "workspace:*",
-    "@booboo/viewer": "workspace:*"
+    "@booboo-brain/build": "workspace:*",
+    "@booboo-brain/serve": "workspace:*",
+    "@booboo-brain/viewer": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8",

@@ -1,4 +1,4 @@
-# @booboo/viewer
+# @booboo-brain/viewer
 
 The [Booboo](https://github.com/jessedu29260-netizen/booboo) 3D renderer — a scale-first
 React Three Fiber component that draws any Booboo graph as a rooted, tiered brain. One GPU
@@ -8,14 +8,14 @@ point field + tier-LOD, so a million nodes stay at 60fps (see
 ## Install
 
 ```bash
-npm install @booboo/viewer react react-dom
+npm install @booboo-brain/viewer react react-dom
 ```
 
 ## Use
 
 ```tsx
-import { BoobooView } from "@booboo/viewer";
-import type { BoobooGraph } from "@booboo/spec";
+import { BoobooView } from "@booboo-brain/viewer";
+import type { BoobooGraph } from "@booboo-brain/spec";
 
 export function Brain({ graph }: { graph: BoobooGraph }) {
   return <BoobooView data={graph} />;
@@ -34,7 +34,7 @@ booboo view --demo --nodes 1000000     # synthetic brain, no data needed
 ```
 
 The package ships a prebuilt static app (`dist-app/`) that the
-[`@booboo/cli`](../cli) `view` command serves directly. For monorepo hacking there's a
-playground: `pnpm -F @booboo/viewer dev`, then open with `?n=1000000`.
+[`@booboo-brain/cli`](../cli) `view` command serves directly. For monorepo hacking there's a
+playground: `pnpm -F @booboo-brain/viewer dev`, then open with `?n=1000000`.
 
 Part of [Booboo](https://github.com/jessedu29260-netizen/booboo) — the unified operational brain. MIT.

@@ -1,6 +1,6 @@
 // `booboo view` — serve the prebuilt 3D viewer app + a snapshot, locally.
 // The end user sees their brain in 3D without cloning the monorepo. Pure stdlib:
-// the heavy React/three is already bundled into @booboo/viewer's static app, so
+// the heavy React/three is already bundled into @booboo-brain/viewer's static app, so
 // this server just hands out files — it never loads the viewer's runtime deps.
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
@@ -24,18 +24,18 @@ const MIME: Record<string, string> = {
   ".woff2": "font/woff2",
 };
 
-/** Locate @booboo/viewer's shipped static app (dist-app). */
+/** Locate @booboo-brain/viewer's shipped static app (dist-app). */
 function appDir(): string {
   const require = createRequire(import.meta.url);
   let pkgJson: string;
   try {
-    pkgJson = require.resolve("@booboo/viewer/package.json");
+    pkgJson = require.resolve("@booboo-brain/viewer/package.json");
   } catch {
-    throw new Error("@booboo/viewer is not installed — run `npm i @booboo/viewer`.");
+    throw new Error("@booboo-brain/viewer is not installed — run `npm i @booboo-brain/viewer`.");
   }
   const dir = join(pkgJson, "..", "dist-app");
   if (!existsSync(join(dir, "index.html"))) {
-    throw new Error("the viewer app isn't built — reinstall @booboo/viewer (or `pnpm --filter @booboo/viewer build` in the repo).");
+    throw new Error("the viewer app isn't built — reinstall @booboo-brain/viewer (or `pnpm --filter @booboo-brain/viewer build` in the repo).");
   }
   return dir;
 }

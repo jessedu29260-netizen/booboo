@@ -9,7 +9,7 @@ uplinks:
   npmjs:
     url: https://registry.npmjs.org/
 packages:
-  '@booboo/*':
+  '@booboo-brain/*':
     access: $all
     publish: $all
   'create-booboo':

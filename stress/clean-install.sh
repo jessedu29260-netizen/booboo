@@ -35,7 +35,7 @@ if [ "$PUBLISH" = "1" ]; then
   echo "── publish: 6 packages via pnpm (converts workspace:* — NEVER npm publish here)"
   NPMRC_TMP=$(mktemp)
   printf '//localhost:4873/:_authToken=stress-dummy\nregistry=http://localhost:4873\n' > "$NPMRC_TMP"
-  for pkg in @booboo/spec @booboo/build @booboo/serve @booboo/viewer @booboo/cli create-booboo; do
+  for pkg in @booboo-brain/spec @booboo-brain/build @booboo-brain/serve @booboo-brain/viewer @booboo-brain/cli create-booboo; do
     env "NPM_CONFIG_USERCONFIG=$NPMRC_TMP" "npm_config_//localhost:4873/:_authToken=stress-dummy" \
       pnpm --filter "$pkg" publish --registry http://localhost:4873 --no-git-checks --force >/dev/null \
       && echo "  ✓ $pkg" || { echo "  ✗ publish failed: $pkg"; exit 1; }

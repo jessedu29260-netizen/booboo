@@ -1,4 +1,4 @@
-# @booboo/cli
+# @booboo-brain/cli
 
 The one command. `booboo` dispatches to four subcommands, each lazy-loaded so a
 build-only run never pulls the server or the viewer.
@@ -11,8 +11,8 @@ booboo view   --snapshot brain.json                # 3D viewer in your browser
 booboo view   --demo --nodes 100000                # a synthetic brain, no data needed
 ```
 
-`build` runs [`@booboo/build`](../build); `serve` and `mcp` run [`@booboo/serve`](../serve);
-`view` serves the prebuilt [`@booboo/viewer`](../viewer) app. Install this one package to
+`build` runs [`@booboo-brain/build`](../build); `serve` and `mcp` run [`@booboo-brain/serve`](../serve);
+`view` serves the prebuilt [`@booboo-brain/viewer`](../viewer) app. Install this one package to
 get the `booboo` command — it brings all of them in.
 
 Part of [Booboo](https://github.com/jessedu29260-netizen/booboo) — the unified operational brain. MIT.

@@ -6,7 +6,7 @@ Named after a dachshund who never forgets where the treats are buried. Fitting, 
 
 Most tools show you *one* slice: a knowledge graph, an agent flow chart, a memory store, a trace viewer. Booboo fuses all of them into **one graph rooted at a single point**, so you can see — and query — how the whole system actually hangs together.
 
-> **Status:** alpha — six packages build green: `@booboo/spec` (the contract), `@booboo/build` (config-driven postgres/json adapters), `@booboo/serve` (REST + MCP query layer), `@booboo/viewer` (million-node 3D render), `@booboo/cli` (the unified `booboo` command), and `create-booboo` (project scaffolder). Published npm releases are next (see [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md)). MIT.
+> **Status:** alpha — six packages build green: `@booboo-brain/spec` (the contract), `@booboo-brain/build` (config-driven postgres/json adapters), `@booboo-brain/serve` (REST + MCP query layer), `@booboo-brain/viewer` (million-node 3D render), `@booboo-brain/cli` (the unified `booboo` command), and `create-booboo` (project scaffolder). Published npm releases are next (see [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md)). MIT.
 
 ---
 
@@ -36,7 +36,7 @@ npm run mcp                      # MCP over stdio — point Claude / Cursor / Cl
 
 Edit `booboo.config.yaml` to point at your own Postgres/Supabase (a commented example ships in the scaffold). Full reference: [docs/CONFIG.md](docs/CONFIG.md) · stuck? [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
-> The headline flex: **Booboo renders a million-node brain at 60fps in your browser.** Try it with `booboo view --demo --nodes 1000000` (or the viewer playground: `pnpm -F @booboo/viewer dev`, then open with `?n=1000000`). See `SCALE.md` for how (instanced GPU field + tier-LOD).
+> The headline flex: **Booboo renders a million-node brain at 60fps in your browser.** Try it with `booboo view --demo --nodes 1000000` (or the viewer playground: `pnpm -F @booboo-brain/viewer dev`, then open with `?n=1000000`). See `SCALE.md` for how (instanced GPU field + tier-LOD).
 
 > **Roadmap:** a single all-in-one command bundling build + REST + MCP + the 3D viewer together, an interactive scaffold wizard, and a `--demo` mega-graph generator — tracked in [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
 
@@ -49,7 +49,7 @@ booboo mcp   --snapshot my.booboo.json               # MCP over stdio: booboo_st
 booboo view  --snapshot my.booboo.json               # 3D viewer in your browser — no monorepo, no build step
 ```
 
-`booboo view` serves the `@booboo/viewer` 3D renderer as a standalone app — any snapshot (or `?n=1000000` synthetic) in your browser, no monorepo. The build engine was
+`booboo view` serves the `@booboo-brain/viewer` 3D renderer as a standalone app — any snapshot (or `?n=1000000` synthetic) in your browser, no monorepo. The build engine was
 proven on a real **4,469-node production brain** assembled straight from Supabase by config alone —
 privacy-walled, validated, served. See each package's README for the details.
 

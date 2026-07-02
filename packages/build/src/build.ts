@@ -1,5 +1,5 @@
-import type { BoobooGraph, BNode, BLink, BLayer } from "@booboo/spec";
-import { validate } from "@booboo/spec";
+import type { BoobooGraph, BNode, BLink, BLayer } from "@booboo-brain/spec";
+import { validate } from "@booboo-brain/spec";
 import type { BoobooConfig } from "./config.js";
 import { postgresAdapter } from "./adapters/postgres.js";
 import { jsonAdapter } from "./adapters/json.js";

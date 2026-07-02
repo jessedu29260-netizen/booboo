@@ -10,7 +10,7 @@ importers:
 
   packages/build:
     dependencies:
-      '@booboo/spec':
+      '@booboo-brain/spec':
         specifier: workspace:*
         version: link:../spec
       pg:
@@ -35,13 +35,13 @@ importers:
 
   packages/cli:
     dependencies:
-      '@booboo/build':
+      '@booboo-brain/build':
         specifier: workspace:*
         version: link:../build
-      '@booboo/serve':
+      '@booboo-brain/serve':
         specifier: workspace:*
         version: link:../serve
-      '@booboo/viewer':
+      '@booboo-brain/viewer':
         specifier: workspace:*
         version: link:../viewer
     devDependencies:
@@ -63,7 +63,7 @@ importers:
 
   packages/serve:
     dependencies:
-      '@booboo/spec':
+      '@booboo-brain/spec':
         specifier: workspace:*
         version: link:../spec
       '@modelcontextprotocol/sdk':
@@ -100,7 +100,7 @@ importers:
 
   packages/viewer:
     dependencies:
-      '@booboo/spec':
+      '@booboo-brain/spec':
         specifier: workspace:*
         version: link:../spec
       '@react-three/drei':

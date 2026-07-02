@@ -22,7 +22,7 @@ cd my-brain
 
 step "install from registry"
 npm install --no-audit --no-fund || fail "npm install errored"
-node -e "import('@booboo/spec').then(()=>process.exit(0),()=>process.exit(1))" || fail "@booboo/spec not importable"
+node -e "import('@booboo-brain/spec').then(()=>process.exit(0),()=>process.exit(1))" || fail "@booboo-brain/spec not importable"
 pass "installed"
 
 step "build: config → brain.json"

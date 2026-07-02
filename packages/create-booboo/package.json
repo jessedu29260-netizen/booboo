@@ -1,14 +1,24 @@
 {
   "name": "create-booboo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Scaffold a new Booboo brain — `npx create-booboo my-brain`. Zero deps.",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/jessedu29260-netizen/booboo.git", "directory": "packages/create-booboo" },
-  "bugs": { "url": "https://github.com/jessedu29260-netizen/booboo/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jessedu29260-netizen/booboo.git",
+    "directory": "packages/create-booboo"
+  },
+  "bugs": {
+    "url": "https://github.com/jessedu29260-netizen/booboo/issues"
+  },
   "homepage": "https://github.com/jessedu29260-netizen/booboo#readme",
   "type": "module",
-  "bin": { "create-booboo": "./dist/cli.js" },
-  "files": ["dist"],
+  "bin": {
+    "create-booboo": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/cli.ts --format esm --clean"
   },
@@ -16,5 +26,11 @@
     "tsup": "^8",
     "typescript": "^5"
   },
-  "keywords": ["booboo", "scaffold", "create", "knowledge-graph", "mcp"]
+  "keywords": [
+    "booboo",
+    "scaffold",
+    "create",
+    "knowledge-graph",
+    "mcp"
+  ]
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BoobooIndex } from "../src/graph.js";
-import type { BoobooGraph } from "@booboo/spec";
+import type { BoobooGraph } from "@booboo-brain/spec";
 
 const g: BoobooGraph = {
   booboo: "1.0",

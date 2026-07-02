@@ -21,7 +21,7 @@ npm run view       # see your brain in 3D (opens your browser)
   immediately, plus a commented postgres block to point at your own Postgres/Supabase
   (`${DATABASE_URL}` from the environment).
 - **`data.booboo.json`** — a small sample graph (agents / knowledge / memory) to build from.
-- **`package.json`** — wired `build` / `serve` / `mcp` / `view` scripts on `@booboo/cli`.
+- **`package.json`** — wired `build` / `serve` / `mcp` / `view` scripts on `@booboo-brain/cli`.
 - **`.gitignore`** — the built snapshot can contain real data, so it's never committed.
 
 Pass `--force` to scaffold into a non-empty directory.

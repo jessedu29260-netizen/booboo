@@ -1,4 +1,4 @@
-import type { BoobooGraph, BNode, BLink } from "@booboo/spec";
+import type { BoobooGraph, BNode, BLink } from "@booboo-brain/spec";
 
 type Edge = { link: BLink; other: string; dir: "out" | "in" };
 

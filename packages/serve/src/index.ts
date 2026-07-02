@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { BoobooGraph } from "@booboo/spec";
+import type { BoobooGraph } from "@booboo-brain/spec";
 
 export { BoobooIndex, type ListOpts, type Neighborhood } from "./graph.js";
 export { createRestServer } from "./rest.js";

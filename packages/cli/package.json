@@ -1,0 +1,25 @@
+{
+  "name": "@booboo/cli",
+  "version": "0.1.0",
+  "description": "Booboo CLI — one `booboo` command: build | serve | mcp | view. Lazy-loads each subcommand so a build-only run never pulls the server or viewer.",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/jessedu29260-netizen/booboo.git", "directory": "packages/cli" },
+  "bugs": { "url": "https://github.com/jessedu29260-netizen/booboo/issues" },
+  "homepage": "https://github.com/jessedu29260-netizen/booboo#readme",
+  "type": "module",
+  "bin": { "booboo": "./dist/cli.js" },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/cli.ts src/view.ts --format esm --clean"
+  },
+  "dependencies": {
+    "@booboo/build": "workspace:*",
+    "@booboo/serve": "workspace:*",
+    "@booboo/viewer": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8",
+    "typescript": "^5"
+  },
+  "keywords": ["booboo", "cli", "knowledge-graph", "mcp"]
+}

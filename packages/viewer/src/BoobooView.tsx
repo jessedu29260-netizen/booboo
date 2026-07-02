@@ -53,7 +53,7 @@ function urlCfg(): Partial<BoobooCfg> | null {
  *  Controls live on the LEFT, the node menu on the RIGHT — they never overlap. */
 export function BoobooView({
   data,
-  persistKey = "booboo-cfg-v2",
+  persistKey = "booboo-cfg-v3",
   persist = true,
   initialSel = null,
 }: {
@@ -123,7 +123,7 @@ function Controls({
   setCfg: (patch: Partial<BoobooCfg> | ((p: BoobooCfg) => BoobooCfg)) => void;
   resetCfg: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const layerVisible = (name: string) => cfg.layers[name] !== false;
   const toggleLayer = (name: string) => setCfg((p) => ({ ...p, layers: { ...p.layers, [name]: !layerVisible(name) } }));
   const setSize = (name: string, v: number) => setCfg((p) => ({ ...p, sizes: { ...p.sizes, [name]: v } }));
@@ -141,17 +141,28 @@ function Controls({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: T.text, letterSpacing: 1, fontSize: 11, fontWeight: 600 }}>Controls</span>
         <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={() => setCfg({ orbit: 0, drift: 0 })} title="pause spin + drift" style={btn()}>❄ still</button>
           <button onClick={resetCfg} style={btn()}>reset</button>
           <button onClick={() => setOpen(false)} title="hide" style={{ ...btn(), padding: "3px 8px" }}>✕</button>
         </div>
       </div>
       <Section label="scene">
-        <div style={{ display: "flex", gap: 7 }}>
-          <Toggle on={cfg.lines} onClick={() => setCfg({ lines: !cfg.lines })} label="links" tone="gold" />
-          <Toggle on={cfg.orbit > 0} onClick={() => setCfg({ orbit: cfg.orbit > 0 ? 0 : 1 })} label="✦ spin" tone="green" />
-        </div>
+        <Slider label="⟳ drift" v={cfg.drift} min={0} max={2.5} step={0.05} on={(v) => setCfg({ drift: v })} />
+        <Toggle on={cfg.orbit > 0} onClick={() => setCfg({ orbit: cfg.orbit > 0 ? 0 : 1 })} label="✦ spin" tone="green" />
         <Slider label="spin" v={cfg.orbit} min={0} max={2.5} step={0.05} on={(v) => setCfg({ orbit: v })} />
-        <Slider label="link" v={cfg.lineOpacity} min={0} max={0.4} step={0.01} on={(v) => setCfg({ lineOpacity: v })} />
+        <Slider label="≋ fog" v={cfg.fog} min={0} max={2} step={0.05} on={(v) => setCfg({ fog: v })} />
+        <Slider label="◐ film" v={cfg.cinematic} min={-0.8} max={1.6} step={0.05} on={(v) => setCfg({ cinematic: v })} />
+        <Slider label="peel" v={cfg.peel} min={0.2} max={2.5} step={0.05} on={(v) => setCfg({ peel: v })} />
+      </Section>
+      <Section label="display">
+        <div style={{ display: "flex", gap: 6 }}>
+          <Toggle on={cfg.labels} onClick={() => setCfg({ labels: !cfg.labels })} label="labels" tone="green" />
+          <Toggle on={cfg.platforms} onClick={() => setCfg({ platforms: !cfg.platforms })} label="planes" tone="green" />
+          <Toggle on={cfg.rings} onClick={() => setCfg({ rings: !cfg.rings })} label="rings" tone="green" />
+        </div>
+        <Slider label="glow" v={cfg.bloom} min={0} max={3} step={0.05} on={(v) => setCfg({ bloom: v })} />
+        <Slider label="lines" v={cfg.lines} min={0} max={2} step={0.02} on={(v) => setCfg({ lines: v })} />
+        <Slider label="≈ pulse" v={cfg.flow} min={0} max={3} step={0.1} on={(v) => setCfg({ flow: v })} />
         <Slider label="size" v={cfg.nodeScale} min={0.3} max={2.5} step={0.05} on={(v) => setCfg({ nodeScale: v })} />
       </Section>
       <Section label="isolate layers">
@@ -377,7 +388,7 @@ function Toggle({ on, onClick, label, tone }: { on: boolean; onClick: () => void
 function Slider({ label, v, min, max, step, on }: { label: string; v: number; min: number; max: number; step: number; on: (v: number) => void }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-      <span style={{ width: 38, color: T.dim, fontSize: 10, flex: "0 0 auto" }}>{label}</span>
+      <span style={{ width: 48, color: T.dim, fontSize: 10, flex: "0 0 auto" }}>{label}</span>
       <input type="range" min={min} max={max} step={step} value={v} onChange={(e) => on(parseFloat(e.target.value))} style={{ flex: 1, accentColor: T.gold, minWidth: 0 }} />
       <span style={{ color: T.text, width: 30, textAlign: "right", fontFamily: T.mono, fontSize: 10.5, flex: "0 0 auto" }}>{v.toFixed(2)}</span>
     </div>

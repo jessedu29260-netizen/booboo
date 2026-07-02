@@ -1,8 +1,11 @@
 {
   "name": "@booboo/spec",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Booboo graph spec — the JSON contract every adapter emits and every consumer reads.",
   "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/jessedu29260-netizen/booboo.git", "directory": "packages/spec" },
+  "bugs": { "url": "https://github.com/jessedu29260-netizen/booboo/issues" },
+  "homepage": "https://github.com/jessedu29260-netizen/booboo#readme",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

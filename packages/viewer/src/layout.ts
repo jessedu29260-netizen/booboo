@@ -17,7 +17,10 @@ export type Laid = {
   linkCount: number;
 };
 
-const PLANE_GAP = 380;
+export const PLANE_GAP = 170; // gap between the stacked tier planes (along Z); a labelled platform sits at each plane
+
+/** Z of a layer's plane. Apex (index 0) on top → highest Z; the last layer sits at the floor. */
+export const planeZ = (layerIndex: number, nLayers: number) => ((nLayers - 1) / 2 - layerIndex) * PLANE_GAP;
 
 function hash(s: string): number {
   let h = 2166136261;
@@ -62,17 +65,18 @@ export function layout(g: BoobooGraph): Laid {
   for (let i = 0; i < n; i++) {
     const nd = nodes[i];
     const li = layerOrder[nd.layer] ?? 0;
-    const planeZ = (li - (nLayers - 1) / 2) * PLANE_GAP;
+    // Each layer is a disc in its own plane; planes stack along Z (apex on top, floor at bottom).
+    const pz = planeZ(li, nLayers);
     let x: number, y: number, z: number;
 
     if (nd.x != null && nd.y != null) {
       x = nd.x;
       y = nd.y;
-      z = nd.z != null ? nd.z : planeZ;
+      z = nd.z != null ? nd.z : pz;
     } else if (nd.id === g.meta.root) {
       x = 0;
       y = 0;
-      z = planeZ;
+      z = pz;
     } else {
       const sectorKey = nd.cluster ?? nd.parent ?? nd.type;
       const ang = hash(sectorKey) * Math.PI * 2;
@@ -81,9 +85,10 @@ export function layout(g: BoobooGraph): Laid {
       const jr = hash(nd.id + "r") * (130 + tier * 90);
       const ja = (hash(nd.id + "a") - 0.5) * (0.45 + tier * 0.22);
       const r = baseR + jr;
+      // Spread within the plane's disc (X/Y); a thin Z jitter keeps each tier a crisp shelf.
       x = Math.cos(ang + ja) * r;
       y = Math.sin(ang + ja) * r * 0.92;
-      z = planeZ + (hash(nd.id + "z") - 0.5) * 150;
+      z = pz + (hash(nd.id + "z") - 0.5) * 90;
     }
 
     positions[i * 3] = x;

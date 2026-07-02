@@ -96,12 +96,12 @@ const pkgJson = JSON.stringify(
     type: "module",
     scripts: {
       build: "booboo build",
-      serve: "booboo-serve rest --snapshot brain.json --port 8787",
-      mcp: "booboo-serve mcp --snapshot brain.json",
+      serve: "booboo serve --snapshot brain.json --port 8787",
+      mcp: "booboo mcp --snapshot brain.json",
+      view: "booboo view --snapshot brain.json",
     },
     dependencies: {
-      "@booboo/build": BOOBOO_VERSION,
-      "@booboo/serve": BOOBOO_VERSION,
+      "@booboo/cli": BOOBOO_VERSION,
     },
   },
   null,
@@ -110,7 +110,7 @@ const pkgJson = JSON.stringify(
 
 const readme = `# ${name} — a Booboo brain
 
-A rooted, queryable graph of your system, built with [Booboo](https://github.com/) (the unified operational brain).
+A rooted, queryable graph of your system, built with [Booboo](https://github.com/jessedu29260-netizen/booboo) (the unified operational brain).
 
 ## Quickstart
 
@@ -119,6 +119,7 @@ npm install
 npm run build      # booboo.config.yaml → brain.json (the snapshot)
 npm run serve      # REST API at http://localhost:8787  (/graph /stats /search /nodes/:id /neighbors/:id /path/:a/:b)
 npm run mcp        # MCP over stdio — point Claude / Cursor / Claude Code at it
+npm run view       # see your brain in 3D (opens your browser)
 \`\`\`
 
 ## Make it yours
@@ -157,5 +158,6 @@ console.log(`  cd ${dirArg}`);
 console.log("  npm install");
 console.log("  npm run build      # build the graph snapshot");
 console.log("  npm run serve      # REST API on http://localhost:8787");
-console.log("  npm run mcp        # MCP over stdio (Claude / Cursor / Claude Code)\n");
+console.log("  npm run mcp        # MCP over stdio (Claude / Cursor / Claude Code)");
+console.log("  npm run view       # see your brain in 3D (opens your browser)\n");
 console.log("Then edit booboo.config.yaml to point at your own data — a postgres example is included.\n");

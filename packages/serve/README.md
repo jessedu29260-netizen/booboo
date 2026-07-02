@@ -6,7 +6,7 @@ Query a [Booboo](../../README.md) snapshot over **REST** and **MCP**. One in-mem
 ## REST
 
 ```bash
-booboo-serve rest --snapshot my.booboo.json --port 8787
+booboo serve --snapshot my.booboo.json --port 8787
 ```
 
 | Route | Returns |
@@ -24,13 +24,13 @@ CORS is open, so a browser viewer can fetch a live graph directly.
 ## MCP
 
 ```bash
-booboo-serve mcp --snapshot my.booboo.json
+booboo mcp --snapshot my.booboo.json
 ```
 
 Speaks MCP over stdio. Point any client at it (Claude Desktop / Claude Code):
 
 ```json
-{ "mcpServers": { "booboo": { "command": "booboo-serve", "args": ["mcp", "--snapshot", "/abs/path/my.booboo.json"] } } }
+{ "mcpServers": { "booboo": { "command": "booboo", "args": ["mcp", "--snapshot", "/abs/path/my.booboo.json"] } } }
 ```
 
 Tools: `booboo_stats` · `booboo_search` · `booboo_node` · `booboo_neighbors` · `booboo_path`.

@@ -8,7 +8,7 @@ Symptom → cause → fix. Grounded in how the build/serve/MCP layers actually b
 The packages aren't on the public npm registry yet (pre-release). Until they're published, run from the cloned monorepo (`pnpm install` at the repo root) rather than a scaffolded project, or link the local packages. A scaffolded `create-booboo` project becomes installable once the registry publish lands.
 
 **`booboo: command not found` after install.**
-The CLIs are package bins: `booboo` (from `@booboo/build`) and `booboo-serve` (from `@booboo/serve`). Run them via your project's npm scripts (`npm run build` / `npm run serve`) or with `npx booboo` / `npx booboo-serve`.
+The CLI is one bin — `booboo` (from `@booboo/cli`) — with subcommands `build` / `serve` / `mcp` / `view`. Run them via your project's npm scripts (`npm run build` / `npm run serve`) or with `npx booboo serve …`.
 
 ## Build (`booboo build`)
 
@@ -41,7 +41,7 @@ Use the schema-qualified table name (e.g. `public.my_table`). `table` and `where
 **`weight_from` produced weird sizes.**
 That column must be numeric; values are normalised 0..1 across the returned rows (max → 1). Non-numeric values read as 0.
 
-## Serve — REST (`booboo-serve rest`)
+## Serve — REST (`booboo serve`)
 
 **`EADDRINUSE`.** The port is taken. Pass `--port <n>` (default 8787).
 
@@ -49,7 +49,7 @@ That column must be numeric; values are normalised 0..1 across the returned rows
 
 **404 with a `routes` list.** You hit an unknown path. Valid: `/graph`, `/stats`, `/search?q=`, `/nodes`, `/nodes/:id`, `/neighbors/:id`, `/path/:from/:to`.
 
-## Serve — MCP (`booboo-serve mcp`)
+## Serve — MCP (`booboo mcp`)
 
 **The MCP client sees nothing / "not valid JSON".**
 MCP speaks JSON-RPC on **stdout**; only stderr may carry human logs (the server already follows this). Don't pipe other output into stdout. Make sure you launched `mcp` mode, not `rest`. Tools exposed: `booboo_stats`, `booboo_search`, `booboo_node`, `booboo_neighbors`, `booboo_path`.

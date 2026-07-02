@@ -76,3 +76,105 @@ export function validate(g: unknown): ValidateResult {
 }
 
 export const SPEC_VERSION = "1.0";
+
+// ── The ORGANIGRAM (org spec v1) ─────────────────────────────────────────────
+// The editable half of Booboo. A graph snapshot is derived and read-only; the
+// org file is a SOURCE — the panel edits it, git diffs it, and agents boot
+// from it (booboo_boot). Drag an agent under a new parent in the panel and,
+// on apply, this file changes — next boot, every agent obeys the new shape.
+
+export type BOrgAgent = {
+  id: string; // unique slug
+  name: string;
+  role?: string; // one-liner shown on the card
+  emoji?: string;
+  parent?: string | null; // null/absent on the root only
+  boot?: string; // boot prompt (inline text or a ref the runner resolves)
+  rules?: string[]; // rule refs (file paths / ids) — inherited down the tree
+  skills?: string[];
+  buckets?: string[]; // memory buckets this agent reads/writes
+  reports?: string; // ref to its report stream
+  data?: Record<string, unknown>;
+};
+
+export type BOrg = {
+  booboo_org: string; // "1.0"
+  title?: string;
+  root: string; // id of the root agent
+  agents: BOrgAgent[];
+  updated?: string;
+};
+
+/** Validate an organigram. Never throws. Cycles and broken parents are errors —
+ *  an org an agent can't safely boot from must never be written to disk. */
+export function validateOrg(o: unknown): ValidateResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const g = o as Partial<BOrg>;
+  if (!g || typeof g !== "object") return { ok: false, errors: ["org is not an object"], warnings };
+  if (!g.root) errors.push("root is required");
+  if (!Array.isArray(g.agents)) errors.push("agents[] is required");
+  if (errors.length) return { ok: false, errors, warnings };
+
+  const byId = new Map<string, BOrgAgent>();
+  for (const a of g.agents!) {
+    if (!a.id) { errors.push("an agent is missing 'id'"); continue; }
+    if (byId.has(a.id)) errors.push(`duplicate agent id: ${a.id}`);
+    byId.set(a.id, a);
+    if (!a.name) warnings.push(`agent '${a.id}' has no name`);
+  }
+  const root = byId.get(g.root!);
+  if (!root) errors.push(`root '${g.root}' is not an agent id`);
+  else if (root.parent) errors.push(`root '${g.root}' must not have a parent`);
+
+  for (const a of byId.values()) {
+    if (a.id === g.root) continue;
+    if (!a.parent) { errors.push(`agent '${a.id}' has no parent (only the root may be parentless)`); continue; }
+    if (!byId.has(a.parent)) { errors.push(`agent '${a.id}' parent '${a.parent}' does not exist`); continue; }
+    // cycle check: walk up; if we never reach the root within n steps, it loops
+    const seen = new Set<string>([a.id]);
+    let cur: BOrgAgent | undefined = a;
+    while (cur?.parent) {
+      if (seen.has(cur.parent)) { errors.push(`cycle detected through agent '${a.id}'`); break; }
+      seen.add(cur.parent);
+      cur = byId.get(cur.parent);
+    }
+  }
+  return { ok: errors.length === 0, errors, warnings };
+}
+
+export type BOrgBootSlice = {
+  agent: BOrgAgent;
+  chain: BOrgAgent[]; // root → … → agent (the authority path)
+  rules: string[]; // inherited: every ancestor's rules first, own rules last
+  buckets: string[]; // own + inherited (deduped)
+  skills: string[];
+  children: BOrgAgent[];
+};
+
+/** An agent's boot-time view of the organigram: who it is, what it inherits,
+ *  who it commands. Pure — used by the MCP booboo_boot verb and the panel. */
+export function orgBootSlice(org: BOrg, agentId: string): BOrgBootSlice | null {
+  const byId = new Map(org.agents.map((a) => [a.id, a]));
+  const agent = byId.get(agentId);
+  if (!agent) return null;
+  const chain: BOrgAgent[] = [];
+  let cur: BOrgAgent | undefined = agent;
+  const guard = new Set<string>();
+  while (cur && !guard.has(cur.id)) {
+    guard.add(cur.id);
+    chain.unshift(cur);
+    cur = cur.parent ? byId.get(cur.parent) : undefined;
+  }
+  const dedup = (xs: string[]) => [...new Set(xs)];
+  return {
+    agent,
+    chain,
+    rules: dedup(chain.flatMap((a) => a.rules ?? [])),
+    buckets: dedup(chain.flatMap((a) => a.buckets ?? [])),
+    skills: dedup(agent.skills ?? []),
+    children: org.agents.filter((a) => a.parent === agentId),
+  };
+}
+
+export const ORG_SPEC_VERSION = "1.0";

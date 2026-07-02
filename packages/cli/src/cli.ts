@@ -29,7 +29,7 @@ async function serve(kind: "rest" | "mcp"): Promise<void> {
     console.error(`usage: booboo ${verb} --snapshot graph.json${kind === "rest" ? " [--port 8787]" : ""}`);
     process.exit(1);
   }
-  const { loadSnapshot, BoobooIndex, createRestServer, runMcp } = await import("@booboo-brain/serve");
+  const { loadSnapshot, loadOrg, BoobooIndex, createRestServer, runMcp } = await import("@booboo-brain/serve");
   const ix = new BoobooIndex(loadSnapshot(snap!));
   if (kind === "rest") {
     const port = parseInt(flag("--port", "8787")!, 10);
@@ -38,7 +38,9 @@ async function serve(kind: "rest" | "mcp"): Promise<void> {
     );
   } else {
     // MCP speaks JSON-RPC on stdout — every human log MUST go to stderr.
-    await runMcp(ix);
+    // With --org, agents boot from the organigram (booboo_boot / booboo_org).
+    const orgPath = flag("--org");
+    await runMcp(ix, "booboo", orgPath ? loadOrg(orgPath) : undefined);
   }
 }
 
@@ -49,9 +51,12 @@ usage: booboo <command> [options]
 
   build  --config booboo.config.yaml          build the graph snapshot
   serve  --snapshot graph.json [--port 8787]  REST API
-  mcp    --snapshot graph.json                MCP server (stdio)
+  mcp    --snapshot graph.json [--org org.booboo.json]  MCP server (stdio; --org adds booboo_boot)
   view   --snapshot graph.json [--port 8989]  3D viewer in your browser
-         --demo [--nodes 100000]              a synthetic brain, no data needed`);
+         --demo [--nodes 100000]              a synthetic brain, no data needed
+  panel  --org org.booboo.json [--snapshot graph.json] [--port 8990]
+                                              the organigram — drag-drop your agent
+                                              hierarchy; apply rewrites the org file`);
 }
 
 async function main(): Promise<void> {
@@ -70,6 +75,16 @@ async function main(): Promise<void> {
         demo: rest.includes("--demo"),
         nodes: nodesArg ? parseInt(nodesArg, 10) : undefined,
         port: parseInt(flag("--port", "8989")!, 10),
+        open: !rest.includes("--no-open"),
+      });
+      return;
+    }
+    case "panel": {
+      const { panel } = await import("./panel.js");
+      await panel({
+        org: flag("--org"),
+        snapshot: flag("--snapshot"),
+        port: parseInt(flag("--port", "8990")!, 10),
         open: !rest.includes("--no-open"),
       });
       return;

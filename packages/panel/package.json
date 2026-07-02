@@ -1,0 +1,36 @@
+{
+  "name": "@booboo-brain/panel",
+  "version": "0.1.0",
+  "description": "Booboo control panel — the dossier-first control plane. Home, Memory search + provenance, prompts, sessions, MCP inventory over the same snapshot the viewer renders.",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/jessedu29260-netizen/booboo.git", "directory": "packages/panel" },
+  "bugs": { "url": "https://github.com/jessedu29260-netizen/booboo/issues" },
+  "homepage": "https://github.com/jessedu29260-netizen/booboo#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }, "./package.json": "./package.json" },
+  "files": ["dist", "dist-app"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean --external react,react-dom,@booboo-brain/spec && vite build --config vite.app.config.ts",
+    "dev": "vite"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@booboo-brain/spec": "workspace:*"
+  },
+  "devDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "vite": "^6.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "tsup": "^8",
+    "typescript": "^5"
+  }
+}

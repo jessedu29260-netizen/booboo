@@ -259,6 +259,16 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .oc-child:last-child::after { right: 50%; }
 .oc-child:only-child::after { display: none; }
 
+/* wide sibling sets — a grouped grid growing downward, one page wide */
+.oc-row.wrap {
+  display: grid; grid-template-columns: repeat(3, auto); justify-content: center;
+  gap: 2px 14px; margin-top: 0; padding: 10px 14px 14px;
+  border: 1px solid var(--line); border-radius: 18px; background: rgba(16, 19, 26, 0.35);
+}
+.oc-row.wrap > .oc-child { padding: 8px 0 0; }
+.oc-row.wrap > .oc-child::before, .oc-row.wrap > .oc-child::after { display: none; }
+@media (max-width: 1500px) { .oc-row.wrap { grid-template-columns: repeat(2, auto); } }
+
 /* agent cards — company badges: hue lanyard on top, avatar, name, role */
 .ag {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;

@@ -274,7 +274,9 @@ function ChartNode({
       {kids.length > 0 && (
         <>
           <div className="oc-down" />
-          <div className="oc-row">
+          {/* ≤4 children: the classic fan with connector bars. More: a compact
+              grid block that grows DOWN instead of spreading the page sideways. */}
+          <div className={`oc-row${kids.length > 4 ? " wrap" : ""}`}>
             {kids.map((k, i) => (
               <div className="oc-child" key={k.id}>
                 <ChartNode org={org} a={k} depth={depth + 1} order={i} {...cardProps} />

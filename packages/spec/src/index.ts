@@ -91,7 +91,9 @@ export type BOrgAgent = {
   parent?: string | null; // null/absent on the root only
   kind?: "agent" | "automation"; // automation = a machine its parent OPERATES —
   // it inherits rules/buckets like anything else (booboo_boot works), but it is
-  // not an org unit: charts render it as a count on its owner, not as a card.
+  // not an org unit: charts render it compactly on its owner, not as a card.
+  cadence?: number; // automations: expected hours between runs — silence past
+  // this is STALE (amber); consumers derive health from report freshness + status.
   boot?: string; // boot prompt (inline text or a ref the runner resolves)
   rules?: string[]; // rule refs (file paths / ids) — inherited down the tree
   skills?: string[];

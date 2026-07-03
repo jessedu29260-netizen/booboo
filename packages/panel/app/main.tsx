@@ -39,12 +39,60 @@ function relTime(iso?: unknown): string {
 // Timestamps vary by adapter — accept the common field names; "" = undated.
 function nodeAt(n: BNode): string {
   const d = (n.data ?? {}) as Record<string, unknown>;
-  for (const k of ["at", "ts", "time", "created_at", "date", "bst"]) {
+  for (const k of ["at", "ts", "time", "created_at", "date", "bst", "ts_bst", "finished_at"]) {
     const v = d[k];
     if (typeof v === "string" && v) return v;
   }
   return "";
 }
+
+// ── HEALTH — reports are the heartbeat ─────────────────────────────────────
+// green: last report ok and fresh for its cadence · amber: stale or last was a
+// warn · red: last report failed · gray: never reported.
+type Pulse = { lastAt: string; lastStatus: string; n: number; fails: number };
+type HealthMap = Map<string, Pulse>;
+type Light = "ok" | "warn" | "fail" | "none";
+
+function buildHealthMap(nodes: BNode[]): HealthMap {
+  const m: HealthMap = new Map();
+  for (const r of nodes) {
+    if (!r.cluster) continue;
+    const d = (r.data ?? {}) as Record<string, unknown>;
+    const status = typeof d.status === "string" ? d.status : "ok";
+    const at = nodeAt(r);
+    const cur = m.get(r.cluster) ?? { lastAt: "", lastStatus: "", n: 0, fails: 0 };
+    cur.n++;
+    if (status === "fail") cur.fails++;
+    if (at >= cur.lastAt) { cur.lastAt = at; cur.lastStatus = status; }
+    m.set(r.cluster, cur);
+  }
+  return m;
+}
+
+function pulseFor(a: BOrgAgent, health: HealthMap | null): Pulse | null {
+  if (!health) return null;
+  const keys = [a.id, ...(a.buckets ?? [])];
+  let best: Pulse | null = null;
+  for (const k of keys) {
+    const p = health.get(k);
+    if (p && (!best || p.lastAt > best.lastAt)) best = p;
+  }
+  return best;
+}
+
+function lightFor(a: BOrgAgent, health: HealthMap | null): Light {
+  const p = pulseFor(a, health);
+  if (!p || !p.lastAt) return "none";
+  if (p.lastStatus === "fail") return "fail";
+  const ageH = (Date.now() - new Date(p.lastAt).getTime()) / 3600e3;
+  const cadence = typeof a.cadence === "number" && a.cadence > 0 ? a.cadence : 26;
+  if (ageH > cadence * 1.5) return "warn";
+  if (p.lastStatus === "warn") return "warn";
+  return "ok";
+}
+
+const worst = (ls: Light[]): Light =>
+  ls.includes("fail") ? "fail" : ls.includes("warn") ? "warn" : ls.includes("ok") ? "ok" : "none";
 
 function nodeSummary(n: BNode): string {
   const d = (n.data ?? {}) as Record<string, unknown>;
@@ -120,7 +168,7 @@ function bucketHue(name: string): number {
 /* ────────────────────────── ORGANIGRAM ────────────────────────── */
 
 function AgentCard({
-  a, isRoot, depth, order, selected, dragId, onSelect, onDragStart, onDropOn, childCount, automationCount = 0,
+  a, isRoot, depth, order, selected, dragId, onSelect, onDragStart, onDropOn, childCount,
 }: {
   a: BOrgAgent;
   isRoot: boolean;
@@ -132,7 +180,6 @@ function AgentCard({
   onDragStart: (id: string) => void;
   onDropOn: (id: string) => void;
   childCount: number;
-  automationCount?: number;
 }) {
   const [over, setOver] = useState(false);
   const nBuckets = a.buckets?.length ?? 0;
@@ -154,7 +201,6 @@ function AgentCard({
       <span className="ag-meta">
         {nBuckets > 0 && <em title="memory buckets">▤ {nBuckets}</em>}
         {nSkills > 0 && <em title="skills">✦ {nSkills}</em>}
-        {automationCount > 0 && <em title="automations this agent operates">🕰 {automationCount}</em>}
         {childCount > 0 && <span className="ag-kids" title="direct reports">{childCount} reports</span>}
       </span>
     </div>
@@ -172,25 +218,28 @@ function ChartNode({
   order: number;
   selected: string | null;
   dragId: string | null;
+  health: HealthMap | null;
   onSelect: (id: string) => void;
   onDragStart: (id: string) => void;
   onDropOn: (id: string) => void;
 }) {
-  // Automations are machines this node OPERATES, not org units — they never
-  // become chart cards; the owner shows a compact count instead.
+  // Automations are machines this node OPERATES, not org units — they render
+  // as a compact TRAY of chips under the owner's card (with health lights),
+  // never as full org cards.
   const kids = org.agents.filter((c) => c.parent === a.id && c.kind !== "automation");
-  const autoCount = (() => {
-    let n = 0;
+  const machines = (() => {
+    const out: BOrgAgent[] = [];
     const walk = (pid: string) => {
       for (const c of org.agents.filter((x) => x.parent === pid && x.kind === "automation")) {
         const hasKids = org.agents.some((x) => x.parent === c.id);
         if (hasKids) walk(c.id);
-        else n++;
+        else out.push(c);
       }
     };
     walk(a.id);
-    return n;
+    return out;
   })();
+  const trayLight = worst(machines.map((m) => lightFor(m, cardProps.health)));
   return (
     <div className="ocn">
       <AgentCard
@@ -204,8 +253,24 @@ function ChartNode({
         onDragStart={cardProps.onDragStart}
         onDropOn={cardProps.onDropOn}
         childCount={kids.length}
-        automationCount={autoCount}
       />
+      {machines.length > 0 && (
+        <div className={`oc-tray ${trayLight}`}>
+          {machines.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              className={`oc-mac${cardProps.selected === m.id ? " sel" : ""}`}
+              title={`${m.name}${m.role ? ` — ${m.role}` : ""}`}
+              onClick={(e) => { e.stopPropagation(); cardProps.onSelect(m.id); }}
+            >
+              <i className={`mac-dot ${lightFor(m, cardProps.health)}`} />
+              <span className="mac-emoji">{m.emoji || "⚙️"}</span>
+              <span className="mac-name">{m.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {kids.length > 0 && (
         <>
           <div className="oc-down" />
@@ -233,7 +298,7 @@ function Chip({ children, tone, onClick }: { children: React.ReactNode; tone?: s
 // The dossier: everything one agent is — and where you EDIT it. Edits land in
 // the draft; the top-bar apply writes them to the org file.
 function Dossier({
-  org, id, hasSnapshot, onUpdate, onAdd, onRemove, onSelect,
+  org, id, hasSnapshot, onUpdate, onAdd, onRemove, onSelect, health = null,
 }: {
   org: BOrg;
   id: string;
@@ -242,6 +307,7 @@ function Dossier({
   onAdd: (parentId: string) => void;
   onRemove: (id: string) => void;
   onSelect: (id: string) => void;
+  health?: HealthMap | null;
 }) {
   const slice = useMemo(() => orgBootSlice(org, id), [org, id]);
 
@@ -364,6 +430,22 @@ function Dossier({
         </div>
       )}
 
+      {a.kind === "automation" && (() => {
+        const p = pulseFor(a, health);
+        const l = lightFor(a, health);
+        return (
+          <div className={`doss-health ${l}`}>
+            <i className={`mac-dot ${l}`} />
+            <b>
+              {l === "ok" ? "healthy" : l === "fail" ? "last run failed" : l === "warn" ? "stale or degraded" : "no runs recorded"}
+            </b>
+            {p?.lastAt && <span>last run {relTime(p.lastAt)}</span>}
+            {p && p.n > 0 && <span>{Math.round(((p.n - p.fails) / p.n) * 100)}% ok of {p.n}</span>}
+            {typeof a.cadence === "number" && <span>expected every {a.cadence}h</span>}
+          </div>
+        );
+      })()}
+
       <div className="doss-chain">
         {slice.chain.map((c, i) => (
           <span key={c.id}>
@@ -421,13 +503,18 @@ function Dossier({
         <section>
           <h3>automations · {autos.length} — machines this agent operates</h3>
           <div className="doss-autos">
-            {autos.map((m) => (
-              <button className="doss-auto" key={m.id} onClick={() => onSelect(m.id)}>
-                <span className="doss-auto-emoji">{m.emoji || "⚙️"}</span>
-                <span className="doss-auto-name">{m.name}</span>
-                {m.role && <span className="doss-auto-role">{m.role}</span>}
-              </button>
-            ))}
+            {autos.map((m) => {
+              const p = pulseFor(m, health);
+              return (
+                <button className="doss-auto" key={m.id} onClick={() => onSelect(m.id)}>
+                  <i className={`mac-dot ${lightFor(m, health)}`} />
+                  <span className="doss-auto-emoji">{m.emoji || "⚙️"}</span>
+                  <span className="doss-auto-name">{m.name}</span>
+                  {m.role && <span className="doss-auto-role">{m.role}</span>}
+                  {p?.lastAt && <span className="doss-auto-when">{relTime(p.lastAt)}</span>}
+                </button>
+              );
+            })}
           </div>
         </section>
       )}
@@ -500,11 +587,18 @@ function OrgScreen({
   onAdd: (parentId: string) => void;
   onRemove: (id: string) => void;
 }) {
+  // The heartbeat: one fetch of every report powers all the lights.
+  const [health, setHealth] = useState<HealthMap | null>(null);
+  useEffect(() => {
+    if (!hasSnapshot) return;
+    fetchReports(null, 2000).then(({ nodes }) => setHealth(buildHealthMap(nodes))).catch(() => {});
+  }, [hasSnapshot]);
+
   const root = draft.agents.find((a) => a.id === draft.root);
   return (
     <div className="body" onClick={() => setSelected(null)}>
       <main className="tree" onClick={(e) => e.stopPropagation()}>
-        <p className="tree-hint">drag an agent onto its new parent · click for its dossier</p>
+        <p className="tree-hint">drag an agent onto its new parent · click for its dossier · machine trays show live health</p>
         <div className="chart">
           {root && (
             <ChartNode
@@ -514,6 +608,7 @@ function OrgScreen({
               order={0}
               selected={selected}
               dragId={dragId}
+              health={health}
               onSelect={setSelected}
               onDragStart={setDragId}
               onDropOn={dropOn}
@@ -530,6 +625,7 @@ function OrgScreen({
           onAdd={onAdd}
           onRemove={onRemove}
           onSelect={setSelected}
+          health={health}
         />
       )}
     </div>

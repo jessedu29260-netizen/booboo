@@ -184,6 +184,41 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .doss-edit-row2 { display: grid; grid-template-columns: 1fr 72px; gap: 8px; }
 .doss-edit-actions { display: flex; gap: 8px; margin-top: 2px; }
 
+/* machine trays — the automations an agent operates, chips with health lights */
+.oc-tray {
+  display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;
+  max-width: 560px; margin-top: 7px; padding: 7px 8px;
+  background: rgba(16, 19, 26, 0.6); border: 1px solid var(--line); border-radius: 12px;
+}
+.oc-tray.fail { border-color: rgba(224, 123, 106, 0.55); box-shadow: 0 0 14px rgba(224, 123, 106, 0.12); }
+.oc-tray.warn { border-color: rgba(224, 180, 95, 0.45); }
+.oc-mac {
+  display: inline-flex; align-items: center; gap: 5px; background: var(--bg-1);
+  border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; cursor: pointer;
+  font-size: 10.5px; color: var(--ink-2); transition: border-color 0.15s, transform 0.1s;
+}
+.oc-mac:hover { border-color: var(--accent); color: var(--ink); transform: translateY(-1px); }
+.oc-mac.sel { border-color: var(--accent); background: var(--accent-dim); color: var(--ink); }
+.mac-emoji { font-size: 11px; }
+.mac-name { white-space: nowrap; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
+.mac-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 7px; display: inline-block; }
+.mac-dot.ok { background: var(--accent); box-shadow: 0 0 6px rgba(79, 184, 160, 0.7); }
+.mac-dot.warn { background: var(--warn); box-shadow: 0 0 6px rgba(224, 180, 95, 0.7); }
+.mac-dot.fail { background: #e07b6a; box-shadow: 0 0 7px rgba(224, 123, 106, 0.8); animation: pulse 1.4s ease-in-out infinite; }
+.mac-dot.none { background: var(--ink-3); }
+
+/* automation dossier health header */
+.doss-health {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--bg-1); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 13px; margin-bottom: 16px; font-size: 11.5px; color: var(--ink-2);
+}
+.doss-health b { color: var(--ink); font-size: 12px; }
+.doss-health.fail { border-color: rgba(224, 123, 106, 0.5); }
+.doss-health.warn { border-color: rgba(224, 180, 95, 0.4); }
+.doss-health.ok { border-color: rgba(79, 184, 160, 0.35); }
+.doss-auto-when { margin-left: auto; font-size: 10px; color: var(--ink-3); white-space: nowrap; }
+
 /* automations — machines an agent operates, listed in its dossier */
 .auto-badge { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--warn); background: rgba(224, 180, 95, 0.1); border: 1px solid rgba(224, 180, 95, 0.3); border-radius: 5px; padding: 2px 7px; vertical-align: middle; margin-left: 6px; }
 .doss-autos { display: flex; flex-direction: column; gap: 5px; }

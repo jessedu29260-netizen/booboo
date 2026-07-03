@@ -22,17 +22,17 @@ const MIME: Record<string, string> = {
   ".map": "application/json",
 };
 
-function appDir(): string {
+function distApp(pkg: string): string {
   const require = createRequire(import.meta.url);
   let pkgJson: string;
   try {
-    pkgJson = require.resolve("@booboo-brain/panel/package.json");
+    pkgJson = require.resolve(`${pkg}/package.json`);
   } catch {
-    throw new Error("@booboo-brain/panel is not installed — run `npm i @booboo-brain/panel`.");
+    throw new Error(`${pkg} is not installed — run \`npm i ${pkg}\`.`);
   }
   const dir = join(pkgJson, "..", "dist-app");
   if (!existsSync(join(dir, "index.html"))) {
-    throw new Error("the panel app isn't built — reinstall @booboo-brain/panel (or `pnpm --filter @booboo-brain/panel build` in the repo).");
+    throw new Error(`${pkg}'s app isn't built — reinstall it (or \`pnpm --filter ${pkg} build\` in the repo).`);
   }
   return dir;
 }
@@ -87,8 +87,22 @@ export async function panel(opts: PanelOpts): Promise<void> {
     process.exit(1);
   }
 
-  const dir = appDir();
+  const dir = distApp("@booboo-brain/panel");
   const dirPrefix = dir.endsWith(sep) ? dir : dir + sep;
+
+  // The Graph tab embeds the real 3D viewer over the same snapshot: serve the
+  // viewer's dist-app under /view/ + the raw snapshot at /snapshot.json.
+  // Viewer missing/unbuilt → the tab explains itself instead of breaking.
+  let viewerDir: string | null = null;
+  if (opts.snapshot) {
+    try {
+      viewerDir = distApp("@booboo-brain/viewer");
+    } catch {
+      console.error("🐾 note: @booboo-brain/viewer app not found — the Graph tab will say so.");
+    }
+  }
+  const viewerPrefix = viewerDir ? (viewerDir.endsWith(sep) ? viewerDir : viewerDir + sep) : null;
+  const snapshotBuf = opts.snapshot ? await readFile(opts.snapshot) : null;
 
   const num = (u: URLSearchParams, k: string, d: number) => {
     const v = parseInt(u.get(k) ?? "", 10);
@@ -145,6 +159,32 @@ export async function panel(opts: PanelOpts): Promise<void> {
       } catch (e) {
         return send(500, { error: String((e as Error)?.message ?? e) });
       }
+    }
+
+    // Raw snapshot for the embedded 3D viewer.
+    if (reqPath === "/snapshot.json") {
+      if (!snapshotBuf) { res.writeHead(404); res.end(); return; }
+      res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      res.end(snapshotBuf);
+      return;
+    }
+
+    // /view/* — the 3D viewer app, embedded by the Graph tab (same guard).
+    if (reqPath === "/view" || reqPath.startsWith("/view/")) {
+      if (!viewerDir || !viewerPrefix) { res.writeHead(404); res.end("viewer not available"); return; }
+      const sub = reqPath === "/view" ? "/" : reqPath.slice(5);
+      let vfile = normalize(join(viewerDir, sub === "/" ? "index.html" : sub));
+      if (vfile !== viewerDir && !vfile.startsWith(viewerPrefix)) { res.writeHead(403); res.end("forbidden"); return; }
+      if (!existsSync(vfile)) vfile = join(viewerDir, "index.html");
+      try {
+        const body = await readFile(vfile);
+        res.writeHead(200, { "content-type": MIME[extname(vfile).toLowerCase()] ?? "application/octet-stream" });
+        res.end(body);
+      } catch {
+        res.writeHead(404);
+        res.end("not found");
+      }
+      return;
     }
 
     // Static files from the app dir, with a path-traversal guard (trust boundary).

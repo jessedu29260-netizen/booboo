@@ -38,9 +38,15 @@ importers:
       '@booboo-brain/build':
         specifier: workspace:*
         version: link:../build
+      '@booboo-brain/panel':
+        specifier: workspace:*
+        version: link:../panel
       '@booboo-brain/serve':
         specifier: workspace:*
         version: link:../serve
+      '@booboo-brain/spec':
+        specifier: workspace:*
+        version: link:../spec
       '@booboo-brain/viewer':
         specifier: workspace:*
         version: link:../viewer
@@ -60,6 +66,37 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+
+  packages/panel:
+    dependencies:
+      '@booboo-brain/spec':
+        specifier: workspace:*
+        version: link:../spec
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.0
+        version: 4.7.0(vite@6.4.3(@types/node@26.0.0)(yaml@2.9.0))
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+      tsup:
+        specifier: ^8
+        version: 8.5.1(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.3(@types/node@26.0.0)(yaml@2.9.0)
 
   packages/serve:
     dependencies:

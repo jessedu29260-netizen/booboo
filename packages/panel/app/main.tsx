@@ -1,6 +1,6 @@
 import { StrictMode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { BOrg, BOrgAgent } from "@booboo-brain/spec";
+import type { BNode, BOrg, BOrgAgent } from "@booboo-brain/spec";
 import { orgBootSlice } from "@booboo-brain/spec";
 import "./panel.css";
 
@@ -12,6 +12,18 @@ const api = (path: string, init?: RequestInit) =>
   fetch(`/api${path}`, init).then((r) => (r.ok ? r.json() : r.json().then((b) => Promise.reject(b))));
 
 type Stats = { nodes: number; links: number; byLayer: Record<string, number> };
+
+function relTime(iso?: unknown): string {
+  if (typeof iso !== "string") return "";
+  const t = new Date(iso).getTime();
+  if (!t) return "";
+  const s = (Date.now() - t) / 1000;
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 172800) return "yesterday";
+  return `${Math.floor(s / 86400)}d ago`;
+}
 
 // Gentle count-up so numbers land, not snap.
 function useCountUp(target: number, ms = 900): number {
@@ -117,21 +129,27 @@ function Dossier({ org, id, hasSnapshot }: { org: BOrg; id: string; hasSnapshot:
   const slice = useMemo(() => orgBootSlice(org, id), [org, id]);
   const [memCount, setMemCount] = useState<number | null>(null);
   const [repCount, setRepCount] = useState<number | null>(null);
+  const [reports, setReports] = useState<BNode[] | null>(null);
 
   useEffect(() => {
     setMemCount(null);
     setRepCount(null);
+    setReports(null);
     if (!hasSnapshot || !slice) return;
     // Conventions: memory nodes → type "memory", cluster = bucket;
-    // report nodes → type "report", cluster = agent id.
+    // report nodes → type "report", cluster = agent id, data.at = when.
     Promise.all(
       slice.buckets.map((b) =>
         api(`/nodes?type=memory&cluster=${encodeURIComponent(b)}&limit=1`).then((j) => j.total as number).catch(() => 0),
       ),
     ).then((counts) => setMemCount(counts.reduce((s, n) => s + n, 0)));
-    api(`/nodes?type=report&cluster=${encodeURIComponent(id)}&limit=1`)
-      .then((j) => setRepCount(j.total))
-      .catch(() => setRepCount(0));
+    api(`/nodes?type=report&cluster=${encodeURIComponent(id)}&limit=100`)
+      .then((j: { total: number; nodes: BNode[] }) => {
+        setRepCount(j.total);
+        const at = (n: BNode) => String((n.data as Record<string, unknown>)?.at ?? "");
+        setReports([...j.nodes].sort((a, b) => at(b).localeCompare(at(a))).slice(0, 4));
+      })
+      .catch(() => { setRepCount(0); setReports([]); });
   }, [id, hasSnapshot, slice]);
 
   const mem = useCountUp(memCount ?? 0);
@@ -175,6 +193,34 @@ function Dossier({ org, id, hasSnapshot }: { org: BOrg; id: string; hasSnapshot:
             <div className="doss-l">direct reports</div>
           </div>
         </div>
+      )}
+
+      {hasSnapshot && (
+        <section>
+          <h3>latest reports</h3>
+          {reports === null ? (
+            <p className="doss-empty">loading…</p>
+          ) : reports.length === 0 ? (
+            <p className="doss-empty">no reports filed yet — they appear here as this agent closes work.</p>
+          ) : (
+            <div className="doss-reps">
+              {reports.map((r) => {
+                const d = (r.data ?? {}) as Record<string, unknown>;
+                return (
+                  <div className="doss-rep" key={r.id}>
+                    <div className="doss-rep-top">
+                      <span className="doss-rep-when">{relTime(d.at) || "undated"}</span>
+                      <span className="doss-rep-label">{r.label}</span>
+                    </div>
+                    {typeof d.summary === "string" && d.summary && (
+                      <p className="doss-rep-sum">{d.summary}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
       )}
 
       <section>

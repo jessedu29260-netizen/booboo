@@ -6,9 +6,10 @@
     "layers": [
       { "name": "agents", "color": "#c9a04a", "label": "AGENTS" },
       { "name": "memory", "color": "#a78bd0", "label": "MEMORY" },
-      { "name": "knowledge", "color": "#4ECDC4", "label": "KNOWLEDGE" }
+      { "name": "knowledge", "color": "#4ECDC4", "label": "KNOWLEDGE" },
+      { "name": "reports", "color": "#6b8cab", "label": "REPORTS" }
     ],
-    "counts": { "nodes": 7, "links": 7 }
+    "counts": { "nodes": 15, "links": 16 }
   },
   "nodes": [
     { "id": "core", "type": "root", "layer": "agents", "label": "DEMO SYSTEM", "weight": 1.0, "tier": 0, "parent": null, "icon": "◈" },
@@ -17,7 +18,15 @@
     { "id": "mem:1", "type": "memory", "layer": "memory", "label": "shipped v1 of the landing page", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "writer" },
     { "id": "mem:2", "type": "memory", "layer": "memory", "label": "found 3 primary sources on RAG", "weight": 0.2, "tier": 2, "parent": "agent:researcher", "cluster": "researcher" },
     { "id": "kb:llm", "type": "entity", "layer": "knowledge", "label": "LLM", "weight": 0.5, "tier": 1, "parent": "core" },
-    { "id": "kb:rag", "type": "entity", "layer": "knowledge", "label": "RAG", "weight": 0.4, "tier": 2, "parent": "kb:llm" }
+    { "id": "kb:rag", "type": "entity", "layer": "knowledge", "label": "RAG", "weight": 0.4, "tier": 2, "parent": "kb:llm" },
+    { "id": "mem:3", "type": "memory", "layer": "memory", "label": "brand voice: builder-to-builder, no fluff", "weight": 0.3, "tier": 2, "parent": "core", "cluster": "shared", "data": { "bucket": "shared", "at": "2026-06-28T09:12:00Z" } },
+    { "id": "mem:4", "type": "memory", "layer": "memory", "label": "newsletter ships Tuesdays, 09:00", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "content", "data": { "bucket": "content", "at": "2026-06-30T17:40:00Z" } },
+    { "id": "mem:5", "type": "memory", "layer": "memory", "label": "staging deploys need the API key rotated first", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "eng", "data": { "bucket": "eng", "at": "2026-07-01T11:05:00Z" } },
+    { "id": "mem:6", "type": "memory", "layer": "memory", "label": "backups verified weekly, Sundays", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "ops", "data": { "bucket": "ops", "at": "2026-06-29T08:00:00Z" } },
+    { "id": "rep:1", "type": "report", "layer": "reports", "label": "Writer · draft shipped", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "writer", "data": { "agent": "writer", "at": "2026-07-03T08:45:00Z", "summary": "Drafted the July newsletter — 2 sources cited from the knowledge layer, handed to Editor." } },
+    { "id": "rep:2", "type": "report", "layer": "reports", "label": "Writer · revision", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "writer", "data": { "agent": "writer", "at": "2026-07-02T16:20:00Z", "summary": "Reworked the landing hero after Editor's pass — shorter, one claim per line." } },
+    { "id": "rep:3", "type": "report", "layer": "reports", "label": "Watchdog · all green", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "watchdog", "data": { "agent": "watchdog", "at": "2026-07-03T06:00:00Z", "summary": "Nightly sweep: 12 checks green, backup verified, zero alerts raised." } },
+    { "id": "rep:4", "type": "report", "layer": "reports", "label": "HQ · weekly rollup", "weight": 0.3, "tier": 1, "parent": "core", "cluster": "hq", "data": { "agent": "hq", "at": "2026-06-30T18:00:00Z", "summary": "Week closed: 3 posts shipped, 1 feature merged, ops quiet. Next: the pricing page." } }
   ],
   "links": [
     { "source": "core", "target": "agent:writer", "type": "spine" },
@@ -26,6 +35,15 @@
     { "source": "agent:researcher", "target": "mem:2", "type": "recalls" },
     { "source": "agent:researcher", "target": "kb:llm", "type": "uses" },
     { "source": "kb:llm", "target": "kb:rag", "type": "related" },
-    { "source": "agent:writer", "target": "kb:rag", "type": "uses" }
+    { "source": "agent:writer", "target": "kb:rag", "type": "uses" },
+    { "source": "core", "target": "mem:3", "type": "recalls" },
+    { "source": "agent:writer", "target": "mem:4", "type": "recalls" },
+    { "source": "core", "target": "mem:5", "type": "recalls" },
+    { "source": "core", "target": "mem:6", "type": "recalls" },
+    { "source": "agent:writer", "target": "rep:1", "type": "filed" },
+    { "source": "agent:writer", "target": "rep:2", "type": "filed" },
+    { "source": "core", "target": "rep:3", "type": "filed" },
+    { "source": "core", "target": "rep:4", "type": "filed" },
+    { "source": "rep:1", "target": "mem:4", "type": "recalls" }
   ]
 }

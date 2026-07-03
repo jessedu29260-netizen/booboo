@@ -145,6 +145,15 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .doss-rules li.own { color: var(--ink); border-color: rgba(79, 184, 160, 0.35); }
 .doss-rules em { color: var(--ink-3); font-style: normal; font-size: 9.5px; margin-left: 5px; }
 .doss-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.doss-reps { display: flex; flex-direction: column; gap: 7px; }
+.doss-rep {
+  background: var(--bg-1); border: 1px solid var(--line); border-left: 2px solid var(--accent);
+  border-radius: 9px; padding: 9px 11px; animation: settle 0.35s ease both;
+}
+.doss-rep-top { display: flex; align-items: baseline; gap: 9px; }
+.doss-rep-when { font-size: 10px; color: var(--accent-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.doss-rep-label { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doss-rep-sum { margin: 5px 0 0; font-size: 11.5px; color: var(--ink-2); line-height: 1.55; }
 .chip { font-size: 11px; background: var(--accent-dim); color: var(--accent-2); border-radius: 7px; padding: 4px 10px; }
 .chip.alt { background: var(--bg-2); color: var(--ink-2); }
 .doss-boot { font-size: 12px; color: var(--ink-2); line-height: 1.6; margin: 0; white-space: pre-wrap; }

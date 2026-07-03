@@ -184,6 +184,15 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .doss-edit-row2 { display: grid; grid-template-columns: 1fr 72px; gap: 8px; }
 .doss-edit-actions { display: flex; gap: 8px; margin-top: 2px; }
 
+/* automations — machines an agent operates, listed in its dossier */
+.auto-badge { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--warn); background: rgba(224, 180, 95, 0.1); border: 1px solid rgba(224, 180, 95, 0.3); border-radius: 5px; padding: 2px 7px; vertical-align: middle; margin-left: 6px; }
+.doss-autos { display: flex; flex-direction: column; gap: 5px; }
+.doss-auto { display: flex; align-items: baseline; gap: 9px; text-align: left; background: var(--bg-1); border: 1px solid var(--line); border-radius: 9px; padding: 8px 11px; cursor: pointer; transition: border-color 0.15s; }
+.doss-auto:hover { border-color: var(--warn); }
+.doss-auto-emoji { font-size: 13px; }
+.doss-auto-name { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.doss-auto-role { font-size: 10.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .doss-foot { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
 .btn.danger { border-color: rgba(224, 123, 106, 0.45); color: #e07b6a; background: transparent; }
 .btn.danger:hover { background: rgba(224, 123, 106, 0.1); }

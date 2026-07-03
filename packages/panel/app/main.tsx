@@ -120,7 +120,7 @@ function bucketHue(name: string): number {
 /* ────────────────────────── ORGANIGRAM ────────────────────────── */
 
 function AgentCard({
-  a, isRoot, depth, order, selected, dragId, onSelect, onDragStart, onDropOn, childCount,
+  a, isRoot, depth, order, selected, dragId, onSelect, onDragStart, onDropOn, childCount, automationCount = 0,
 }: {
   a: BOrgAgent;
   isRoot: boolean;
@@ -132,6 +132,7 @@ function AgentCard({
   onDragStart: (id: string) => void;
   onDropOn: (id: string) => void;
   childCount: number;
+  automationCount?: number;
 }) {
   const [over, setOver] = useState(false);
   const nBuckets = a.buckets?.length ?? 0;
@@ -153,6 +154,7 @@ function AgentCard({
       <span className="ag-meta">
         {nBuckets > 0 && <em title="memory buckets">▤ {nBuckets}</em>}
         {nSkills > 0 && <em title="skills">✦ {nSkills}</em>}
+        {automationCount > 0 && <em title="automations this agent operates">🕰 {automationCount}</em>}
         {childCount > 0 && <span className="ag-kids" title="direct reports">{childCount} reports</span>}
       </span>
     </div>
@@ -174,7 +176,21 @@ function ChartNode({
   onDragStart: (id: string) => void;
   onDropOn: (id: string) => void;
 }) {
-  const kids = org.agents.filter((c) => c.parent === a.id);
+  // Automations are machines this node OPERATES, not org units — they never
+  // become chart cards; the owner shows a compact count instead.
+  const kids = org.agents.filter((c) => c.parent === a.id && c.kind !== "automation");
+  const autoCount = (() => {
+    let n = 0;
+    const walk = (pid: string) => {
+      for (const c of org.agents.filter((x) => x.parent === pid && x.kind === "automation")) {
+        const hasKids = org.agents.some((x) => x.parent === c.id);
+        if (hasKids) walk(c.id);
+        else n++;
+      }
+    };
+    walk(a.id);
+    return n;
+  })();
   return (
     <div className="ocn">
       <AgentCard
@@ -188,6 +204,7 @@ function ChartNode({
         onDragStart={cardProps.onDragStart}
         onDropOn={cardProps.onDropOn}
         childCount={kids.length}
+        automationCount={autoCount}
       />
       {kids.length > 0 && (
         <>
@@ -216,7 +233,7 @@ function Chip({ children, tone, onClick }: { children: React.ReactNode; tone?: s
 // The dossier: everything one agent is — and where you EDIT it. Edits land in
 // the draft; the top-bar apply writes them to the org file.
 function Dossier({
-  org, id, hasSnapshot, onUpdate, onAdd, onRemove,
+  org, id, hasSnapshot, onUpdate, onAdd, onRemove, onSelect,
 }: {
   org: BOrg;
   id: string;
@@ -224,8 +241,24 @@ function Dossier({
   onUpdate: (id: string, patch: Partial<BOrgAgent>) => void;
   onAdd: (parentId: string) => void;
   onRemove: (id: string) => void;
+  onSelect: (id: string) => void;
 }) {
   const slice = useMemo(() => orgBootSlice(org, id), [org, id]);
+
+  // The machines this agent operates — automation leaves anywhere in its
+  // automation subtree (grouping nodes like a "fleet" flatten away).
+  const autos = useMemo(() => {
+    const out: BOrgAgent[] = [];
+    const walk = (pid: string) => {
+      for (const c of org.agents.filter((x) => x.parent === pid && x.kind === "automation")) {
+        const hasKids = org.agents.some((x) => x.parent === c.id);
+        if (hasKids) walk(c.id);
+        else out.push(c);
+      }
+    };
+    walk(id);
+    return out;
+  }, [org, id]);
   const [memCount, setMemCount] = useState<number | null>(null);
   const [repCount, setRepCount] = useState<number | null>(null);
   const [reports, setReports] = useState<BNode[] | null>(null);
@@ -292,7 +325,7 @@ function Dossier({
       <div className="doss-head">
         <span className="doss-emoji">{a.emoji || "🤖"}</span>
         <div>
-          <h2>{a.name}</h2>
+          <h2>{a.name} {a.kind === "automation" && <span className="auto-badge">automation</span>}</h2>
           {a.role && <p className="doss-role">{a.role}</p>}
         </div>
         <div className="doss-head-actions">
@@ -351,7 +384,7 @@ function Dossier({
             <div className="doss-l">reports filed</div>
           </div>
           <div className="doss-stat">
-            <div className="doss-n">{slice.children.length}</div>
+            <div className="doss-n">{slice.children.filter((c) => c.kind !== "automation").length}</div>
             <div className="doss-l">direct reports</div>
           </div>
         </div>
@@ -381,6 +414,21 @@ function Dossier({
               })}
             </div>
           )}
+        </section>
+      )}
+
+      {autos.length > 0 && (
+        <section>
+          <h3>automations · {autos.length} — machines this agent operates</h3>
+          <div className="doss-autos">
+            {autos.map((m) => (
+              <button className="doss-auto" key={m.id} onClick={() => onSelect(m.id)}>
+                <span className="doss-auto-emoji">{m.emoji || "⚙️"}</span>
+                <span className="doss-auto-name">{m.name}</span>
+                {m.role && <span className="doss-auto-role">{m.role}</span>}
+              </button>
+            ))}
+          </div>
         </section>
       )}
 
@@ -474,7 +522,15 @@ function OrgScreen({
         </div>
       </main>
       {selected && (
-        <Dossier org={draft} id={selected} hasSnapshot={hasSnapshot} onUpdate={onUpdate} onAdd={onAdd} onRemove={onRemove} />
+        <Dossier
+          org={draft}
+          id={selected}
+          hasSnapshot={hasSnapshot}
+          onUpdate={onUpdate}
+          onAdd={onAdd}
+          onRemove={onRemove}
+          onSelect={setSelected}
+        />
       )}
     </div>
   );

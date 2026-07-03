@@ -4,7 +4,7 @@
 import { mkdirSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-const BOOBOO_VERSION = "^0.1.0"; // @booboo-brain/* range the scaffolded project depends on
+const BOOBOO_VERSION = "^0.2.0"; // @booboo-brain/* range the scaffolded project depends on (organigram-capable)
 
 const args = process.argv.slice(2);
 const flags = new Set(args.filter((a) => a.startsWith("--")));
@@ -88,6 +88,24 @@ const dataJson = JSON.stringify(
   2,
 );
 
+// The ORGANIGRAM seed — a source file (committed, unlike the snapshot). Run
+// your agents like a company: the panel edits this, agents boot from it. The
+// two agents match the sample brain so `npm run panel` demos coherently.
+const orgJson = JSON.stringify(
+  {
+    booboo_org: "1.0",
+    title: TITLE,
+    root: "core",
+    agents: [
+      { id: "core", name: TITLE, emoji: "🏛️", role: "the orchestrator — routes, never executes", rules: ["rules/GLOBAL.md"], buckets: ["shared"], boot: "You are the orchestrator. Boot with booboo_boot('core'); route work to your branches, never do it yourself." },
+      { id: "writer", name: "Writer", emoji: "📝", role: "drafts content", parent: "core", skills: ["humanizer"], buckets: ["content"] },
+      { id: "researcher", name: "Researcher", emoji: "🔎", role: "gathers sources", parent: "core", skills: ["deep-research"], buckets: ["research"] },
+    ],
+  },
+  null,
+  2,
+);
+
 const pkgJson = JSON.stringify(
   {
     name,
@@ -97,8 +115,9 @@ const pkgJson = JSON.stringify(
     scripts: {
       build: "booboo build",
       serve: "booboo serve --snapshot brain.json --port 8787",
-      mcp: "booboo mcp --snapshot brain.json",
+      mcp: "booboo mcp --snapshot brain.json --org org.booboo.json",
       view: "booboo view --snapshot brain.json",
+      panel: "booboo panel --org org.booboo.json --snapshot brain.json",
     },
     dependencies: {
       "@booboo-brain/cli": BOOBOO_VERSION,
@@ -120,7 +139,16 @@ npm run build      # booboo.config.yaml → brain.json (the snapshot)
 npm run serve      # REST API at http://localhost:8787  (/graph /stats /search /nodes/:id /neighbors/:id /path/:a/:b)
 npm run mcp        # MCP over stdio — point Claude / Cursor / Claude Code at it
 npm run view       # see your brain in 3D (opens your browser)
+npm run panel      # THE ORGANIGRAM — run your agents like a company
 \`\`\`
+
+## The organigram — run your agents like a company
+
+\`npm run panel\` opens **org.booboo.json** as a real company chart: drag an agent
+under a new parent, hit apply, and the file changes — versioned in git, validated
+before every write. Agents that boot with \`booboo_boot('<id>')\` obey the new shape
+next session. Rules inherit top-down; each agent carries its buckets, skills and
+latest reports. This file is a **source** (commit it) — the snapshot is derived.
 
 ## Make it yours
 
@@ -146,6 +174,7 @@ brain.json
 const files: Record<string, string> = {
   "booboo.config.yaml": configYaml,
   "data.booboo.json": dataJson,
+  "org.booboo.json": orgJson,
   "package.json": pkgJson,
   "README.md": readme,
   ".gitignore": gitignore,
@@ -159,5 +188,6 @@ console.log("  npm install");
 console.log("  npm run build      # build the graph snapshot");
 console.log("  npm run serve      # REST API on http://localhost:8787");
 console.log("  npm run mcp        # MCP over stdio (Claude / Cursor / Claude Code)");
-console.log("  npm run view       # see your brain in 3D (opens your browser)\n");
+console.log("  npm run view       # see your brain in 3D (opens your browser)");
+console.log("  npm run panel      # the organigram — run your agents like a company\n");
 console.log("Then edit booboo.config.yaml to point at your own data — a postgres example is included.\n");

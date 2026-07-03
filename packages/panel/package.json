@@ -1,17 +1,32 @@
 {
   "name": "@booboo-brain/panel",
-  "version": "0.1.0",
-  "description": "Booboo control panel — the dossier-first control plane. Home, Memory search + provenance, prompts, sessions, MCP inventory over the same snapshot the viewer renders.",
+  "version": "0.2.0",
+  "description": "Booboo panel — the organigram. Run your agents like a company: a drag-drop hierarchy your agents boot from, with buckets, reports, rules and the 3D graph, over one org file + snapshot.",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/jessedu29260-netizen/booboo.git", "directory": "packages/panel" },
-  "bugs": { "url": "https://github.com/jessedu29260-netizen/booboo/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jessedu29260-netizen/booboo.git",
+    "directory": "packages/panel"
+  },
+  "bugs": {
+    "url": "https://github.com/jessedu29260-netizen/booboo/issues"
+  },
   "homepage": "https://github.com/jessedu29260-netizen/booboo#readme",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }, "./package.json": "./package.json" },
-  "files": ["dist", "dist-app"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "dist-app"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --external react,react-dom,@booboo-brain/spec && vite build --config vite.app.config.ts",
     "dev": "vite"

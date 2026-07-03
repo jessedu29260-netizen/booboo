@@ -36,10 +36,13 @@ function relTime(iso?: unknown): string {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
+const REDUCED = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
 function useCountUp(target: number, ms = 900): number {
-  const [v, setV] = useState(0);
+  const [v, setV] = useState(REDUCED ? target : 0);
   const fromRef = useRef(0);
   useEffect(() => {
+    if (REDUCED) { setV(target); return; } // land instantly — also keeps screenshots honest
     const from = fromRef.current;
     const t0 = performance.now();
     let raf = 0;
@@ -84,10 +87,12 @@ function bucketHue(name: string): number {
 /* ────────────────────────── ORGANIGRAM ────────────────────────── */
 
 function AgentCard({
-  a, isRoot, selected, dragId, onSelect, onDragStart, onDropOn, childCount,
+  a, isRoot, depth, order, selected, dragId, onSelect, onDragStart, onDropOn, childCount,
 }: {
   a: BOrgAgent;
   isRoot: boolean;
+  depth: number;
+  order: number;
   selected: boolean;
   dragId: string | null;
   onSelect: (id: string) => void;
@@ -96,9 +101,12 @@ function AgentCard({
   childCount: number;
 }) {
   const [over, setOver] = useState(false);
+  const nBuckets = a.buckets?.length ?? 0;
+  const nSkills = a.skills?.length ?? 0;
   return (
     <div
       className={`ag${isRoot ? " root" : ""}${selected ? " sel" : ""}${over ? " over" : ""}${dragId === a.id ? " dragging" : ""}`}
+      style={{ ["--h" as string]: bucketHue(a.id), animationDelay: `${Math.min(depth * 70 + order * 45, 600)}ms` }}
       draggable={!isRoot}
       onClick={(e) => { e.stopPropagation(); onSelect(a.id); }}
       onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(a.id); }}
@@ -106,19 +114,24 @@ function AgentCard({
       onDragLeave={() => setOver(false)}
       onDrop={(e) => { e.preventDefault(); setOver(false); onDropOn(a.id); }}
     >
-      <span className="ag-emoji">{a.emoji || "🤖"}</span>
+      <span className="ag-ava">{a.emoji || "🤖"}</span>
       <span className="ag-name">{a.name}</span>
       {a.role && <span className="ag-role">{a.role}</span>}
-      {childCount > 0 && <span className="ag-kids">{childCount}</span>}
+      <span className="ag-meta">
+        {nBuckets > 0 && <em title="memory buckets">▤ {nBuckets}</em>}
+        {nSkills > 0 && <em title="skills">✦ {nSkills}</em>}
+        {childCount > 0 && <span className="ag-kids" title="direct reports">{childCount}</span>}
+      </span>
     </div>
   );
 }
 
 function Tree({
-  org, parent, ...cardProps
+  org, parent, depth = 0, ...cardProps
 }: {
   org: BOrg;
   parent: string | null;
+  depth?: number;
   selected: string | null;
   dragId: string | null;
   onSelect: (id: string) => void;
@@ -128,11 +141,13 @@ function Tree({
   const kids = org.agents.filter((a) => (parent === null ? a.id === org.root : a.parent === parent));
   return (
     <>
-      {kids.map((a) => (
+      {kids.map((a, i) => (
         <div className="tree-branch" key={a.id}>
           <AgentCard
             a={a}
             isRoot={a.id === org.root}
+            depth={depth}
+            order={i}
             selected={cardProps.selected === a.id}
             dragId={cardProps.dragId}
             onSelect={cardProps.onSelect}
@@ -141,7 +156,7 @@ function Tree({
             childCount={org.agents.filter((c) => c.parent === a.id).length}
           />
           <div className="tree-kids">
-            <Tree org={org} parent={a.id} {...cardProps} />
+            <Tree org={org} parent={a.id} depth={depth + 1} {...cardProps} />
           </div>
         </div>
       ))}
@@ -349,12 +364,12 @@ function BucketCount({ bucket }: { bucket: string }) {
 function BucketsScreen({ org, param, hasSnapshot }: { org: BOrg; param: string | null; hasSnapshot: boolean }) {
   // bucket → the agents that can reach it (declared or inherited).
   const buckets = useMemo(() => {
-    const map = new Map<string, string[]>();
+    const map = new Map<string, BOrgAgent[]>();
     for (const a of org.agents) {
       const slice = orgBootSlice(org, a.id);
       for (const b of slice?.buckets ?? []) {
         const arr = map.get(b) ?? [];
-        arr.push(a.name);
+        arr.push(a);
         map.set(b, arr);
       }
     }
@@ -411,15 +426,26 @@ function BucketsScreen({ org, param, hasSnapshot }: { org: BOrg; param: string |
         <p className="scr-empty">no buckets declared on any agent yet — add <code>"buckets"</code> to agents in the org file.</p>
       ) : (
         <div className="bk-grid">
-          {buckets.map(([b, agents]) => (
-            <button className="bk-card" key={b} style={{ ["--h" as string]: bucketHue(b) }} onClick={() => nav(`/buckets/${encodeURIComponent(b)}`)}>
+          {buckets.map(([b, agents], i) => (
+            <button
+              className="bk-card"
+              key={b}
+              style={{ ["--h" as string]: bucketHue(b), animationDelay: `${i * 70}ms` }}
+              onClick={() => nav(`/buckets/${encodeURIComponent(b)}`)}
+            >
               <div className="bk-top">
                 <i className="bk-dot" />
                 <span className="bk-name">{b}</span>
               </div>
               {hasSnapshot ? <BucketCount bucket={b} /> : <div className="bk-n dim">—</div>}
               <div className="bk-l">memories</div>
-              <div className="bk-agents">{agents.slice(0, 4).join(" · ")}{agents.length > 4 ? ` +${agents.length - 4}` : ""}</div>
+              <div className="bk-crew">
+                {agents.slice(0, 7).map((a) => (
+                  <span className="bk-face" key={a.id} title={a.name}>{a.emoji || "🤖"}</span>
+                ))}
+                {agents.length > 7 && <span className="bk-more">+{agents.length - 7}</span>}
+              </div>
+              <div className="bk-agents">{agents.slice(0, 3).map((a) => a.name).join(" · ")}{agents.length > 3 ? ` +${agents.length - 3}` : ""}</div>
             </button>
           ))}
         </div>
@@ -476,14 +502,15 @@ function ReportsScreen({ org, hasSnapshot }: { org: BOrg; hasSnapshot: boolean }
             const d = (r.data ?? {}) as Record<string, unknown>;
             const a = r.cluster ? nameOf.get(r.cluster) : undefined;
             return (
-              <div className="tl-row" key={r.id}>
+              <div className="tl-row" key={r.id} style={{ ["--h" as string]: bucketHue(r.cluster ?? "x") }}>
                 <div className="tl-dot" />
                 <div className="tl-body">
                   <div className="tl-top">
-                    <span className="tl-agent">{a?.emoji ?? "🤖"} {a?.name ?? r.cluster ?? "unknown"}</span>
+                    <span className="tl-ava">{a?.emoji ?? "🤖"}</span>
+                    <span className="tl-agent">{a?.name ?? r.cluster ?? "unknown"}</span>
+                    <span className="tl-label">· {r.label}</span>
                     <span className="tl-when">{relTime(d.at) || "undated"}</span>
                   </div>
-                  <div className="tl-label">{r.label}</div>
                   {typeof d.summary === "string" && d.summary && <p className="tl-sum">{d.summary}</p>}
                 </div>
               </div>
@@ -518,8 +545,14 @@ function RulesScreen({ org }: { org: BOrg }) {
     const name = (id: string) => org.agents.find((a) => a.id === id)?.name ?? id;
     return [...declared.entries()]
       .sort((x, y) => x[0].localeCompare(y[0]))
-      .map(([r, by]) => ({ rule: r, declaredBy: by.map(name), inheritedBy: (inherited.get(r) ?? []).map(name) }));
+      .map(([r, by]) => ({
+        rule: r,
+        global: by.includes(org.root),
+        declaredBy: by.map(name),
+        inheritedBy: (inherited.get(r) ?? []).map(name),
+      }));
   }, [org]);
+  const maxBind = Math.max(1, org.agents.length - 1);
 
   return (
     <div className="screen">
@@ -529,12 +562,18 @@ function RulesScreen({ org }: { org: BOrg }) {
         <p className="scr-empty">no rules declared yet — add <code>"rules"</code> refs to agents in the org file.</p>
       ) : (
         <div className="rule-list">
-          {rules.map((r) => (
-            <div className="rule-card" key={r.rule}>
-              <div className="rule-ref">{r.rule}</div>
+          {rules.map((r, i) => (
+            <div className="rule-card" key={r.rule} style={{ animationDelay: `${i * 60}ms` }}>
+              <div className="rule-top">
+                <span className="rule-ref">{r.rule}</span>
+                {r.global && <span className="rule-scope">global — binds everyone</span>}
+              </div>
               <div className="rule-meta">
                 <span>declared by <b>{r.declaredBy.join(", ")}</b></span>
-                {r.inheritedBy.length > 0 && <span>· binds <b>{r.inheritedBy.length}</b> below: {r.inheritedBy.join(", ")}</span>}
+                {r.inheritedBy.length > 0 && <span> · binds <b>{r.inheritedBy.length}</b> below: {r.inheritedBy.join(", ")}</span>}
+              </div>
+              <div className="rule-bar">
+                <i style={{ width: `${Math.round((r.inheritedBy.length / maxBind) * 100)}%` }} />
               </div>
             </div>
           ))}
@@ -568,11 +607,19 @@ function App() {
   const [err, setErr] = useState("");
   const [applying, setApplying] = useState(false);
 
+  const [totals, setTotals] = useState<{ mem: number; rep: number } | null>(null);
+
   useEffect(() => {
     api("/org")
       .then((o: BOrg) => { setSaved(o); setDraft(o); setSelected(o.root); })
       .catch(() => setErr("Can't load the organigram — is `booboo panel --org` running?"));
     api("/stats").then(setStats).catch(() => setStats(null));
+    Promise.all([
+      api("/nodes?type=memory&limit=1").then((j) => j.total as number),
+      api("/nodes?type=report&limit=1").then((j) => j.total as number),
+    ])
+      .then(([mem, rep]) => setTotals({ mem, rep }))
+      .catch(() => setTotals(null));
   }, []);
 
   const changes = useMemo(() => {
@@ -627,6 +674,8 @@ function App() {
 
   const agentCount = useCountUp(draft?.agents.length ?? 0);
   const nodeCount = useCountUp(stats?.nodes ?? 0, 1200);
+  const memTotal = useCountUp(totals?.mem ?? 0, 1100);
+  const repTotal = useCountUp(totals?.rep ?? 0, 1300);
 
   if (err && !draft) return <div className="pnl-fatal">{err}</div>;
   if (!draft) return <div className="pnl-fatal calm">waking the organigram…</div>;
@@ -638,7 +687,9 @@ function App() {
         <div className="bar-brand">🐾 <b>{draft.title || "the organigram"}</b></div>
         <div className="bar-stats">
           <span><b>{agentCount}</b> agents</span>
-          {stats && <span><b>{nodeCount.toLocaleString()}</b> nodes in the brain</span>}
+          {stats && <span><b>{nodeCount.toLocaleString()}</b> nodes</span>}
+          {totals && <span onClick={() => nav("/buckets")} className="tap"><b>{memTotal.toLocaleString()}</b> memories</span>}
+          {totals && <span onClick={() => nav("/reports")} className="tap"><b>{repTotal.toLocaleString()}</b> reports</span>}
         </div>
         <div className="bar-actions">
           {changes.length > 0 ? (

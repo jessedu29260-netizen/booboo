@@ -6,11 +6,16 @@
     { "id": "hq", "name": "HQ", "emoji": "🏛️", "role": "the orchestrator — routes, never executes", "rules": ["rules/GLOBAL.md"], "buckets": ["shared"], "boot": "You are HQ, the orchestrator. Boot with booboo_boot('hq'); route work to your branches, never do it yourself." },
     { "id": "content", "name": "Content", "emoji": "✒️", "role": "everything published", "parent": "hq", "rules": ["rules/CONTENT.md"], "buckets": ["content"] },
     { "id": "writer", "name": "Writer", "emoji": "📝", "role": "drafts posts + newsletters", "parent": "content", "skills": ["humanizer", "seo-audit"], "buckets": ["content"] },
-    { "id": "editor", "name": "Editor", "emoji": "🔍", "role": "reviews before anything ships", "parent": "content", "rules": ["rules/EDITORIAL.md"], "buckets": ["content"] },
+    { "id": "editor", "name": "Editor", "emoji": "🔍", "role": "reviews before anything ships", "parent": "content", "rules": ["rules/EDITORIAL.md"], "skills": ["style-guide"], "buckets": ["content"] },
+    { "id": "designer", "name": "Designer", "emoji": "🎨", "role": "visuals, decks, social frames", "parent": "content", "skills": ["brand-kit"], "buckets": ["content"] },
     { "id": "engineering", "name": "Engineering", "emoji": "⚙️", "role": "builds and ships code", "parent": "hq", "rules": ["rules/CODE.md"], "buckets": ["eng"] },
-    { "id": "builder", "name": "Builder", "emoji": "🔨", "role": "implements features", "parent": "engineering", "skills": ["tdd"], "buckets": ["eng"] },
-    { "id": "reviewer", "name": "Reviewer", "emoji": "🧐", "role": "adversarial code review", "parent": "engineering", "buckets": ["eng"] },
+    { "id": "builder", "name": "Builder", "emoji": "🔨", "role": "implements features", "parent": "engineering", "skills": ["tdd", "ship-small"], "buckets": ["eng"] },
+    { "id": "reviewer", "name": "Reviewer", "emoji": "🧐", "role": "adversarial code review", "parent": "engineering", "skills": ["security-pass"], "buckets": ["eng"] },
+    { "id": "growth", "name": "Growth", "emoji": "📈", "role": "distribution + funnels", "parent": "hq", "rules": ["rules/GROWTH.md"], "buckets": ["growth"] },
+    { "id": "scout", "name": "Scout", "emoji": "🔭", "role": "finds trends + opportunities", "parent": "growth", "skills": ["deep-research"], "buckets": ["growth"] },
+    { "id": "analyst", "name": "Analyst", "emoji": "📊", "role": "reads the numbers weekly", "parent": "growth", "buckets": ["growth", "shared"] },
     { "id": "ops", "name": "Ops", "emoji": "🛰️", "role": "keeps the machines honest", "parent": "hq", "buckets": ["ops", "shared"] },
-    { "id": "watchdog", "name": "Watchdog", "emoji": "🐕", "role": "health checks + alerts", "parent": "ops", "buckets": ["ops"] }
+    { "id": "watchdog", "name": "Watchdog", "emoji": "🐕", "role": "health checks + alerts", "parent": "ops", "skills": ["escalation"], "buckets": ["ops"] },
+    { "id": "archivist", "name": "Archivist", "emoji": "🗄️", "role": "backups, retention, tidy memory", "parent": "ops", "buckets": ["ops", "shared"] }
   ]
 }

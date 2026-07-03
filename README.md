@@ -9,7 +9,7 @@ Named after a dachshund who never forgets where the treats are buried. Fitting, 
 
 Most tools show you *one* slice: a knowledge graph, an agent flow chart, a memory store, a trace viewer. Booboo fuses all of them into **one graph rooted at a single point**, so you can see — and query — how the whole system actually hangs together.
 
-> **Status:** alpha — six packages, all published: [`@booboo-brain/spec`](https://www.npmjs.com/package/@booboo-brain/spec) (the contract), [`@booboo-brain/build`](https://www.npmjs.com/package/@booboo-brain/build) (config-driven postgres/json adapters), [`@booboo-brain/serve`](https://www.npmjs.com/package/@booboo-brain/serve) (REST + MCP query layer), [`@booboo-brain/viewer`](https://www.npmjs.com/package/@booboo-brain/viewer) (million-node 3D render), [`@booboo-brain/cli`](https://www.npmjs.com/package/@booboo-brain/cli) (the unified `booboo` command), and [`create-booboo`](https://www.npmjs.com/package/create-booboo) (project scaffolder). MIT.
+> **Status:** alpha — six packages published: [`@booboo-brain/spec`](https://www.npmjs.com/package/@booboo-brain/spec) (the contract), [`@booboo-brain/build`](https://www.npmjs.com/package/@booboo-brain/build) (config-driven postgres/json adapters), [`@booboo-brain/serve`](https://www.npmjs.com/package/@booboo-brain/serve) (REST + MCP query layer), [`@booboo-brain/viewer`](https://www.npmjs.com/package/@booboo-brain/viewer) (million-node 3D render), [`@booboo-brain/cli`](https://www.npmjs.com/package/@booboo-brain/cli) (the unified `booboo` command), and [`create-booboo`](https://www.npmjs.com/package/create-booboo) (project scaffolder) — plus `@booboo-brain/panel` (the organigram, in-repo, npm imminent). MIT.
 
 ---
 
@@ -48,13 +48,26 @@ Edit `booboo.config.yaml` to point at your own Postgres/Supabase (a commented ex
 ```bash
 booboo build --config booboo.config.yaml    # any postgres/json → one graph snapshot (privacy walls + parent spines)
 booboo serve --snapshot my.booboo.json --port 8787   # REST: /graph /stats /search /nodes/:id /neighbors/:id /path/:a/:b
-booboo mcp   --snapshot my.booboo.json               # MCP over stdio: booboo_stats/search/node/neighbors/path
+booboo mcp   --snapshot my.booboo.json --org org.booboo.json  # MCP over stdio (+ booboo_boot: agents boot FROM the org)
 booboo view  --snapshot my.booboo.json               # 3D viewer in your browser — no monorepo, no build step
+booboo panel --org org.booboo.json --snapshot my.booboo.json  # THE ORGANIGRAM — see below
 ```
 
 `booboo view` serves the `@booboo-brain/viewer` 3D renderer as a standalone app — any snapshot (or `?n=1000000` synthetic) in your browser, no monorepo. The build engine was
 proven on a real **4,469-node production brain** assembled straight from Supabase by config alone —
 privacy-walled, validated, served. See each package's README for the details.
+
+## The Organigram — run your agents like a company
+
+![The Booboo panel organigram — a 14-agent fleet as a real company chart: root on top, departments fanning beneath, a dossier with live memory and report counts on the right](docs/assets/panel-organigram.jpg)
+
+`booboo panel` opens your agent fleet as a **real org chart** — and the chart is not a diagram, it's the **authority**. Every agent is a card: its rules, skills, memory-bucket access, and latest reports. **Drag an agent under a new parent, hit apply, and the org file changes** — versioned in git, validated before every write (a cycle can never land). Agents that boot with `booboo_boot` obey the new shape on their next session. Reorganize your company at breakfast; the whole fleet knows by the first coffee.
+
+| the portfolio timeline | memory, bucket by bucket |
+|---|---|
+| ![Reports tab — every agent's filed reports on one timeline, filterable per agent](docs/assets/panel-reports.jpg) | ![Buckets tab — each memory bucket with live counts and the agents that reach it](docs/assets/panel-buckets.jpg) |
+
+Five tabs over one org file + one snapshot: **organigram** (drag-drop hierarchy) · **buckets** (who remembers what) · **reports** (what the fleet closed, newest first) · **rules** (who declares, who inherits) · **graph** (the 3D brain, embedded). Rules inherit top-down — declare once at a branch, everyone beneath is bound; every dossier shows the inherited stack in boot order.
 
 ## Why it's different
 

@@ -1,6 +1,6 @@
 {
   "name": "@booboo-brain/serve",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Query a Booboo snapshot over REST + MCP. In-memory index: search, neighbors, shortest-path, layer stats.",
   "license": "MIT",
   "repository": {

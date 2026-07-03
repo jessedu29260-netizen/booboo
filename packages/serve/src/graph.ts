@@ -37,6 +37,18 @@ export class BoobooIndex {
 
   node(id: string): BNode | null { return this.byId.get(id) ?? null; }
 
+  /** Distinct cluster values (optionally for one node type) with counts —
+   *  cheap discovery for UIs: "which buckets exist?" without paging nodes. */
+  clusters(type?: string): Record<string, number> {
+    const out: Record<string, number> = {};
+    for (const n of this.graph.nodes) {
+      if (type && n.type !== type) continue;
+      if (!n.cluster) continue;
+      out[n.cluster] = (out[n.cluster] ?? 0) + 1;
+    }
+    return out;
+  }
+
   list(o: ListOpts = {}): { total: number; nodes: BNode[] } {
     const q = o.q?.toLowerCase();
     const all = this.graph.nodes.filter(

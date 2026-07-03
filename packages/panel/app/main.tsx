@@ -36,6 +36,39 @@ function relTime(iso?: unknown): string {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
+// Timestamps vary by adapter — accept the common field names; "" = undated.
+function nodeAt(n: BNode): string {
+  const d = (n.data ?? {}) as Record<string, unknown>;
+  for (const k of ["at", "ts", "time", "created_at", "date", "bst"]) {
+    const v = d[k];
+    if (typeof v === "string" && v) return v;
+  }
+  return "";
+}
+
+function nodeSummary(n: BNode): string {
+  const d = (n.data ?? {}) as Record<string, unknown>;
+  for (const k of ["summary", "title", "detail"]) {
+    const v = d[k];
+    if (typeof v === "string" && v && v !== n.label) return v;
+  }
+  return "";
+}
+
+// "What the agent closed" lives as type `report` — or `decision` in systems
+// that record decisions. Both count; query both and merge, newest first.
+async function fetchReports(cluster: string | null, limit = 500): Promise<{ total: number; nodes: BNode[] }> {
+  const q = (t: string) =>
+    api(`/nodes?type=${t}${cluster ? `&cluster=${encodeURIComponent(cluster)}` : ""}&limit=${limit}`).catch(() => ({ total: 0, nodes: [] }));
+  const [r, d] = await Promise.all([q("report"), q("decision")]);
+  const nodes = [...(r.nodes ?? []), ...(d.nodes ?? [])].sort((a: BNode, b: BNode) => nodeAt(b).localeCompare(nodeAt(a)));
+  return { total: (r.total ?? 0) + (d.total ?? 0), nodes };
+}
+
+function slugify(s: string): string {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
 const REDUCED = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 function useCountUp(target: number, ms = 900): number {
@@ -180,11 +213,26 @@ function Chip({ children, tone, onClick }: { children: React.ReactNode; tone?: s
   );
 }
 
-function Dossier({ org, id, hasSnapshot }: { org: BOrg; id: string; hasSnapshot: boolean }) {
+// The dossier: everything one agent is — and where you EDIT it. Edits land in
+// the draft; the top-bar apply writes them to the org file.
+function Dossier({
+  org, id, hasSnapshot, onUpdate, onAdd, onRemove,
+}: {
+  org: BOrg;
+  id: string;
+  hasSnapshot: boolean;
+  onUpdate: (id: string, patch: Partial<BOrgAgent>) => void;
+  onAdd: (parentId: string) => void;
+  onRemove: (id: string) => void;
+}) {
   const slice = useMemo(() => orgBootSlice(org, id), [org, id]);
   const [memCount, setMemCount] = useState<number | null>(null);
   const [repCount, setRepCount] = useState<number | null>(null);
   const [reports, setReports] = useState<BNode[] | null>(null);
+  const [edit, setEdit] = useState(false);
+  const [form, setForm] = useState<Record<string, string>>({});
+
+  useEffect(() => { setEdit(false); }, [id]);
 
   useEffect(() => {
     setMemCount(null);
@@ -196,20 +244,47 @@ function Dossier({ org, id, hasSnapshot }: { org: BOrg; id: string; hasSnapshot:
         api(`/nodes?type=memory&cluster=${encodeURIComponent(b)}&limit=1`).then((j) => j.total as number).catch(() => 0),
       ),
     ).then((counts) => setMemCount(counts.reduce((s, n) => s + n, 0)));
-    api(`/nodes?type=report&cluster=${encodeURIComponent(id)}&limit=100`)
-      .then((j: { total: number; nodes: BNode[] }) => {
-        setRepCount(j.total);
-        const at = (n: BNode) => String((n.data as Record<string, unknown>)?.at ?? "");
-        setReports([...j.nodes].sort((a, b) => at(b).localeCompare(at(a))).slice(0, 4));
-      })
-      .catch(() => { setRepCount(0); setReports([]); });
+    fetchReports(id, 100).then(({ total, nodes }) => {
+      setRepCount(total);
+      setReports(nodes.slice(0, 4));
+    });
   }, [id, hasSnapshot, slice]);
 
   const mem = useCountUp(memCount ?? 0);
   const rep = useCountUp(repCount ?? 0);
 
+  const startEdit = () => {
+    if (!slice) return;
+    const ag = slice.agent;
+    setForm({
+      name: ag.name ?? "",
+      emoji: ag.emoji ?? "",
+      role: ag.role ?? "",
+      boot: ag.boot ?? "",
+      rules: (ag.rules ?? []).join(", "),
+      skills: (ag.skills ?? []).join(", "),
+      buckets: (ag.buckets ?? []).join(", "),
+    });
+    setEdit(true);
+  };
+
+  const saveEdit = () => {
+    const list = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
+    onUpdate(id, {
+      name: form.name.trim() || slice?.agent.name || id,
+      emoji: form.emoji.trim() || undefined,
+      role: form.role.trim() || undefined,
+      boot: form.boot.trim() || undefined,
+      rules: list(form.rules),
+      skills: list(form.skills),
+      buckets: list(form.buckets),
+    });
+    setEdit(false);
+  };
+
   if (!slice) return null;
   const a = slice.agent;
+  const isRoot = a.id === org.root;
   const own = new Set(a.rules ?? []);
 
   return (
@@ -220,12 +295,41 @@ function Dossier({ org, id, hasSnapshot }: { org: BOrg; id: string; hasSnapshot:
           <h2>{a.name}</h2>
           {a.role && <p className="doss-role">{a.role}</p>}
         </div>
-        {hasSnapshot && (
-          <button className="doss-3d" title="see the whole brain in 3D" onClick={() => nav("/graph")}>
-            ◉ 3D
-          </button>
-        )}
+        <div className="doss-head-actions">
+          {!edit && (
+            <button className="doss-3d" title="edit this agent" onClick={startEdit}>✎ edit</button>
+          )}
+          {hasSnapshot && (
+            <button className="doss-3d" title="see the whole brain in 3D" onClick={() => nav("/graph")}>◉ 3D</button>
+          )}
+        </div>
       </div>
+
+      {edit && (
+        <div className="doss-edit">
+          <div className="doss-edit-row2">
+            <label>name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
+            <label className="narrow">emoji<input value={form.emoji} onChange={(e) => setForm({ ...form, emoji: e.target.value })} /></label>
+          </div>
+          <label>role<input value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} placeholder="one line — what this agent is for" /></label>
+          <label>rules <em>comma-separated refs · inherited by everyone beneath</em>
+            <input value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} placeholder="rules/GLOBAL.md, rules/CONTENT.md" />
+          </label>
+          <label>memory buckets <em>comma-separated</em>
+            <input value={form.buckets} onChange={(e) => setForm({ ...form, buckets: e.target.value })} placeholder="shared, content" />
+          </label>
+          <label>skills <em>comma-separated</em>
+            <input value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} placeholder="humanizer, deep-research" />
+          </label>
+          <label>boot prompt
+            <textarea rows={3} value={form.boot} onChange={(e) => setForm({ ...form, boot: e.target.value })} placeholder="who this agent is, first thing every session" />
+          </label>
+          <div className="doss-edit-actions">
+            <button className="btn primary" onClick={saveEdit}>save to draft</button>
+            <button className="btn ghost" onClick={() => setEdit(false)}>cancel</button>
+          </div>
+        </div>
+      )}
 
       <div className="doss-chain">
         {slice.chain.map((c, i) => (
@@ -263,14 +367,15 @@ function Dossier({ org, id, hasSnapshot }: { org: BOrg; id: string; hasSnapshot:
           ) : (
             <div className="doss-reps">
               {reports.map((r) => {
-                const d = (r.data ?? {}) as Record<string, unknown>;
+                const when = relTime(nodeAt(r));
+                const sum = nodeSummary(r);
                 return (
                   <div className="doss-rep" key={r.id}>
                     <div className="doss-rep-top">
-                      <span className="doss-rep-when">{relTime(d.at) || "undated"}</span>
+                      {when && <span className="doss-rep-when">{when}</span>}
                       <span className="doss-rep-label">{r.label}</span>
                     </div>
-                    {typeof d.summary === "string" && d.summary && <p className="doss-rep-sum">{d.summary}</p>}
+                    {sum && <p className="doss-rep-sum">{sum}</p>}
                   </div>
                 );
               })}
@@ -316,18 +421,25 @@ function Dossier({ org, id, hasSnapshot }: { org: BOrg; id: string; hasSnapshot:
         )}
       </section>
 
-      {a.boot && (
+      {a.boot && !edit && (
         <section>
           <h3>boot</h3>
           <p className="doss-boot">{a.boot}</p>
         </section>
       )}
+
+      <div className="doss-foot">
+        <button className="btn ghost" onClick={() => onAdd(id)}>＋ add agent under {a.name}</button>
+        {!isRoot && (
+          <button className="btn danger" onClick={() => onRemove(id)}>− remove {a.name}</button>
+        )}
+      </div>
     </aside>
   );
 }
 
 function OrgScreen({
-  draft, selected, dragId, setSelected, setDragId, dropOn, hasSnapshot,
+  draft, selected, dragId, setSelected, setDragId, dropOn, hasSnapshot, onUpdate, onAdd, onRemove,
 }: {
   draft: BOrg;
   selected: string | null;
@@ -336,6 +448,9 @@ function OrgScreen({
   setDragId: (id: string | null) => void;
   dropOn: (id: string) => void;
   hasSnapshot: boolean;
+  onUpdate: (id: string, patch: Partial<BOrgAgent>) => void;
+  onAdd: (parentId: string) => void;
+  onRemove: (id: string) => void;
 }) {
   const root = draft.agents.find((a) => a.id === draft.root);
   return (
@@ -358,7 +473,9 @@ function OrgScreen({
           )}
         </div>
       </main>
-      {selected && <Dossier org={draft} id={selected} hasSnapshot={hasSnapshot} />}
+      {selected && (
+        <Dossier org={draft} id={selected} hasSnapshot={hasSnapshot} onUpdate={onUpdate} onAdd={onAdd} onRemove={onRemove} />
+      )}
     </div>
   );
 }
@@ -377,7 +494,16 @@ function BucketCount({ bucket }: { bucket: string }) {
 }
 
 function BucketsScreen({ org, param, hasSnapshot }: { org: BOrg; param: string | null; hasSnapshot: boolean }) {
-  // bucket → the agents that can reach it (declared or inherited).
+  // Discovered clusters from the snapshot — buckets that exist in the data even
+  // if no agent declares them. Nothing gets to hide from the buckets screen.
+  const [discovered, setDiscovered] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    if (!hasSnapshot) { setDiscovered({}); return; }
+    api("/clusters?type=memory").then((j) => setDiscovered(j.clusters ?? {})).catch(() => setDiscovered({}));
+  }, [hasSnapshot]);
+
+  // bucket → the agents that can reach it (declared or inherited), UNION the
+  // discovered set (agent-less buckets render as "unassigned").
   const buckets = useMemo(() => {
     const map = new Map<string, BOrgAgent[]>();
     for (const a of org.agents) {
@@ -388,17 +514,22 @@ function BucketsScreen({ org, param, hasSnapshot }: { org: BOrg; param: string |
         map.set(b, arr);
       }
     }
-    return [...map.entries()].sort((x, y) => x[0].localeCompare(y[0]));
-  }, [org]);
+    for (const b of Object.keys(discovered ?? {})) if (!map.has(b)) map.set(b, []);
+    return [...map.entries()].sort(
+      (x, y) =>
+        (y[1].length ? 1 : 0) - (x[1].length ? 1 : 0) ||
+        (discovered?.[y[0]] ?? 0) - (discovered?.[x[0]] ?? 0) ||
+        x[0].localeCompare(y[0]),
+    );
+  }, [org, discovered]);
 
   const [items, setItems] = useState<BNode[] | null>(null);
   useEffect(() => {
     setItems(null);
     if (!param || !hasSnapshot) return;
-    api(`/nodes?type=memory&cluster=${encodeURIComponent(param)}&limit=200`)
+    api(`/nodes?type=memory&cluster=${encodeURIComponent(param)}&limit=500`)
       .then((j: { nodes: BNode[] }) => {
-        const at = (n: BNode) => String((n.data as Record<string, unknown>)?.at ?? "");
-        setItems([...j.nodes].sort((a, b) => at(b).localeCompare(at(a))));
+        setItems([...j.nodes].sort((a, b) => nodeAt(b).localeCompare(nodeAt(a))));
       })
       .catch(() => setItems([]));
   }, [param, hasSnapshot]);
@@ -418,11 +549,11 @@ function BucketsScreen({ org, param, hasSnapshot }: { org: BOrg; param: string |
           <p className="scr-empty">this bucket is empty — nothing remembered here yet.</p>
         ) : (
           <div className="mem-list">
-            {items.map((m) => {
-              const d = (m.data ?? {}) as Record<string, unknown>;
+            {items.slice(0, 150).map((m) => {
+              const when = relTime(nodeAt(m));
               return (
                 <div className="mem-row" key={m.id}>
-                  <span className="mem-when">{relTime(d.at) || "—"}</span>
+                  {when && <span className="mem-when">{when}</span>}
                   <span className="mem-label">{m.label}</span>
                 </div>
               );
@@ -454,13 +585,19 @@ function BucketsScreen({ org, param, hasSnapshot }: { org: BOrg; param: string |
               </div>
               {hasSnapshot ? <BucketCount bucket={b} /> : <div className="bk-n dim">—</div>}
               <div className="bk-l">memories</div>
-              <div className="bk-crew">
-                {agents.slice(0, 7).map((a) => (
-                  <span className="bk-face" key={a.id} title={a.name}>{a.emoji || "🤖"}</span>
-                ))}
-                {agents.length > 7 && <span className="bk-more">+{agents.length - 7}</span>}
-              </div>
-              <div className="bk-agents">{agents.slice(0, 3).map((a) => a.name).join(" · ")}{agents.length > 3 ? ` +${agents.length - 3}` : ""}</div>
+              {agents.length > 0 ? (
+                <>
+                  <div className="bk-crew">
+                    {agents.slice(0, 7).map((a) => (
+                      <span className="bk-face" key={a.id} title={a.name}>{a.emoji || "🤖"}</span>
+                    ))}
+                    {agents.length > 7 && <span className="bk-more">+{agents.length - 7}</span>}
+                  </div>
+                  <div className="bk-agents">{agents.slice(0, 3).map((a) => a.name).join(" · ")}{agents.length > 3 ? ` +${agents.length - 3}` : ""}</div>
+                </>
+              ) : (
+                <div className="bk-agents unassigned">unassigned — no agent declares this bucket; add it to an agent's buckets to claim it</div>
+              )}
             </button>
           ))}
         </div>
@@ -478,11 +615,8 @@ function ReportsScreen({ org, hasSnapshot }: { org: BOrg; hasSnapshot: boolean }
 
   useEffect(() => {
     if (!hasSnapshot) return;
-    api(`/nodes?type=report&limit=1000`)
-      .then((j: { nodes: BNode[] }) => {
-        const at = (n: BNode) => String((n.data as Record<string, unknown>)?.at ?? "");
-        setRows([...j.nodes].sort((a, b) => at(b).localeCompare(at(a))));
-      })
+    fetchReports(null, 1000)
+      .then(({ nodes }) => setRows(nodes))
       .catch(() => setRows([]));
   }, [hasSnapshot]);
 
@@ -513,9 +647,10 @@ function ReportsScreen({ org, hasSnapshot }: { org: BOrg; hasSnapshot: boolean }
         <p className="scr-empty">no reports filed yet — they land here as agents close work (node type <code>report</code>).</p>
       ) : (
         <div className="timeline">
-          {shown.map((r) => {
-            const d = (r.data ?? {}) as Record<string, unknown>;
+          {shown.slice(0, 100).map((r) => {
             const a = r.cluster ? nameOf.get(r.cluster) : undefined;
+            const when = relTime(nodeAt(r));
+            const sum = nodeSummary(r);
             return (
               <div className="tl-row" key={r.id} style={{ ["--h" as string]: bucketHue(r.cluster ?? "x") }}>
                 <div className="tl-dot" />
@@ -523,14 +658,14 @@ function ReportsScreen({ org, hasSnapshot }: { org: BOrg; hasSnapshot: boolean }
                   <div className="tl-top">
                     <span className="tl-ava">{a?.emoji ?? "🤖"}</span>
                     <span className="tl-agent">{a?.name ?? r.cluster ?? "unknown"}</span>
-                    <span className="tl-label">· {r.label}</span>
-                    <span className="tl-when">{relTime(d.at) || "undated"}</span>
+                    {when && <span className="tl-when">{when}</span>}
                   </div>
-                  {typeof d.summary === "string" && d.summary && <p className="tl-sum">{d.summary}</p>}
+                  <p className="tl-sum">{sum || r.label}</p>
                 </div>
               </div>
             );
           })}
+          {shown.length > 100 && <p className="scr-empty">showing the latest 100 of {shown.length}.</p>}
         </div>
       )}
     </div>
@@ -631,7 +766,7 @@ function App() {
     api("/stats").then(setStats).catch(() => setStats(null));
     Promise.all([
       api("/nodes?type=memory&limit=1").then((j) => j.total as number),
-      api("/nodes?type=report&limit=1").then((j) => j.total as number),
+      fetchReports(null, 1).then((r) => r.total),
     ])
       .then(([mem, rep]) => setTotals({ mem, rep }))
       .catch(() => setTotals(null));
@@ -639,16 +774,57 @@ function App() {
 
   const changes = useMemo(() => {
     if (!saved || !draft) return [];
-    const before = new Map(saved.agents.map((a) => [a.id, a.parent ?? null]));
-    const name = (id: string) => draft.agents.find((a) => a.id === id)?.name ?? id;
+    const before = new Map(saved.agents.map((a) => [a.id, a]));
+    const after = new Map(draft.agents.map((a) => [a.id, a]));
+    const name = (id: string) => after.get(id)?.name ?? before.get(id)?.name ?? id;
+    const noParent = ({ parent: _p, ...rest }: BOrgAgent) => rest;
     const out: string[] = [];
     for (const a of draft.agents) {
-      const was = before.get(a.id);
-      if (was !== undefined && was !== (a.parent ?? null))
-        out.push(`${name(a.id)} → now under ${a.parent ? name(a.parent) : "root"}`);
+      const b = before.get(a.id);
+      if (!b) { out.push(`＋ ${a.name} under ${a.parent ? name(a.parent) : "root"}`); continue; }
+      if ((b.parent ?? null) !== (a.parent ?? null)) out.push(`${a.name} → now under ${a.parent ? name(a.parent) : "root"}`);
+      if (JSON.stringify(noParent(b)) !== JSON.stringify(noParent(a))) out.push(`✎ ${a.name} edited`);
     }
+    for (const b of saved.agents) if (!after.has(b.id)) out.push(`− ${b.name} removed`);
     return out;
   }, [saved, draft]);
+
+  // Tweakability — every field of every agent, plus add/remove, all draft-side.
+  const updateAgent = useCallback((id: string, patch: Partial<BOrgAgent>) => {
+    setDraft((d) => (d ? { ...d, agents: d.agents.map((a) => (a.id === id ? { ...a, ...patch } : a)) } : d));
+  }, []);
+
+  const addAgent = useCallback(
+    (parentId: string) => {
+      if (!draft) return;
+      const nm = window.prompt("Name for the new agent:");
+      if (!nm || !nm.trim()) return;
+      const base = slugify(nm) || "agent";
+      let newId = base;
+      let i = 2;
+      while (draft.agents.some((a) => a.id === newId)) newId = `${base}-${i++}`;
+      setDraft({ ...draft, agents: [...draft.agents, { id: newId, name: nm.trim(), emoji: "🤖", parent: parentId }] });
+      setSelected(newId);
+    },
+    [draft],
+  );
+
+  const removeAgent = useCallback(
+    (id: string) => {
+      if (!draft || id === draft.root) return;
+      const ag = draft.agents.find((a) => a.id === id);
+      if (!ag) return;
+      const parentName = draft.agents.find((a) => a.id === ag.parent)?.name ?? "the root";
+      const kids = draft.agents.filter((a) => a.parent === id).length;
+      if (!window.confirm(`Remove ${ag.name}?${kids ? ` Its ${kids} direct report${kids > 1 ? "s" : ""} move up to ${parentName}.` : ""}`)) return;
+      setDraft({
+        ...draft,
+        agents: draft.agents.filter((a) => a.id !== id).map((a) => (a.parent === id ? { ...a, parent: ag.parent ?? draft.root } : a)),
+      });
+      setSelected(ag.parent ?? draft.root);
+    },
+    [draft],
+  );
 
   const isDescendant = useCallback((org: BOrg, maybeChild: string, of: string): boolean => {
     const byId = new Map(org.agents.map((a) => [a.id, a]));
@@ -746,6 +922,9 @@ function App() {
             setDragId={setDragId}
             dropOn={dropOn}
             hasSnapshot={!!stats}
+            onUpdate={updateAgent}
+            onAdd={addAgent}
+            onRemove={removeAgent}
           />
         )}
         {tab === "buckets" && <BucketsScreen org={draft} param={param} hasSnapshot={!!stats} />}

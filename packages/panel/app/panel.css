@@ -171,8 +171,23 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .graph-frame { flex: 1; border: none; background: #06080e; }
 
 /* dossier extras */
-.doss-3d { margin-left: auto; background: var(--accent-dim); border: 1px solid rgba(79, 184, 160, 0.35); color: var(--accent); border-radius: 8px; padding: 6px 10px; font-size: 11px; cursor: pointer; }
+.doss-head-actions { margin-left: auto; display: flex; gap: 6px; }
+.doss-3d { background: var(--accent-dim); border: 1px solid rgba(79, 184, 160, 0.35); color: var(--accent); border-radius: 8px; padding: 6px 10px; font-size: 11px; cursor: pointer; white-space: nowrap; }
 .doss-3d:hover { border-color: var(--accent); }
+
+/* dossier edit mode — every field of the agent, saved into the draft */
+.doss-edit { display: flex; flex-direction: column; gap: 10px; background: var(--bg-1); border: 1px solid rgba(79, 184, 160, 0.3); border-radius: 12px; padding: 13px 14px; margin-bottom: 20px; animation: settle 0.25s ease both; }
+.doss-edit label { display: flex; flex-direction: column; gap: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); }
+.doss-edit label em { font-style: normal; text-transform: none; letter-spacing: 0; color: var(--ink-3); font-size: 9.5px; }
+.doss-edit input, .doss-edit textarea { background: var(--bg-2); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; font-family: var(--font); resize: vertical; }
+.doss-edit input:focus, .doss-edit textarea:focus { outline: none; border-color: var(--accent); }
+.doss-edit-row2 { display: grid; grid-template-columns: 1fr 72px; gap: 8px; }
+.doss-edit-actions { display: flex; gap: 8px; margin-top: 2px; }
+
+.doss-foot { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.btn.danger { border-color: rgba(224, 123, 106, 0.45); color: #e07b6a; background: transparent; }
+.btn.danger:hover { background: rgba(224, 123, 106, 0.1); }
+.bk-agents.unassigned { color: var(--ink-3); font-style: italic; }
 
 .pending {
   position: relative; z-index: 2; display: flex; gap: 8px; flex-wrap: wrap;

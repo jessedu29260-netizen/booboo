@@ -147,6 +147,7 @@ export async function panel(opts: PanelOpts): Promise<void> {
         if (!ix) return send(404, { error: "no snapshot loaded — start with --snapshot to see memory/report counts" });
         if (seg[0] === "graph") return send(200, ix.meta());
         if (seg[0] === "stats") return send(200, ix.counts());
+        if (seg[0] === "clusters") return send(200, { clusters: ix.clusters(str(p, "type")) });
         if (seg[0] === "search") return send(200, { nodes: ix.search(p.get("q") ?? "", num(p, "limit", 20)) });
         if (seg[0] === "nodes" && seg[1]) {
           const n = ix.node(seg[1]);

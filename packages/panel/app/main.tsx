@@ -116,51 +116,59 @@ function AgentCard({
     >
       <span className="ag-ava">{a.emoji || "🤖"}</span>
       <span className="ag-name">{a.name}</span>
-      {a.role && <span className="ag-role">{a.role}</span>}
+      <span className="ag-role">{a.role || " "}</span>
       <span className="ag-meta">
         {nBuckets > 0 && <em title="memory buckets">▤ {nBuckets}</em>}
         {nSkills > 0 && <em title="skills">✦ {nSkills}</em>}
-        {childCount > 0 && <span className="ag-kids" title="direct reports">{childCount}</span>}
+        {childCount > 0 && <span className="ag-kids" title="direct reports">{childCount} reports</span>}
       </span>
     </div>
   );
 }
 
-function Tree({
-  org, parent, depth = 0, ...cardProps
+// A real company chart: the root on top, branches fanning out beneath, with
+// connector lines drawn in CSS (vertical drop → horizontal bar → drops).
+function ChartNode({
+  org, a, depth, order, ...cardProps
 }: {
   org: BOrg;
-  parent: string | null;
-  depth?: number;
+  a: BOrgAgent;
+  depth: number;
+  order: number;
   selected: string | null;
   dragId: string | null;
   onSelect: (id: string) => void;
   onDragStart: (id: string) => void;
   onDropOn: (id: string) => void;
 }) {
-  const kids = org.agents.filter((a) => (parent === null ? a.id === org.root : a.parent === parent));
+  const kids = org.agents.filter((c) => c.parent === a.id);
   return (
-    <>
-      {kids.map((a, i) => (
-        <div className="tree-branch" key={a.id}>
-          <AgentCard
-            a={a}
-            isRoot={a.id === org.root}
-            depth={depth}
-            order={i}
-            selected={cardProps.selected === a.id}
-            dragId={cardProps.dragId}
-            onSelect={cardProps.onSelect}
-            onDragStart={cardProps.onDragStart}
-            onDropOn={cardProps.onDropOn}
-            childCount={org.agents.filter((c) => c.parent === a.id).length}
-          />
-          <div className="tree-kids">
-            <Tree org={org} parent={a.id} depth={depth + 1} {...cardProps} />
+    <div className="ocn">
+      <AgentCard
+        a={a}
+        isRoot={a.id === org.root}
+        depth={depth}
+        order={order}
+        selected={cardProps.selected === a.id}
+        dragId={cardProps.dragId}
+        onSelect={cardProps.onSelect}
+        onDragStart={cardProps.onDragStart}
+        onDropOn={cardProps.onDropOn}
+        childCount={kids.length}
+      />
+      {kids.length > 0 && (
+        <>
+          <div className="oc-down" />
+          <div className="oc-row">
+            {kids.map((k, i) => (
+              <div className="oc-child" key={k.id}>
+                <ChartNode org={org} a={k} depth={depth + 1} order={i} {...cardProps} />
+              </div>
+            ))}
           </div>
-        </div>
-      ))}
-    </>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -329,19 +337,26 @@ function OrgScreen({
   dropOn: (id: string) => void;
   hasSnapshot: boolean;
 }) {
+  const root = draft.agents.find((a) => a.id === draft.root);
   return (
     <div className="body" onClick={() => setSelected(null)}>
       <main className="tree" onClick={(e) => e.stopPropagation()}>
         <p className="tree-hint">drag an agent onto its new parent · click for its dossier</p>
-        <Tree
-          org={draft}
-          parent={null}
-          selected={selected}
-          dragId={dragId}
-          onSelect={setSelected}
-          onDragStart={setDragId}
-          onDropOn={dropOn}
-        />
+        <div className="chart">
+          {root && (
+            <ChartNode
+              org={draft}
+              a={root}
+              depth={0}
+              order={0}
+              selected={selected}
+              dragId={dragId}
+              onSelect={setSelected}
+              onDragStart={setDragId}
+              onDropOn={dropOn}
+            />
+          )}
+        </div>
       </main>
       {selected && <Dossier org={draft} id={selected} hasSnapshot={hasSnapshot} />}
     </div>

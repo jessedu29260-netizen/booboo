@@ -168,7 +168,7 @@ function bucketHue(name: string): number {
 /* ────────────────────────── ORGANIGRAM ────────────────────────── */
 
 function AgentCard({
-  a, isRoot, depth, order, selected, dragId, onSelect, onDragStart, onDropOn, childCount,
+  a, isRoot, depth, order, selected, dragId, onSelect, onDragStart, onDropOn, childCount, light = "none",
 }: {
   a: BOrgAgent;
   isRoot: boolean;
@@ -180,6 +180,7 @@ function AgentCard({
   onDragStart: (id: string) => void;
   onDropOn: (id: string) => void;
   childCount: number;
+  light?: Light;
 }) {
   const [over, setOver] = useState(false);
   const nBuckets = a.buckets?.length ?? 0;
@@ -187,14 +188,17 @@ function AgentCard({
   return (
     <div
       className={`ag${isRoot ? " root" : ""}${selected ? " sel" : ""}${over ? " over" : ""}${dragId === a.id ? " dragging" : ""}`}
-      style={{ ["--h" as string]: bucketHue(a.id), animationDelay: `${Math.min(depth * 70 + order * 45, 600)}ms` }}
+      style={{ ["--h" as string]: bucketHue(a.id), ["--d" as string]: depth, animationDelay: `${Math.min(depth * 70 + order * 45, 600)}ms` }}
       draggable={!isRoot}
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(a.id); } }}
       onClick={(e) => { e.stopPropagation(); onSelect(a.id); }}
       onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(a.id); }}
       onDragOver={(e) => { if (dragId && dragId !== a.id) { e.preventDefault(); setOver(true); } }}
       onDragLeave={() => setOver(false)}
       onDrop={(e) => { e.preventDefault(); setOver(false); onDropOn(a.id); }}
     >
+      {light !== "none" && <i className={`ag-light ${light}`} title={`fleet health: ${light}`} />}
       <span className="ag-ava">{a.emoji || "🤖"}</span>
       <span className="ag-name">{a.name}</span>
       <span className="ag-role">{a.role || " "}</span>
@@ -239,7 +243,14 @@ function ChartNode({
     walk(a.id);
     return out;
   })();
-  const trayLight = worst(machines.map((m) => lightFor(m, cardProps.health)));
+  const lights = machines.map((m) => lightFor(m, cardProps.health));
+  const trayLight = worst(lights);
+  const TRAY_MAX = 8;
+  const hidden = machines.length - TRAY_MAX;
+  const hiddenBad = machines.slice(TRAY_MAX).reduce(
+    (n, m) => n + (lightFor(m, cardProps.health) !== "ok" && lightFor(m, cardProps.health) !== "none" ? 1 : 0),
+    0,
+  );
   return (
     <div className="ocn">
       <AgentCard
@@ -253,10 +264,11 @@ function ChartNode({
         onDragStart={cardProps.onDragStart}
         onDropOn={cardProps.onDropOn}
         childCount={kids.length}
+        light={trayLight}
       />
       {machines.length > 0 && (
         <div className={`oc-tray ${trayLight}`}>
-          {machines.map((m) => (
+          {machines.slice(0, TRAY_MAX).map((m) => (
             <button
               key={m.id}
               type="button"
@@ -269,6 +281,16 @@ function ChartNode({
               <span className="mac-name">{m.name}</span>
             </button>
           ))}
+          {hidden > 0 && (
+            <button
+              type="button"
+              className="oc-mac more"
+              title="open the full machine list in the dossier"
+              onClick={(e) => { e.stopPropagation(); cardProps.onSelect(a.id); }}
+            >
+              +{hidden} machines{hiddenBad > 0 ? ` · ${hiddenBad} not green` : ""}
+            </button>
+          )}
         </div>
       )}
       {kids.length > 0 && (
@@ -278,7 +300,7 @@ function ChartNode({
               grid block that grows DOWN instead of spreading the page sideways. */}
           <div className={`oc-row${kids.length > 4 ? " wrap" : ""}`}>
             {kids.map((k, i) => (
-              <div className="oc-child" key={k.id}>
+              <div className="oc-child" key={k.id} style={{ ["--h" as string]: bucketHue(k.id) }}>
                 <ChartNode org={org} a={k} depth={depth + 1} order={i} {...cardProps} />
               </div>
             ))}

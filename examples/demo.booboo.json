@@ -4,88 +4,843 @@
     "root": "core",
     "title": "Demo Brain",
     "layers": [
-      { "name": "agents", "color": "#c9a04a", "label": "AGENTS" },
-      { "name": "memory", "color": "#a78bd0", "label": "MEMORY" },
-      { "name": "knowledge", "color": "#4ECDC4", "label": "KNOWLEDGE" },
-      { "name": "reports", "color": "#6b8cab", "label": "REPORTS" }
+      {
+        "name": "agents",
+        "color": "#c9a04a",
+        "label": "AGENTS"
+      },
+      {
+        "name": "memory",
+        "color": "#a78bd0",
+        "label": "MEMORY"
+      },
+      {
+        "name": "knowledge",
+        "color": "#4ECDC4",
+        "label": "KNOWLEDGE"
+      },
+      {
+        "name": "reports",
+        "color": "#6b8cab",
+        "label": "REPORTS"
+      }
     ],
-    "counts": { "nodes": 33, "links": 38 }
+    "counts": {
+      "nodes": 40,
+      "links": 45
+    }
   },
   "nodes": [
-    { "id": "core", "type": "root", "layer": "agents", "label": "DEMO SYSTEM", "weight": 1.0, "tier": 0, "parent": null, "icon": "◈" },
-    { "id": "agent:writer", "type": "agent", "layer": "agents", "label": "Writer", "weight": 0.6, "tier": 1, "parent": "core", "icon": "✍", "data": { "role": "drafts content", "last": "shipped v1", "prompt": "You are the Writer agent.\n\nVoice: clear, concrete, builder-to-builder — no fluff.\nProcess: draft → self-edit for length → cite the source node before shipping.\nNever invent facts; pull from the knowledge layer (kb:*) and link what you used." } },
-    { "id": "agent:researcher", "type": "agent", "layer": "agents", "label": "Researcher", "weight": 0.6, "tier": 1, "parent": "core", "icon": "🔎", "data": { "role": "gathers sources" } },
-    { "id": "kb:llm", "type": "entity", "layer": "knowledge", "label": "LLM", "weight": 0.5, "tier": 1, "parent": "core" },
-    { "id": "kb:rag", "type": "entity", "layer": "knowledge", "label": "RAG", "weight": 0.4, "tier": 2, "parent": "kb:llm" },
-
-    { "id": "mem:s1", "type": "memory", "layer": "memory", "label": "brand voice: builder-to-builder, no fluff", "weight": 0.3, "tier": 2, "parent": "core", "cluster": "shared", "data": { "bucket": "shared", "at": "2026-06-28T09:12:00Z" } },
-    { "id": "mem:s2", "type": "memory", "layer": "memory", "label": "pricing page is the next launch surface", "weight": 0.3, "tier": 2, "parent": "core", "cluster": "shared", "data": { "bucket": "shared", "at": "2026-07-01T10:00:00Z" } },
-    { "id": "mem:s3", "type": "memory", "layer": "memory", "label": "no external sends without a human eyeball", "weight": 0.3, "tier": 2, "parent": "core", "cluster": "shared", "data": { "bucket": "shared", "at": "2026-06-20T08:00:00Z" } },
-    { "id": "mem:c1", "type": "memory", "layer": "memory", "label": "newsletter ships Tuesdays, 09:00", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "content", "data": { "bucket": "content", "at": "2026-06-30T17:40:00Z" } },
-    { "id": "mem:c2", "type": "memory", "layer": "memory", "label": "headline law: one claim per line, verbs first", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "content", "data": { "bucket": "content", "at": "2026-07-02T09:15:00Z" } },
-    { "id": "mem:c3", "type": "memory", "layer": "memory", "label": "case-study format outperforms listicles 3:1", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "content", "data": { "bucket": "content", "at": "2026-06-25T14:30:00Z" } },
-    { "id": "mem:c4", "type": "memory", "layer": "memory", "label": "hero image: real product, never stock", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "content", "data": { "bucket": "content", "at": "2026-07-02T18:05:00Z" } },
-    { "id": "mem:e1", "type": "memory", "layer": "memory", "label": "staging deploys need the API key rotated first", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "eng", "data": { "bucket": "eng", "at": "2026-07-01T11:05:00Z" } },
-    { "id": "mem:e2", "type": "memory", "layer": "memory", "label": "flaky test: checkout e2e — rerun before blaming the diff", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "eng", "data": { "bucket": "eng", "at": "2026-06-29T16:22:00Z" } },
-    { "id": "mem:e3", "type": "memory", "layer": "memory", "label": "feature flags live in config/flags.ts — never inline", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "eng", "data": { "bucket": "eng", "at": "2026-07-02T13:48:00Z" } },
-    { "id": "mem:g1", "type": "memory", "layer": "memory", "label": "shorts outperform carousels on weekdays", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "growth", "data": { "bucket": "growth", "at": "2026-07-01T19:30:00Z" } },
-    { "id": "mem:g2", "type": "memory", "layer": "memory", "label": "signup drop-off is at the email step, not pricing", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "growth", "data": { "bucket": "growth", "at": "2026-07-02T21:10:00Z" } },
-    { "id": "mem:g3", "type": "memory", "layer": "memory", "label": "best posting window: 08:00 and 13:00 local", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "growth", "data": { "bucket": "growth", "at": "2026-06-27T12:00:00Z" } },
-    { "id": "mem:o1", "type": "memory", "layer": "memory", "label": "backups verified weekly, Sundays", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "ops", "data": { "bucket": "ops", "at": "2026-06-29T08:00:00Z" } },
-    { "id": "mem:o2", "type": "memory", "layer": "memory", "label": "cron drift alarm: anything >10min late pages the watchdog", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "ops", "data": { "bucket": "ops", "at": "2026-07-01T07:45:00Z" } },
-    { "id": "mem:o3", "type": "memory", "layer": "memory", "label": "retention: transcripts 90d, snapshots forever", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "ops", "data": { "bucket": "ops", "at": "2026-06-24T10:20:00Z" } },
-
-    { "id": "rep:1", "type": "report", "layer": "reports", "label": "draft shipped", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "writer", "data": { "agent": "writer", "at": "2026-07-03T08:45:00Z", "summary": "Drafted the July newsletter — 2 sources cited from the knowledge layer, handed to Editor." } },
-    { "id": "rep:2", "type": "report", "layer": "reports", "label": "revision", "weight": 0.2, "tier": 2, "parent": "agent:writer", "cluster": "writer", "data": { "agent": "writer", "at": "2026-07-02T16:20:00Z", "summary": "Reworked the landing hero after Editor's pass — shorter, one claim per line." } },
-    { "id": "rep:3", "type": "report", "layer": "reports", "label": "all green", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "watchdog", "data": { "agent": "watchdog", "at": "2026-07-03T06:00:00Z", "summary": "Nightly sweep: 12 checks green, backup verified, zero alerts raised." } },
-    { "id": "rep:4", "type": "report", "layer": "reports", "label": "weekly rollup", "weight": 0.3, "tier": 1, "parent": "core", "cluster": "hq", "data": { "agent": "hq", "at": "2026-06-30T18:00:00Z", "summary": "Week closed: 3 posts shipped, 1 feature merged, ops quiet. Next: the pricing page." } },
-    { "id": "rep:5", "type": "report", "layer": "reports", "label": "editorial pass", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "editor", "data": { "agent": "editor", "at": "2026-07-03T09:30:00Z", "summary": "July newsletter approved with 4 line edits — cut the second CTA, tightened the open." } },
-    { "id": "rep:6", "type": "report", "layer": "reports", "label": "feature merged", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "builder", "data": { "agent": "builder", "at": "2026-07-02T22:14:00Z", "summary": "Checkout v2 merged behind a flag — e2e green, rollout starts at 5% tomorrow." } },
-    { "id": "rep:7", "type": "report", "layer": "reports", "label": "review verdict", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "reviewer", "data": { "agent": "reviewer", "at": "2026-07-02T20:40:00Z", "summary": "Checkout v2: 2 findings fixed pre-merge (unvalidated coupon input, missing error path). Approved." } },
-    { "id": "rep:8", "type": "report", "layer": "reports", "label": "trend brief", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "scout", "data": { "agent": "scout", "at": "2026-07-03T07:15:00Z", "summary": "3 rising topics this week — agent orgs, local-first memory, MCP registries. Draft angles attached." } },
-    { "id": "rep:9", "type": "report", "layer": "reports", "label": "weekly numbers", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "analyst", "data": { "agent": "analyst", "at": "2026-06-30T17:00:00Z", "summary": "Traffic +12% w/w, signups +8%, churn flat. Email step still the biggest leak." } },
-    { "id": "rep:10", "type": "report", "layer": "reports", "label": "asset pack", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "designer", "data": { "agent": "designer", "at": "2026-07-01T15:25:00Z", "summary": "6 social frames + 2 OG images shipped for the July push — brand kit v3 applied." } },
-    { "id": "rep:11", "type": "report", "layer": "reports", "label": "archive sweep", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "archivist", "data": { "agent": "archivist", "at": "2026-06-29T04:00:00Z", "summary": "90-day transcript purge done, 3 stale memories flagged for review, snapshot archived." } },
-    { "id": "rep:12", "type": "report", "layer": "reports", "label": "funnel experiment", "weight": 0.2, "tier": 2, "parent": "core", "cluster": "growth", "data": { "agent": "growth", "at": "2026-07-02T11:50:00Z", "summary": "A/B on the email step live — magic-link vs password. First read Friday." } }
+    {
+      "id": "core",
+      "type": "root",
+      "layer": "agents",
+      "label": "DEMO SYSTEM",
+      "weight": 1,
+      "tier": 0,
+      "parent": null,
+      "icon": "◈"
+    },
+    {
+      "id": "agent:writer",
+      "type": "agent",
+      "layer": "agents",
+      "label": "Writer",
+      "weight": 0.6,
+      "tier": 1,
+      "parent": "core",
+      "icon": "✍",
+      "data": {
+        "role": "drafts content",
+        "last": "shipped v1",
+        "prompt": "You are the Writer agent.\n\nVoice: clear, concrete, builder-to-builder — no fluff.\nProcess: draft → self-edit for length → cite the source node before shipping.\nNever invent facts; pull from the knowledge layer (kb:*) and link what you used."
+      }
+    },
+    {
+      "id": "agent:researcher",
+      "type": "agent",
+      "layer": "agents",
+      "label": "Researcher",
+      "weight": 0.6,
+      "tier": 1,
+      "parent": "core",
+      "icon": "🔎",
+      "data": {
+        "role": "gathers sources"
+      }
+    },
+    {
+      "id": "kb:llm",
+      "type": "entity",
+      "layer": "knowledge",
+      "label": "LLM",
+      "weight": 0.5,
+      "tier": 1,
+      "parent": "core"
+    },
+    {
+      "id": "kb:rag",
+      "type": "entity",
+      "layer": "knowledge",
+      "label": "RAG",
+      "weight": 0.4,
+      "tier": 2,
+      "parent": "kb:llm"
+    },
+    {
+      "id": "mem:s1",
+      "type": "memory",
+      "layer": "memory",
+      "label": "brand voice: builder-to-builder, no fluff",
+      "weight": 0.3,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "shared",
+      "data": {
+        "bucket": "shared",
+        "at": "2026-06-28T09:12:00Z"
+      }
+    },
+    {
+      "id": "mem:s2",
+      "type": "memory",
+      "layer": "memory",
+      "label": "pricing page is the next launch surface",
+      "weight": 0.3,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "shared",
+      "data": {
+        "bucket": "shared",
+        "at": "2026-07-01T10:00:00Z"
+      }
+    },
+    {
+      "id": "mem:s3",
+      "type": "memory",
+      "layer": "memory",
+      "label": "no external sends without a human eyeball",
+      "weight": 0.3,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "shared",
+      "data": {
+        "bucket": "shared",
+        "at": "2026-06-20T08:00:00Z"
+      }
+    },
+    {
+      "id": "mem:c1",
+      "type": "memory",
+      "layer": "memory",
+      "label": "newsletter ships Tuesdays, 09:00",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "agent:writer",
+      "cluster": "content",
+      "data": {
+        "bucket": "content",
+        "at": "2026-06-30T17:40:00Z"
+      }
+    },
+    {
+      "id": "mem:c2",
+      "type": "memory",
+      "layer": "memory",
+      "label": "headline law: one claim per line, verbs first",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "agent:writer",
+      "cluster": "content",
+      "data": {
+        "bucket": "content",
+        "at": "2026-07-02T09:15:00Z"
+      }
+    },
+    {
+      "id": "mem:c3",
+      "type": "memory",
+      "layer": "memory",
+      "label": "case-study format outperforms listicles 3:1",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "agent:writer",
+      "cluster": "content",
+      "data": {
+        "bucket": "content",
+        "at": "2026-06-25T14:30:00Z"
+      }
+    },
+    {
+      "id": "mem:c4",
+      "type": "memory",
+      "layer": "memory",
+      "label": "hero image: real product, never stock",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "agent:writer",
+      "cluster": "content",
+      "data": {
+        "bucket": "content",
+        "at": "2026-07-02T18:05:00Z"
+      }
+    },
+    {
+      "id": "mem:e1",
+      "type": "memory",
+      "layer": "memory",
+      "label": "staging deploys need the API key rotated first",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "eng",
+      "data": {
+        "bucket": "eng",
+        "at": "2026-07-01T11:05:00Z"
+      }
+    },
+    {
+      "id": "mem:e2",
+      "type": "memory",
+      "layer": "memory",
+      "label": "flaky test: checkout e2e — rerun before blaming the diff",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "eng",
+      "data": {
+        "bucket": "eng",
+        "at": "2026-06-29T16:22:00Z"
+      }
+    },
+    {
+      "id": "mem:e3",
+      "type": "memory",
+      "layer": "memory",
+      "label": "feature flags live in config/flags.ts — never inline",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "eng",
+      "data": {
+        "bucket": "eng",
+        "at": "2026-07-02T13:48:00Z"
+      }
+    },
+    {
+      "id": "mem:g1",
+      "type": "memory",
+      "layer": "memory",
+      "label": "shorts outperform carousels on weekdays",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "growth",
+      "data": {
+        "bucket": "growth",
+        "at": "2026-07-01T19:30:00Z"
+      }
+    },
+    {
+      "id": "mem:g2",
+      "type": "memory",
+      "layer": "memory",
+      "label": "signup drop-off is at the email step, not pricing",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "growth",
+      "data": {
+        "bucket": "growth",
+        "at": "2026-07-02T21:10:00Z"
+      }
+    },
+    {
+      "id": "mem:g3",
+      "type": "memory",
+      "layer": "memory",
+      "label": "best posting window: 08:00 and 13:00 local",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "growth",
+      "data": {
+        "bucket": "growth",
+        "at": "2026-06-27T12:00:00Z"
+      }
+    },
+    {
+      "id": "mem:o1",
+      "type": "memory",
+      "layer": "memory",
+      "label": "backups verified weekly, Sundays",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "ops",
+      "data": {
+        "bucket": "ops",
+        "at": "2026-06-29T08:00:00Z"
+      }
+    },
+    {
+      "id": "mem:o2",
+      "type": "memory",
+      "layer": "memory",
+      "label": "cron drift alarm: anything >10min late pages the watchdog",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "ops",
+      "data": {
+        "bucket": "ops",
+        "at": "2026-07-01T07:45:00Z"
+      }
+    },
+    {
+      "id": "mem:o3",
+      "type": "memory",
+      "layer": "memory",
+      "label": "retention: transcripts 90d, snapshots forever",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "ops",
+      "data": {
+        "bucket": "ops",
+        "at": "2026-06-24T10:20:00Z"
+      }
+    },
+    {
+      "id": "rep:1",
+      "type": "report",
+      "layer": "reports",
+      "label": "draft shipped",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "agent:writer",
+      "cluster": "writer",
+      "data": {
+        "agent": "writer",
+        "at": "2026-07-03T08:45:00Z",
+        "summary": "Drafted the July newsletter — 2 sources cited from the knowledge layer, handed to Editor.",
+        "status": "ok"
+      }
+    },
+    {
+      "id": "rep:2",
+      "type": "report",
+      "layer": "reports",
+      "label": "revision",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "agent:writer",
+      "cluster": "writer",
+      "data": {
+        "agent": "writer",
+        "at": "2026-07-02T16:20:00Z",
+        "summary": "Reworked the landing hero after Editor's pass — shorter, one claim per line.",
+        "status": "ok"
+      }
+    },
+    {
+      "id": "rep:3",
+      "type": "report",
+      "layer": "reports",
+      "label": "all green",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "watchdog",
+      "data": {
+        "agent": "watchdog",
+        "at": "2026-07-03T06:00:00Z",
+        "summary": "Nightly sweep: 12 checks green, backup verified, zero alerts raised.",
+        "status": "ok"
+      }
+    },
+    {
+      "id": "rep:4",
+      "type": "report",
+      "layer": "reports",
+      "label": "weekly rollup",
+      "weight": 0.3,
+      "tier": 1,
+      "parent": "core",
+      "cluster": "hq",
+      "data": {
+        "agent": "hq",
+        "at": "2026-06-30T18:00:00Z",
+        "summary": "Week closed: 3 posts shipped, 1 feature merged, ops quiet. Next: the pricing page.",
+        "status": "ok"
+      }
+    },
+    {
+      "id": "rep:5",
+      "type": "report",
+      "layer": "reports",
+      "label": "editorial pass",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "editor",
+      "data": {
+        "agent": "editor",
+        "at": "2026-07-03T09:30:00Z",
+        "summary": "July newsletter approved with 4 line edits — cut the second CTA, tightened the open.",
+        "status": "ok"
+      }
+    },
+    {
+      "id": "rep:6",
+      "type": "report",
+      "layer": "reports",
+      "label": "feature merged",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "builder",
+      "data": {
+        "agent": "builder",
+        "at": "2026-07-02T22:14:00Z",
+        "summary": "Checkout v2 merged behind a flag — e2e green, rollout starts at 5% tomorrow.",
+        "status": "ok"
+      }
+    },
+    {
+      "id": "rep:7",
+      "type": "report",
+      "layer": "reports",
+      "label": "review verdict",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "reviewer",
+      "data": {
+        "agent": "reviewer",
+        "at": "2026-07-02T20:40:00Z",
+        "summary": "Checkout v2: 2 findings fixed pre-merge (unvalidated coupon input, missing error path). Approved.",
+        "status": "ok"
+      }
+    },
+    {
+      "id": "rep:8",
+      "type": "report",
+      "layer": "reports",
+      "label": "trend brief",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "scout",
+      "data": {
+        "agent": "scout",
+        "at": "2026-07-03T07:15:00Z",
+        "summary": "3 rising topics this week — agent orgs, local-first memory, MCP registries. Draft angles attached.",
+        "status": "ok"
+      }
+    },
+    {
+      "id": "rep:9",
+      "type": "report",
+      "layer": "reports",
+      "label": "weekly numbers",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "analyst",
+      "data": {
+        "agent": "analyst",
+        "at": "2026-06-30T17:00:00Z",
+        "summary": "Traffic +12% w/w, signups +8%, churn flat. Email step still the biggest leak.",
+        "status": "ok"
+      }
+    },
+    {
+      "id": "rep:10",
+      "type": "report",
+      "layer": "reports",
+      "label": "asset pack",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "designer",
+      "data": {
+        "agent": "designer",
+        "at": "2026-07-01T15:25:00Z",
+        "summary": "6 social frames + 2 OG images shipped for the July push — brand kit v3 applied.",
+        "status": "ok"
+      }
+    },
+    {
+      "id": "rep:11",
+      "type": "report",
+      "layer": "reports",
+      "label": "archive sweep",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "archivist",
+      "data": {
+        "agent": "archivist",
+        "at": "2026-06-29T04:00:00Z",
+        "summary": "90-day transcript purge done, 3 stale memories flagged for review, snapshot archived.",
+        "status": "ok"
+      }
+    },
+    {
+      "id": "rep:12",
+      "type": "report",
+      "layer": "reports",
+      "label": "funnel experiment — FAILED",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "growth",
+      "data": {
+        "agent": "growth",
+        "at": "2026-07-02T11:50:00Z",
+        "summary": "A/B deploy errored at the email step — rollback done, fix queued for tomorrow.",
+        "status": "fail"
+      }
+    },
+    {
+      "id": "run:ps1",
+      "type": "report",
+      "layer": "reports",
+      "label": "post batch fired",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "post-scheduler",
+      "data": {
+        "agent": "post-scheduler",
+        "at": "2026-07-03T03:22:33.178Z",
+        "status": "ok",
+        "summary": "6 posts dispatched across 3 channels, zero rejects."
+      }
+    },
+    {
+      "id": "run:ps2",
+      "type": "report",
+      "layer": "reports",
+      "label": "post batch fired",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "post-scheduler",
+      "data": {
+        "agent": "post-scheduler",
+        "at": "2026-07-02T15:22:33.178Z",
+        "status": "ok",
+        "summary": "5 posts dispatched, 1 rescheduled (rate window)."
+      }
+    },
+    {
+      "id": "run:up1",
+      "type": "report",
+      "layer": "reports",
+      "label": "sweep",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "uptime-probe",
+      "data": {
+        "agent": "uptime-probe",
+        "at": "2026-07-03T05:04:33.178Z",
+        "status": "ok",
+        "summary": "14 endpoints green, p95 212ms."
+      }
+    },
+    {
+      "id": "run:up2",
+      "type": "report",
+      "layer": "reports",
+      "label": "sweep",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "uptime-probe",
+      "data": {
+        "agent": "uptime-probe",
+        "at": "2026-07-03T04:10:33.178Z",
+        "status": "ok",
+        "summary": "14 endpoints green."
+      }
+    },
+    {
+      "id": "run:nb1",
+      "type": "report",
+      "layer": "reports",
+      "label": "backup verified",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "nightly-backup",
+      "data": {
+        "agent": "nightly-backup",
+        "at": "2026-07-02T21:22:33.178Z",
+        "status": "ok",
+        "summary": "snapshot 2.1GB written + restore-tested."
+      }
+    },
+    {
+      "id": "run:fa1",
+      "type": "report",
+      "layer": "reports",
+      "label": "experiment deploy",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "funnel-ab",
+      "data": {
+        "agent": "funnel-ab",
+        "at": "2026-07-03T02:22:33.178Z",
+        "status": "fail",
+        "summary": "A/B deploy errored at the email step — rollback done, fix queued."
+      }
+    },
+    {
+      "id": "run:fa2",
+      "type": "report",
+      "layer": "reports",
+      "label": "experiment deploy",
+      "weight": 0.2,
+      "tier": 2,
+      "parent": "core",
+      "cluster": "funnel-ab",
+      "data": {
+        "agent": "funnel-ab",
+        "at": "2026-07-02T02:22:33.178Z",
+        "status": "ok",
+        "summary": "magic-link variant live at 50%."
+      }
+    }
   ],
   "links": [
-    { "source": "core", "target": "agent:writer", "type": "spine" },
-    { "source": "core", "target": "agent:researcher", "type": "spine" },
-    { "source": "agent:researcher", "target": "kb:llm", "type": "uses" },
-    { "source": "kb:llm", "target": "kb:rag", "type": "related" },
-    { "source": "agent:writer", "target": "kb:rag", "type": "uses" },
-    { "source": "core", "target": "mem:s1", "type": "recalls" },
-    { "source": "core", "target": "mem:s2", "type": "recalls" },
-    { "source": "core", "target": "mem:s3", "type": "recalls" },
-    { "source": "agent:writer", "target": "mem:c1", "type": "recalls" },
-    { "source": "agent:writer", "target": "mem:c2", "type": "recalls" },
-    { "source": "agent:writer", "target": "mem:c3", "type": "recalls" },
-    { "source": "agent:writer", "target": "mem:c4", "type": "recalls" },
-    { "source": "core", "target": "mem:e1", "type": "recalls" },
-    { "source": "core", "target": "mem:e2", "type": "recalls" },
-    { "source": "core", "target": "mem:e3", "type": "recalls" },
-    { "source": "core", "target": "mem:g1", "type": "recalls" },
-    { "source": "core", "target": "mem:g2", "type": "recalls" },
-    { "source": "core", "target": "mem:g3", "type": "recalls" },
-    { "source": "core", "target": "mem:o1", "type": "recalls" },
-    { "source": "core", "target": "mem:o2", "type": "recalls" },
-    { "source": "core", "target": "mem:o3", "type": "recalls" },
-    { "source": "agent:writer", "target": "rep:1", "type": "filed" },
-    { "source": "agent:writer", "target": "rep:2", "type": "filed" },
-    { "source": "core", "target": "rep:3", "type": "filed" },
-    { "source": "core", "target": "rep:4", "type": "filed" },
-    { "source": "core", "target": "rep:5", "type": "filed" },
-    { "source": "core", "target": "rep:6", "type": "filed" },
-    { "source": "core", "target": "rep:7", "type": "filed" },
-    { "source": "core", "target": "rep:8", "type": "filed" },
-    { "source": "core", "target": "rep:9", "type": "filed" },
-    { "source": "core", "target": "rep:10", "type": "filed" },
-    { "source": "core", "target": "rep:11", "type": "filed" },
-    { "source": "core", "target": "rep:12", "type": "filed" },
-    { "source": "rep:1", "target": "mem:c1", "type": "recalls" },
-    { "source": "rep:6", "target": "mem:e3", "type": "recalls" },
-    { "source": "rep:12", "target": "mem:g2", "type": "recalls" },
-    { "source": "rep:9", "target": "mem:g2", "type": "recalls" },
-    { "source": "rep:11", "target": "mem:o3", "type": "recalls" }
+    {
+      "source": "core",
+      "target": "agent:writer",
+      "type": "spine"
+    },
+    {
+      "source": "core",
+      "target": "agent:researcher",
+      "type": "spine"
+    },
+    {
+      "source": "agent:researcher",
+      "target": "kb:llm",
+      "type": "uses"
+    },
+    {
+      "source": "kb:llm",
+      "target": "kb:rag",
+      "type": "related"
+    },
+    {
+      "source": "agent:writer",
+      "target": "kb:rag",
+      "type": "uses"
+    },
+    {
+      "source": "core",
+      "target": "mem:s1",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "mem:s2",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "mem:s3",
+      "type": "recalls"
+    },
+    {
+      "source": "agent:writer",
+      "target": "mem:c1",
+      "type": "recalls"
+    },
+    {
+      "source": "agent:writer",
+      "target": "mem:c2",
+      "type": "recalls"
+    },
+    {
+      "source": "agent:writer",
+      "target": "mem:c3",
+      "type": "recalls"
+    },
+    {
+      "source": "agent:writer",
+      "target": "mem:c4",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "mem:e1",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "mem:e2",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "mem:e3",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "mem:g1",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "mem:g2",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "mem:g3",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "mem:o1",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "mem:o2",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "mem:o3",
+      "type": "recalls"
+    },
+    {
+      "source": "agent:writer",
+      "target": "rep:1",
+      "type": "filed"
+    },
+    {
+      "source": "agent:writer",
+      "target": "rep:2",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "rep:3",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "rep:4",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "rep:5",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "rep:6",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "rep:7",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "rep:8",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "rep:9",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "rep:10",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "rep:11",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "rep:12",
+      "type": "filed"
+    },
+    {
+      "source": "rep:1",
+      "target": "mem:c1",
+      "type": "recalls"
+    },
+    {
+      "source": "rep:6",
+      "target": "mem:e3",
+      "type": "recalls"
+    },
+    {
+      "source": "rep:12",
+      "target": "mem:g2",
+      "type": "recalls"
+    },
+    {
+      "source": "rep:9",
+      "target": "mem:g2",
+      "type": "recalls"
+    },
+    {
+      "source": "rep:11",
+      "target": "mem:o3",
+      "type": "recalls"
+    },
+    {
+      "source": "core",
+      "target": "run:ps1",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "run:ps2",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "run:up1",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "run:up2",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "run:nb1",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "run:fa1",
+      "type": "filed"
+    },
+    {
+      "source": "core",
+      "target": "run:fa2",
+      "type": "filed"
+    }
   ]
 }

@@ -732,6 +732,11 @@ function OrgScreen({
   const fitRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState(1);
+  // User zoom on top of the auto-fit: null = fit-to-viewport (default). Set by
+  // the −/＋ controls or ctrl+wheel; "fit" resets. When zoomed, the wrapper
+  // scrolls natively (top-left origin so the overflow is fully reachable).
+  const [zoom, setZoom] = useState<number | null>(null);
+  const eff = zoom ?? fit;
   useLayoutEffect(() => {
     const vp = fitRef.current, chart = chartRef.current;
     if (!vp || !chart) return;
@@ -750,13 +755,30 @@ function OrgScreen({
     return () => ro.disconnect();
   }, [draft, health, selected]);
 
+  // ctrl/⌘ + wheel zooms (native listener — React's delegated wheel is passive,
+  // so preventDefault would be ignored there). Plain wheel keeps scrolling.
+  const effRef = useRef(eff);
+  effRef.current = eff;
+  useEffect(() => {
+    const vp = fitRef.current;
+    if (!vp) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const k = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+      setZoom(Math.min(2.5, Math.max(0.2, effRef.current * k)));
+    };
+    vp.addEventListener("wheel", onWheel, { passive: false });
+    return () => vp.removeEventListener("wheel", onWheel);
+  }, []);
+
   const root = draft.agents.find((a) => a.id === draft.root);
   return (
     <div className="body" onClick={() => setSelected(null)}>
       <main className="tree" onClick={(e) => e.stopPropagation()}>
         <p className="tree-hint">drag an agent onto its new parent · click for its dossier · machine trays show live health</p>
-        <div className="chart-fit" ref={fitRef}>
-          <div className="chart" ref={chartRef} style={{ ["--fit" as string]: fit }}>
+        <div className={`chart-fit${zoom !== null ? " zoomed" : ""}`} ref={fitRef}>
+          <div className="chart" ref={chartRef} style={{ ["--fit" as string]: eff }}>
             {root && (
               <ChartNode
                 org={draft}
@@ -772,7 +794,12 @@ function OrgScreen({
               />
             )}
           </div>
-          {fit < 0.999 && <span className="fit-badge">fit {Math.round(fit * 100)}%</span>}
+        </div>
+        <div className="zoomer">
+          <button type="button" title="zoom out (ctrl+wheel)" onClick={() => setZoom(Math.max(0.2, eff / 1.25))}>−</button>
+          <span className="zoomer-pct">{Math.round(eff * 100)}%</span>
+          <button type="button" title="zoom in (ctrl+wheel)" onClick={() => setZoom(Math.min(2.5, eff * 1.25))}>＋</button>
+          <button type="button" className={zoom === null ? "on" : ""} title="fit the whole org in view" onClick={() => setZoom(null)}>fit</button>
         </div>
       </main>
       {selected && (

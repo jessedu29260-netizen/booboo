@@ -328,8 +328,10 @@ function ChartNode({
             <button
               key={m.id}
               type="button"
-              className={`oc-mac${cardProps.selected === m.id ? " sel" : ""}`}
-              title={`${m.name}${m.role ? ` — ${m.role}` : ""}`}
+              className={`oc-mac${cardProps.selected === m.id ? " sel" : ""}${cardProps.dragId === m.id ? " dragging" : ""}`}
+              title={`${m.name}${m.role ? ` — ${m.role}` : ""} · drag onto an agent to reallocate`}
+              draggable
+              onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; cardProps.onDragStart(m.id); }}
               onClick={(e) => { e.stopPropagation(); cardProps.onSelect(m.id); }}
             >
               <i className={`mac-dot ${lightFor(m, cardProps.health)}${unstableFor(m, cardProps.health) ? " unstable" : ""}`} />
@@ -776,7 +778,7 @@ function OrgScreen({
   return (
     <div className="body" onClick={() => setSelected(null)}>
       <main className="tree" onClick={(e) => e.stopPropagation()}>
-        <p className="tree-hint">drag an agent onto its new parent · click for its dossier · machine trays show live health</p>
+        <p className="tree-hint">drag an agent — or a tray machine — onto its new parent · click for its dossier · machine trays show live health</p>
         <div className={`chart-fit${zoom !== null ? " zoomed" : ""}`} ref={fitRef}>
           <div className="chart" ref={chartRef} style={{ ["--fit" as string]: eff }}>
             {root && (

@@ -240,6 +240,7 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .oc-mac:hover { border-color: var(--accent); color: var(--ink); transform: translateY(-1px); }
 .oc-mac.sel { border-color: var(--accent); background: var(--accent-dim); color: var(--ink); }
 .oc-mac.more { color: var(--ink-3); font-style: italic; }
+.oc-mac.dragging { opacity: 0.45; cursor: grabbing; }
 .oc-mac.more:hover { color: var(--accent); }
 .mac-emoji { font-size: 11px; }
 .mac-name { white-space: nowrap; max-width: 76px; overflow: hidden; text-overflow: ellipsis; }

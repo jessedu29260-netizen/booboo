@@ -57,6 +57,25 @@ booboo panel --org org.booboo.json --snapshot my.booboo.json  # THE ORGANIGRAM �
 proven on a real **4,469-node production brain** assembled straight from Supabase by config alone —
 privacy-walled, validated, served. See each package's README for the details.
 
+### Connect it to Claude / Cursor (MCP)
+
+`booboo mcp` speaks MCP over stdio. Point any MCP client at it — no server to host, it runs on demand:
+
+```jsonc
+// Claude Desktop: claude_desktop_config.json · Cursor: .cursor/mcp.json · Claude Code: .mcp.json
+{
+  "mcpServers": {
+    "booboo": {
+      "command": "npx",
+      "args": ["-y", "@booboo-brain/cli", "mcp",
+               "--snapshot", "my.booboo.json", "--org", "org.booboo.json"]
+    }
+  }
+}
+```
+
+Your agent can now query the whole system — `search`, `neighbors`, `path`, `stats` — and `booboo_boot('<agent-id>')` returns an agent's rules, memory reach, and reports so it **boots from the org**. Point `--snapshot`/`--org` at absolute paths if the client's working directory differs.
+
 ## The Organigram — run your agents like a company
 
 ![The Booboo panel organigram — a 14-agent fleet as a real company chart: root on top, departments fanning beneath, a dossier with live memory and report counts on the right](docs/assets/panel-organigram.jpg)

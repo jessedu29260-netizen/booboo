@@ -213,6 +213,8 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .mac-dot.warn { background: var(--warn); box-shadow: 0 0 6px rgba(224, 180, 95, 0.7); }
 .mac-dot.fail { background: #e07b6a; box-shadow: 0 0 7px rgba(224, 123, 106, 0.8); animation: pulse 1.4s ease-in-out infinite; }
 .mac-dot.none { background: var(--ink-3); }
+/* green, but it failed earlier in the window — a faint amber ring, never a tint */
+.mac-dot.ok.unstable { box-shadow: 0 0 6px rgba(79, 184, 160, 0.7), 0 0 0 2px rgba(224, 180, 95, 0.3); }
 
 /* automation dossier health header */
 .doss-health {

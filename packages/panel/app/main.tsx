@@ -47,8 +47,10 @@ function nodeAt(n: BNode): string {
 }
 
 // ── HEALTH — reports are the heartbeat ─────────────────────────────────────
-// green: last report ok and fresh for its cadence · amber: stale or last was a
-// warn · red: last report failed · gray: never reported.
+// Recency-weighted: the LATEST report decides the light. green: latest ok and
+// fresh · amber: latest was a warn, or silent past ~2× cadence · red: latest
+// failed · gray: never reported. Older failures inside the window never tint
+// the light — they only add a subtle "recent instability" ring on the dot.
 type Pulse = { lastAt: string; lastStatus: string; n: number; fails: number };
 type HealthMap = Map<string, Pulse>;
 type Light = "ok" | "warn" | "fail" | "none";
@@ -58,7 +60,10 @@ function buildHealthMap(nodes: BNode[]): HealthMap {
   for (const r of nodes) {
     if (!r.cluster) continue;
     const d = (r.data ?? {}) as Record<string, unknown>;
-    const status = typeof d.status === "string" ? d.status : "ok";
+    // Only rows with an explicit status are heartbeats. Close-notes/decisions
+    // carry none — defaulting them to ok let one overwrite a run's verdict.
+    if (typeof d.status !== "string") continue;
+    const status = d.status;
     const at = nodeAt(r);
     const cur = m.get(r.cluster) ?? { lastAt: "", lastStatus: "", n: 0, fails: 0 };
     cur.n++;
@@ -86,9 +91,14 @@ function lightFor(a: BOrgAgent, health: HealthMap | null): Light {
   if (p.lastStatus === "fail") return "fail";
   const ageH = (Date.now() - new Date(p.lastAt).getTime()) / 3600e3;
   const cadence = typeof a.cadence === "number" && a.cadence > 0 ? a.cadence : 26;
-  if (ageH > cadence * 1.5) return "warn";
+  if (ageH > cadence * 2) return "warn";
   if (p.lastStatus === "warn") return "warn";
   return "ok";
+}
+
+// Green but with failures earlier in the window — recovered, worth a glance.
+function unstableFor(a: BOrgAgent, health: HealthMap | null): boolean {
+  return lightFor(a, health) === "ok" && (pulseFor(a, health)?.fails ?? 0) > 0;
 }
 
 const worst = (ls: Light[]): Light =>
@@ -105,9 +115,23 @@ function nodeSummary(n: BNode): string {
 
 // "What the agent closed" lives as type `report` — or `decision` in systems
 // that record decisions. Both count; query both and merge, newest first.
+// The server caps a page at 1000, so page by offset up to `limit` — truncation
+// here once dropped the newest runs and froze stale FAIL lights on the chart.
 async function fetchReports(cluster: string | null, limit = 500): Promise<{ total: number; nodes: BNode[] }> {
-  const q = (t: string) =>
-    api(`/nodes?type=${t}${cluster ? `&cluster=${encodeURIComponent(cluster)}` : ""}&limit=${limit}`).catch(() => ({ total: 0, nodes: [] }));
+  const q = async (t: string) => {
+    try {
+      const base = `/nodes?type=${t}${cluster ? `&cluster=${encodeURIComponent(cluster)}` : ""}`;
+      const first = await api(`${base}&limit=${limit}`);
+      const nodes: BNode[] = first.nodes ?? [];
+      const want = Math.min(first.total ?? 0, limit);
+      while (nodes.length < want) {
+        const page = await api(`${base}&limit=${limit}&offset=${nodes.length}`);
+        if (!page.nodes?.length) break;
+        nodes.push(...page.nodes);
+      }
+      return { total: first.total ?? 0, nodes };
+    } catch { return { total: 0, nodes: [] as BNode[] }; }
+  };
   const [r, d] = await Promise.all([q("report"), q("decision")]);
   const nodes = [...(r.nodes ?? []), ...(d.nodes ?? [])].sort((a: BNode, b: BNode) => nodeAt(b).localeCompare(nodeAt(a)));
   return { total: (r.total ?? 0) + (d.total ?? 0), nodes };
@@ -276,7 +300,7 @@ function ChartNode({
               title={`${m.name}${m.role ? ` — ${m.role}` : ""}`}
               onClick={(e) => { e.stopPropagation(); cardProps.onSelect(m.id); }}
             >
-              <i className={`mac-dot ${lightFor(m, cardProps.health)}`} />
+              <i className={`mac-dot ${lightFor(m, cardProps.health)}${unstableFor(m, cardProps.health) ? " unstable" : ""}`} />
               <span className="mac-emoji">{m.emoji || "⚙️"}</span>
               <span className="mac-name">{m.name}</span>
             </button>
@@ -531,7 +555,7 @@ function Dossier({
               const p = pulseFor(m, health);
               return (
                 <button className="doss-auto" key={m.id} onClick={() => onSelect(m.id)}>
-                  <i className={`mac-dot ${lightFor(m, health)}`} />
+                  <i className={`mac-dot ${lightFor(m, health)}${unstableFor(m, health) ? " unstable" : ""}`} />
                   <span className="doss-auto-emoji">{m.emoji || "⚙️"}</span>
                   <span className="doss-auto-name">{m.name}</span>
                   {m.role && <span className="doss-auto-role">{m.role}</span>}
@@ -615,7 +639,7 @@ function OrgScreen({
   const [health, setHealth] = useState<HealthMap | null>(null);
   useEffect(() => {
     if (!hasSnapshot) return;
-    fetchReports(null, 2000).then(({ nodes }) => setHealth(buildHealthMap(nodes))).catch(() => {});
+    fetchReports(null, 10000).then(({ nodes }) => setHealth(buildHealthMap(nodes))).catch(() => {});
   }, [hasSnapshot]);
 
   const root = draft.agents.find((a) => a.id === draft.root);

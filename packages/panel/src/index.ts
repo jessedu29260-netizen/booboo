@@ -1,4 +1,6 @@
-// Library entry — currently the panel ships only as a prebuilt static app
-// (see app/), so there's nothing to import as a component library yet. This
-// stub keeps the dual tsup+vite build (mirroring @booboo-brain/viewer) valid.
-export const PANEL_VERSION = "0.1.0";
+// Library entry — the panel ships as a mountable React component (mirroring
+// @booboo-brain/viewer's BoobooView). A host app renders <Panel /> and injects
+// its own backend via the `api` prop; standalone it uses same-origin /api/*.
+export { Panel, type ApiFn } from "./Panel";
+
+export const PANEL_VERSION = "0.4.0";

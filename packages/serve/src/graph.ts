@@ -14,7 +14,12 @@ export class BoobooIndex {
 
   constructor(graph: BoobooGraph) {
     this.graph = graph;
-    for (const n of graph.nodes) this.byId.set(n.id, n);
+    let dupes = 0;
+    for (const n of graph.nodes) {
+      if (this.byId.has(n.id)) dupes++; // last-wins; loadSnapshot already validates
+      this.byId.set(n.id, n);
+    }
+    if (dupes) console.warn(`[booboo] ${dupes} duplicate node id(s) in snapshot — last definition wins`);
     for (const l of graph.links) {
       if (!this.byId.has(l.source) || !this.byId.has(l.target)) continue; // skip dangling
       this.edge(l.source).push({ link: l, other: l.target, dir: "out" });
@@ -32,7 +37,11 @@ export class BoobooIndex {
   counts() {
     const byLayer: Record<string, number> = {};
     for (const n of this.graph.nodes) byLayer[n.layer] = (byLayer[n.layer] ?? 0) + 1;
-    return { nodes: this.graph.nodes.length, links: this.graph.links.length, byLayer };
+    // Count only indexed (non-dangling) links — the constructor drops links whose
+    // source/target is missing, so graph.links.length would overstate the real count.
+    let links = 0;
+    for (const l of this.graph.links) if (this.byId.has(l.source) && this.byId.has(l.target)) links++;
+    return { nodes: this.graph.nodes.length, links, byLayer };
   }
 
   node(id: string): BNode | null { return this.byId.get(id) ?? null; }
@@ -112,13 +121,13 @@ export class BoobooIndex {
   }
 
   /** Shortest path (unweighted BFS) between two node ids; null if unreachable. */
-  path(from: string, to: string, maxHops = 8): BNode[] | null {
+  path(from: string, to: string, maxHops = 64): BNode[] | null {
     if (!this.byId.has(from) || !this.byId.has(to)) return null;
     if (from === to) return [this.byId.get(from)!];
     const prev = new Map<string, string>();
     const seen = new Set<string>([from]);
     let frontier = [from];
-    const cap = Math.min(20, Math.max(1, maxHops));
+    const cap = Math.min(1000, Math.max(1, maxHops));
     for (let h = 0; h < cap; h++) {
       const next: string[] = [];
       for (const cur of frontier) {

@@ -47,8 +47,8 @@ export async function runMcp(ix: BoobooIndex, name = "booboo", org?: BOrg): Prom
   server.tool(
     "booboo_path",
     "Shortest path (chain of nodes) between two node ids; null if unreachable.",
-    { from: z.string(), to: z.string() },
-    async ({ from, to }) => j(ix.path(from, to)),
+    { from: z.string(), to: z.string(), maxHops: z.number().int().min(1).max(1000).optional().describe("max BFS hops (default 64)") },
+    async ({ from, to, maxHops }) => j(ix.path(from, to, maxHops ?? 64)),
   );
 
   await server.connect(new StdioServerTransport());

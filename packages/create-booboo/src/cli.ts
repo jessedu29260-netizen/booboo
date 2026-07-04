@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // create-booboo — scaffold a runnable Booboo brain (config + sample data + wired scripts).
 // Zero dependencies; pure stdlib. `npx create-booboo my-brain [--force]`.
-import { mkdirSync, writeFileSync, existsSync, readdirSync } from "node:fs";
+import { mkdirSync, writeFileSync, existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-const BOOBOO_VERSION = "^0.2.0"; // @booboo-brain/* range the scaffolded project depends on (organigram-capable)
+const BOOBOO_VERSION = "^0.3.0"; // @booboo-brain/* range the scaffolded project depends on (organigram-capable). Keep the minor in sync with @booboo-brain/cli.
+const VERSION = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 
 const args = process.argv.slice(2);
 const flags = new Set(args.filter((a) => a.startsWith("--")));
@@ -14,6 +15,16 @@ const force = flags.has("--force");
 if (flags.has("--help") || flags.has("-h")) {
   console.log("usage: npx create-booboo <dir> [--force]\n  scaffolds a runnable Booboo brain (json starter + postgres upgrade path)");
   process.exit(0);
+}
+if (flags.has("--version") || flags.has("-v")) {
+  console.log(VERSION);
+  process.exit(0);
+}
+const KNOWN_FLAGS = new Set(["--force", "--help", "-h", "--version", "-v"]);
+const unknownFlags = [...flags].filter((f) => !KNOWN_FLAGS.has(f));
+if (unknownFlags.length) {
+  console.error(`✗ unknown flag(s): ${unknownFlags.join(", ")}\n  usage: npx create-booboo <dir> [--force]`);
+  process.exit(1);
 }
 
 const dir = path.resolve(process.cwd(), dirArg);

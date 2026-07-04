@@ -15,15 +15,21 @@ const str = (u: URLSearchParams, k: string) => u.get(k) ?? undefined;
  *    GET /nodes?layer=&cluster=&type=&q=&limit=&offset= → filtered list
  *    GET /nodes/:id                    → one node
  *    GET /neighbors/:id?depth=&limit=  → neighbourhood
- *    GET /path/:from/:to               → shortest path */
+ *    GET /path/:from/:to?maxHops=      → shortest path
+ *
+ *  Auth: if BOOBOO_TOKEN is set, every request must carry `Authorization: Bearer <token>` (401 otherwise);
+ *  unset → open. CORS origin is BOOBOO_CORS_ORIGIN (default `*`). */
 export function createRestServer(ix: BoobooIndex): http.Server {
+  const token = process.env.BOOBOO_TOKEN;
+  const cors = process.env.BOOBOO_CORS_ORIGIN ?? "*";
   return http.createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
     const p = url.searchParams;
     const send = (code: number, body: unknown) => {
-      res.writeHead(code, { "content-type": "application/json", "access-control-allow-origin": "*" });
+      res.writeHead(code, { "content-type": "application/json", "access-control-allow-origin": cors });
       res.end(JSON.stringify(body));
     };
+    if (token && req.headers.authorization !== `Bearer ${token}`) return send(401, { error: "unauthorized" });
     const seg = url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
     try {
       if (seg.length === 0 || seg[0] === "graph") return send(200, ix.meta());
@@ -37,7 +43,7 @@ export function createRestServer(ix: BoobooIndex): http.Server {
       if (seg[0] === "nodes")
         return send(200, ix.list({ layer: str(p, "layer"), cluster: str(p, "cluster"), type: str(p, "type"), q: str(p, "q"), limit: num(p, "limit", 100), offset: num(p, "offset", 0) }));
       if (seg[0] === "neighbors" && seg[1]) return send(200, ix.neighbors(seg[1], num(p, "depth", 1), num(p, "limit", 200)));
-      if (seg[0] === "path" && seg[1] && seg[2]) return send(200, { path: ix.path(seg[1], seg[2]) });
+      if (seg[0] === "path" && seg[1] && seg[2]) return send(200, { path: ix.path(seg[1], seg[2], num(p, "maxHops", 64)) });
       send(404, { error: "unknown route", routes: ["/graph", "/stats", "/search?q=", "/nodes", "/nodes/:id", "/neighbors/:id", "/path/:from/:to"] });
     } catch (e) {
       send(500, { error: String((e as Error)?.message ?? e) });

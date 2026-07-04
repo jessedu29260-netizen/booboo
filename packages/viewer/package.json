@@ -1,17 +1,32 @@
 {
   "name": "@booboo-brain/viewer",
   "version": "0.1.0",
-  "description": "Booboo 3D viewer — the scale-first R3F renderer. Instanced GPU field + tier-LOD. Renders any Booboo graph.",
+  "description": "Booboo 3D viewer \u2014 the scale-first R3F renderer. Instanced GPU field + tier-LOD. Renders any Booboo graph.",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/jessedu29260-netizen/booboo.git", "directory": "packages/viewer" },
-  "bugs": { "url": "https://github.com/jessedu29260-netizen/booboo/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jessedu29260-netizen/booboo.git",
+    "directory": "packages/viewer"
+  },
+  "bugs": {
+    "url": "https://github.com/jessedu29260-netizen/booboo/issues"
+  },
   "homepage": "https://github.com/jessedu29260-netizen/booboo#readme",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }, "./package.json": "./package.json" },
-  "files": ["dist", "dist-app"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "dist-app"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --external react,react-dom,three,@react-three/fiber,@react-three/drei,@booboo-brain/spec && vite build --config vite.app.config.ts",
     "dev": "vite"
@@ -38,5 +53,11 @@
     "@vitejs/plugin-react": "^4.3.0",
     "tsup": "^8",
     "typescript": "^5"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

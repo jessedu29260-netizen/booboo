@@ -3,7 +3,9 @@
   "meta": { "root": "core", "layers": [{ "name": "a" }, { "name": "b" }] },
   "nodes": [
     { "id": "n1", "type": "x", "layer": "a", "label": "N1", "parent": "core", "cluster": "open" },
-    { "id": "n2", "type": "x", "layer": "b", "label": "N2", "parent": "core", "cluster": "secret" }
+    { "id": "n2", "type": "x", "layer": "b", "label": "N2", "parent": "core", "cluster": "secret" },
+    { "id": "n3", "type": "x", "layer": "a", "label": "N3", "parent": "core", "cluster": "open", "data": { "__wall": "secret", "k": "v" } },
+    { "id": "n4", "type": "x", "layer": "a", "label": "N4", "parent": "core", "cluster": "open", "data": { "__wall": "open", "k": "v" } }
   ],
   "links": [{ "source": "n1", "target": "ghost", "type": "rel" }]
 }

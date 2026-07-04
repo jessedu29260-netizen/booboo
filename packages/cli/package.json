@@ -1,7 +1,7 @@
 {
   "name": "@booboo-brain/cli",
   "version": "0.3.0",
-  "description": "Booboo CLI — one `booboo` command: build | serve | mcp | view | panel. Lazy-loads each subcommand so a build-only run never pulls the server or viewer.",
+  "description": "Booboo CLI \u2014 one `booboo` command: build | serve | mcp | view | panel. Lazy-loads each subcommand so a build-only run never pulls the server or viewer.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -38,5 +38,11 @@
     "cli",
     "knowledge-graph",
     "mcp"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }

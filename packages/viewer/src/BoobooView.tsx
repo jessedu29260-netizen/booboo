@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Component, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { BoobooGraph, BNode, BLink } from "@booboo-brain/spec";
 import { Booboo, defaultCfg, type BoobooCfg } from "./Booboo";
 import { usePersisted } from "./usePersisted";
@@ -49,6 +49,25 @@ function urlCfg(): Partial<BoobooCfg> | null {
   return null;
 }
 
+/* ── error boundary: a render throw shows a fallback, not a blank white canvas ── */
+class RenderBoundary extends Component<{ children: ReactNode }, { msg: string | null }> {
+  state = { msg: null as string | null };
+  static getDerivedStateFromError(e: unknown) {
+    return { msg: e instanceof Error ? e.message : String(e) };
+  }
+  render() {
+    if (this.state.msg == null) return this.props.children;
+    return (
+      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#e6a0a0", fontFamily: T.sans, textAlign: "center", padding: 24 }}>
+        <div>
+          <div style={{ fontSize: 18 }}>Failed to render</div>
+          <div style={{ marginTop: 8, fontSize: 13, opacity: 0.85, maxWidth: 520, wordBreak: "break-word", color: T.dim }}>{this.state.msg}</div>
+        </div>
+      </div>
+    );
+  }
+}
+
 /** Booboo + the full instrument: HUD · click→node menu · a collapsible control drawer.
  *  Controls live on the LEFT, the node menu on the RIGHT — they never overlap. */
 export function BoobooView({
@@ -82,7 +101,9 @@ export function BoobooView({
   return (
     <div style={{ position: "absolute", inset: 0, background: T.bg, fontFamily: T.sans }}>
       <style>{PULSE_CSS}</style>
-      <Booboo data={data} cfg={cfg} onSelect={setSel} />
+      <RenderBoundary>
+        <Booboo data={data} cfg={cfg} onSelect={setSel} />
+      </RenderBoundary>
 
       {/* HUD — top-left */}
       <div style={{ position: "absolute", top: 18, left: 20, pointerEvents: "none" }}>

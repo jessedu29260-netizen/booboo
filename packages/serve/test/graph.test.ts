@@ -21,7 +21,8 @@ const ix = new BoobooIndex(g);
 
 describe("BoobooIndex", () => {
   it("counts by layer and total", () => {
-    expect(ix.counts()).toEqual({ nodes: 4, links: 3, byLayer: { a: 2, b: 2 } });
+    // links: 2 — the core→ghost link is dangling and excluded (3 links defined, 1 dropped)
+    expect(ix.counts()).toEqual({ nodes: 4, links: 2, byLayer: { a: 2, b: 2 } });
   });
 
   it("lists with filters + paging", () => {

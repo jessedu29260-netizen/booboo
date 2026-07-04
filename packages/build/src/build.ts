@@ -10,7 +10,7 @@ import { jsonAdapter } from "./adapters/json.js";
 export async function build(config: BoobooConfig, baseDir = process.cwd()): Promise<BoobooGraph> {
   const nodes: BNode[] = [];
   const links: BLink[] = [];
-  let layers: BLayer[] = config.layers ?? [];
+  let layers: BLayer[] = [...(config.layers ?? [])]; // copy — never mutate the caller's config.layers (deterministic across repeated build() calls)
 
   nodes.push({
     id: config.root.id,
@@ -35,9 +35,14 @@ export async function build(config: BoobooConfig, baseDir = process.cwd()): Prom
     }
   }
 
-  // privacy walls: a node whose cluster is walled is NEVER emitted (sealed data never leaves here)
+  // privacy walls: a node is NEVER emitted if its cluster OR its per-source wall_field value (carried
+  // as the build-time-only data.__wall marker) is walled — sealed data never leaves here
   const walls = new Set(config.walls ?? []);
-  const kept = walls.size ? nodes.filter((n) => !(n.cluster != null && walls.has(String(n.cluster)))) : nodes;
+  const walled = (n: BNode) =>
+    (n.cluster != null && walls.has(String(n.cluster))) || (n.data?.__wall != null && walls.has(String(n.data.__wall)));
+  const kept = walls.size ? nodes.filter((n) => !walled(n)) : nodes;
+  // strip the internal marker so it never leaks into emitted node.data for kept nodes
+  for (const n of kept) if (n.data && "__wall" in n.data) delete n.data.__wall;
 
   // dedup by id (first wins)
   const seen = new Set<string>();

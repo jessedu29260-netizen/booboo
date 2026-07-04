@@ -61,15 +61,22 @@ export function validate(g: unknown): ValidateResult {
 
   const ids = new Set<string>();
   for (const n of o.nodes!) {
+    if (!n || typeof n !== "object") { errors.push("a node is not an object"); continue; }
     if (!n.id) { errors.push("a node is missing 'id'"); continue; }
     if (ids.has(n.id)) errors.push(`duplicate node id: ${n.id}`);
     ids.add(n.id);
+    if (!n.type) warnings.push(`node '${n.id}' is missing 'type' (required by spec)`);
+    if (!n.label) warnings.push(`node '${n.id}' is missing 'label' (required by spec)`);
+    if (n.weight != null && (n.weight < 0 || n.weight > 1)) warnings.push(`node '${n.id}' weight ${n.weight} is outside [0,1]`);
     if (!n.layer || !layers.has(n.layer)) warnings.push(`node '${n.id}' layer '${n.layer}' is not in meta.layers`);
   }
   if (!ids.has(o.meta!.root)) errors.push(`meta.root '${o.meta!.root}' is not a node id`);
 
   let dangling = 0;
-  for (const l of o.links!) if (!ids.has(l.source) || !ids.has(l.target)) dangling++;
+  for (const l of o.links!) {
+    if (!l || typeof l !== "object") { errors.push("a link is not an object"); continue; }
+    if (!ids.has(l.source) || !ids.has(l.target)) dangling++;
+  }
   if (dangling) warnings.push(`${dangling} link(s) reference missing nodes (the builder drops these)`);
 
   return { ok: errors.length === 0, errors, warnings };
@@ -125,6 +132,7 @@ export function validateOrg(o: unknown): ValidateResult {
 
   const byId = new Map<string, BOrgAgent>();
   for (const a of g.agents!) {
+    if (!a || typeof a !== "object") { errors.push("an agent is not an object"); continue; }
     if (!a.id) { errors.push("an agent is missing 'id'"); continue; }
     if (byId.has(a.id)) errors.push(`duplicate agent id: ${a.id}`);
     byId.set(a.id, a);

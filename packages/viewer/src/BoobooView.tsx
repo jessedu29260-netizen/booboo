@@ -75,13 +75,17 @@ export function BoobooView({
   persistKey = "booboo-cfg-v3",
   persist = true,
   initialSel = null,
+  initialCfg,
 }: {
   data: BoobooGraph;
   persistKey?: string;
   persist?: boolean;
   initialSel?: string | null;
+  // Opening overrides merged over defaultCfg — lets a host set its own look
+  // (e.g. a de-bloomed, peeled-wide layered view) without forking the viewer.
+  initialCfg?: Partial<BoobooCfg>;
 }) {
-  const initial = useMemo(() => defaultCfg(data), [data]);
+  const initial = useMemo(() => ({ ...defaultCfg(data), ...(initialCfg ?? {}) }), [data, initialCfg]);
   const [cfg, setCfg, resetCfg] = usePersisted<BoobooCfg>(persistKey, initial, persist, mergeCfg, urlCfg());
   const [sel, setSel] = useState<string | null>(initialSel);
 

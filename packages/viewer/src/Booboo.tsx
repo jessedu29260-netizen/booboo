@@ -78,7 +78,11 @@ function Field({ laid, cfg, onPick }: { laid: Laid; cfg: BoobooCfg; onPick?: (i:
     }
     attr.needsUpdate = true;
   }, [geo, laid, cfg.nodeScale, cfg.sizes, cfg.layers]);
-  const mat = useMemo(() => new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }), []);
+  // Additive glow is gorgeous on sparse graphs but saturates dense clusters to white.
+  // In the de-bloomed look (bloom 0) fall back to normal blending so a 16k-node layer
+  // reads as a coloured mass, not a blown-out core (matches the Operational Atlas cloud).
+  // de-bloomed look (bloom 0) → normal blending so a dense layer reads as a colour mass, not a white core
+  const mat = useMemo(() => new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: cfg.bloom > 0 ? THREE.AdditiveBlending : THREE.NormalBlending }), [cfg.bloom > 0]);
   useEffect(() => () => mat.dispose(), [mat]);
   return <points geometry={geo} material={mat} frustumCulled={false} onClick={(e) => { if (e.index != null && onPick) { onPick(e.index); e.stopPropagation(); } }} />;
 }

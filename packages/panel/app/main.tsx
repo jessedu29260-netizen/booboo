@@ -403,8 +403,10 @@ function Dossier({
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
   const [openRep, setOpenRep] = useState<string | null>(null);
+  const [editContract, setEditContract] = useState(false);
+  const [contractText, setContractText] = useState("");
 
-  useEffect(() => { setEdit(false); setOpenRep(null); }, [id]);
+  useEffect(() => { setEdit(false); setOpenRep(null); setEditContract(false); }, [id]);
 
   useEffect(() => {
     setMemCount(null);
@@ -493,9 +495,7 @@ function Dossier({
           <label>skills <em>comma-separated</em>
             <input value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} placeholder="humanizer, deep-research" />
           </label>
-          <label>boot prompt
-            <textarea rows={3} value={form.boot} onChange={(e) => setForm({ ...form, boot: e.target.value })} placeholder="who this agent is, first thing every session" />
-          </label>
+          <p className="doss-edit-hint">↓ edit the contract below — the agent's operating prompt lives in its own section.</p>
           <div className="doss-edit-actions">
             <button className="btn primary" onClick={saveEdit}>save to draft</button>
             <button className="btn ghost" onClick={() => setEdit(false)}>cancel</button>
@@ -648,10 +648,36 @@ function Dossier({
         )}
       </section>
 
-      {a.boot && !edit && (
-        <section>
-          <h3>boot</h3>
-          <p className="doss-boot">{a.boot}</p>
+      {!edit && (
+        <section className="doss-contract">
+          <h3>contract <em>the operating prompt — loaded first, every session</em></h3>
+          {editContract ? (
+            <div className="contract-edit">
+              <textarea
+                className="contract-ta"
+                autoFocus
+                value={contractText}
+                onChange={(e) => setContractText(e.target.value)}
+                placeholder="Who this agent is · what it decides · how it verifies · when it stops. This is the first thing it reads."
+              />
+              <div className="doss-edit-actions">
+                <button className="btn primary" onClick={() => { onUpdate(id, { boot: contractText.trim() || undefined }); setEditContract(false); }}>save to draft</button>
+                <button className="btn ghost" onClick={() => setEditContract(false)}>cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className={`contract-card${a.boot ? "" : " empty"}`}
+              title="click to open · edit this agent's contract"
+              onClick={() => { setContractText(a.boot ?? ""); setEditContract(true); }}
+            >
+              {a.boot
+                ? <p className="doss-boot">{a.boot}</p>
+                : <p className="doss-empty">no contract yet — click to write one.</p>}
+              <span className="contract-hint">✎ edit</span>
+            </button>
+          )}
         </section>
       )}
 

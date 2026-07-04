@@ -462,6 +462,28 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .chip { font-size: 11px; background: var(--accent-dim); color: var(--accent-2); border-radius: 7px; padding: 4px 10px; }
 .chip.alt { background: var(--bg-2); color: var(--ink-2); }
 .doss-boot { font-size: 12px; color: var(--ink-2); line-height: 1.6; margin: 0; white-space: pre-wrap; }
+/* contract — one click to open, edit in place, save flows to the org file */
+.doss-contract h3 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.contract-card {
+  position: relative; display: block; width: 100%; text-align: left; cursor: pointer;
+  background: var(--bg-1); border: 1px solid var(--line); border-radius: 12px;
+  padding: 13px 14px; transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.contract-card:hover { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.contract-card:hover .contract-hint { opacity: 1; }
+.contract-card.empty { border-style: dashed; }
+.contract-hint {
+  position: absolute; top: 9px; right: 11px; font-size: 10.5px; font-weight: 650;
+  color: var(--accent-2); opacity: 0.55; transition: opacity 0.15s; letter-spacing: 0.02em;
+}
+.contract-edit { display: flex; flex-direction: column; gap: 8px; }
+.contract-ta {
+  width: 100%; min-height: 220px; resize: vertical; box-sizing: border-box;
+  background: var(--bg-1); border: 1px solid var(--accent); border-radius: 12px;
+  padding: 12px 13px; color: var(--ink); font-family: var(--mono); font-size: 12px; line-height: 1.6;
+  outline: none; box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.doss-edit-hint { font-size: 11px; color: var(--ink-3); margin: 2px 0 0; font-style: italic; }
 .doss-note { color: var(--ink-3); font-size: 11px; line-height: 1.6; }
 .doss-note code { font-family: var(--mono); background: var(--bg-2); padding: 1px 5px; border-radius: 4px; }
 

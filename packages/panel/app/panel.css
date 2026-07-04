@@ -39,6 +39,16 @@
 [data-theme="light"] .doss-rep.tap:hover { background: rgba(0, 0, 0, 0.03); }
 [data-theme="light"] .bk-card:hover,
 [data-theme="light"] .mem-row:hover { box-shadow: 0 8px 22px rgba(20, 40, 60, 0.08); }
+/* surfaces that hardcode a dark tint — retint for the light theme */
+[data-theme="light"] .oc-row.wrap { background: rgba(20, 40, 60, 0.04); }
+[data-theme="light"] .doss { background: rgba(255, 255, 255, 0.9); }
+[data-theme="light"] .ag {
+  background: linear-gradient(180deg, hsl(var(--h) 42% 93% / 0.9), var(--bg-1) 60%);
+  border-color: hsl(var(--h) 30% 78%);
+}
+[data-theme="light"] .tl-ava { background: hsl(var(--h) 45% 90% / 0.9); border-color: hsl(var(--h) 40% 75% / 0.5); }
+[data-theme="light"] .oc-tray { background: linear-gradient(180deg, #e7ebef, #eef1f4); box-shadow: inset 0 3px 7px rgba(20, 40, 60, 0.08); }
+[data-theme="light"] .oc-mac { background: rgba(20, 40, 60, 0.05); border-color: rgba(20, 40, 60, 0.1); }
 
 * { box-sizing: border-box; }
 body { font-family: var(--font); color: var(--ink); background: var(--bg); overflow-x: hidden; }

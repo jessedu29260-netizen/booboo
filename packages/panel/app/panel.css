@@ -339,14 +339,15 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .ocn:has(> .ag:hover) > .oc-row > .oc-child::before { background: hsl(165 45% 45% / 0.6); }
 .ocn:has(> .ag:hover) > .oc-row > .oc-child::after { border-color: hsl(165 45% 45% / 0.6); }
 
-/* wide sibling sets — a grouped grid growing downward, one page wide */
+/* wide sibling sets — grouped subtrees that wrap to natural width (never crush a
+   branch into a fixed cell — that overflowed and collided with the next branch) */
 .oc-row.wrap {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); justify-content: center;
-  gap: 2px 10px; margin-top: 0; padding: 10px 12px 12px;
-  max-width: min(100%, 660px); margin-left: auto; margin-right: auto;
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start;
+  gap: 10px 18px; margin: 0 auto; padding: 12px 14px 14px;
+  max-width: min(100%, 840px);
   border: 1px solid var(--line); border-radius: 18px; background: rgba(16, 19, 26, 0.35);
 }
-.oc-row.wrap > .oc-child { padding: 8px 0 0; }
+.oc-row.wrap > .oc-child { padding: 8px 4px 0; flex: 0 0 auto; }
 .oc-row.wrap > .oc-child::before, .oc-row.wrap > .oc-child::after { display: none; }
 
 /* agent cards — company badges with a rank system (size + saturation recede

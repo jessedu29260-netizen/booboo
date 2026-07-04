@@ -24,3 +24,52 @@ Notes:
   when we run its CLI (kept out of the repo until then — nothing speculative).
 - All six want the same thing that already exists: a clean public repo + README MCP block +
   npm package. The remaining work is purely the authenticated submit step per site.
+- **2026-07-04 audit:** booboo is NOT live on Glama (search + direct slug both empty) — the
+  Jul-3 submission never indexed; redo it first. PR #9087 carries the `missing-glama`
+  label, so **Glama is the gate for the whole chain**. Order of the guided pass:
+  Glama → (label clears / re-trigger) → Smithery → mcp.so → PulseMCP → official registry.
+
+## Paste-ready copy (one guided pass — Claude drives, Jesse authenticates)
+
+**Name:** Booboo
+**Repo:** `https://github.com/jessedu29260-netizen/booboo`
+**npm:** `@booboo-brain/cli` (+ spec/build/serve/viewer/panel, `create-booboo`)
+**License:** MIT · TypeScript · runs locally, cross-platform
+
+**One-liner (short fields):**
+> Open-source operational brain — fuse your AI system's agents, memory, knowledge and automations into one rooted, privacy-walled graph served over MCP, with a million-node 3D viewer and a drag-drop organigram your agents boot from.
+
+**Description (longer fields):**
+> Booboo turns any AI system's data into one queryable brain: adapters (postgres/json) emit a tiny JSON spec; consumers render/serve it — 3D viewer (60fps at a million nodes), REST, MCP (stats · search · node dossiers · neighbors · pathfinding), and an editable org chart with per-agent contracts, memory buckets, reports and health lights. Privacy walls are applied before emit. MIT, local-first, `npx create-booboo` to scaffold.
+
+**Tags:** knowledge-graph · memory · agents · visualization · orchestration
+
+**MCP config (verbatim from README):**
+```jsonc
+{
+  "mcpServers": {
+    "booboo": {
+      "command": "npx",
+      "args": ["-y", "@booboo-brain/cli", "mcp",
+               "--snapshot", "my.booboo.json", "--org", "org.booboo.json"]
+    }
+  }
+}
+```
+
+**smithery.yaml draft (add to repo only when running the Smithery step):**
+```yaml
+startCommand:
+  type: stdio
+  commandFunction: |
+    (config) => ({
+      command: "npx",
+      args: ["-y", "@booboo-brain/cli", "mcp", "--snapshot", config.snapshot, "--org", config.org]
+    })
+  configSchema:
+    type: object
+    required: [snapshot]
+    properties:
+      snapshot: { type: string, description: "Path to the booboo graph snapshot (my.booboo.json)" }
+      org: { type: string, description: "Optional path to the org file (org.booboo.json)" }
+```

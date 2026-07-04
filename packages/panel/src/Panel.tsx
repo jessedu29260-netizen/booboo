@@ -380,7 +380,7 @@ function Chip({ children, tone, onClick }: { children: React.ReactNode; tone?: s
 // The dossier: everything one agent is — and where you EDIT it. Edits land in
 // the draft; the top-bar apply writes them to the org file.
 function Dossier({
-  org, id, hasSnapshot, onUpdate, onAdd, onRemove, onSelect, health = null,
+  org, id, hasSnapshot, onUpdate, onAdd, onRemove, onSelect, onClose, health = null,
 }: {
   org: BOrg;
   id: string;
@@ -389,6 +389,7 @@ function Dossier({
   onAdd: (parentId: string) => void;
   onRemove: (id: string) => void;
   onSelect: (id: string) => void;
+  onClose: () => void;
   health?: HealthMap | null;
 }) {
   const api = useApi();
@@ -487,6 +488,7 @@ function Dossier({
           {hasSnapshot && (
             <button className="doss-3d" title="see the whole brain in 3D" onClick={() => nav("/graph")}>◉ 3D</button>
           )}
+          <button className="doss-close" title="close the dossier" aria-label="close the dossier" onClick={onClose}>✕</button>
         </div>
       </div>
 
@@ -813,6 +815,7 @@ function OrgScreen({
           onAdd={onAdd}
           onRemove={onRemove}
           onSelect={setSelected}
+          onClose={() => setSelected(null)}
           health={health}
         />
       )}

@@ -509,9 +509,33 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .pnl-fatal.calm { color: var(--ink-2); }
 
 @media (max-width: 760px) {
-  .doss { position: fixed; right: 0; top: 0; bottom: 0; z-index: 5; width: min(340px, 88vw); box-shadow: -18px 0 50px rgba(0, 0, 0, 0.5); }
-  .tree { padding: 20px 14px 60px; }
+  /* compact chrome */
+  .bar { gap: 8px 14px; padding: 9px 12px; }
+  .bar-brand { font-size: 13px; }
+  .bar-stats { gap: 11px; font-size: 11px; }
+  .bar-stats b { font-size: 12.5px; }
+  .bar-actions { gap: 6px; }
+  .btn { padding: 6px 11px; font-size: 11.5px; }
+  .tabs { padding: 0 4px; }
+  .tab { padding: 10px 9px 9px; font-size: 11.5px; }
+  .tree { padding: 12px 8px 40px; }
+  .tree-hint { display: none; }
   .ag { max-width: 100%; }
   .ag-role { display: none; }
+  .screen { padding: 18px 13px 60px; }
+  /* the dossier becomes a BOTTOM SHEET inside the pane — the chart above stays
+     tappable to switch agents; the ✕ closes. ABSOLUTE (not fixed) so it can
+     never overlap an embedding host's chrome. */
+  .doss {
+    position: absolute; left: 0; right: 0; bottom: 0; top: 34%;
+    width: auto; z-index: 6; border-radius: 16px 16px 0 0;
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.55);
+  }
+  .doss { animation: sheetup 0.25s ease both; }
+  @keyframes sheetup { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+  .doss-close { display: grid; }
+  /* zoom control clears the sheet — top-right of the chart */
+  .zoomer { top: 4px; right: 8px; bottom: auto; }
 }
 `;

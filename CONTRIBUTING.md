@@ -1,6 +1,6 @@
 # Contributing to Booboo
 
-Thanks for helping the brain grow. Booboo is a pnpm monorepo of six small packages — the
+Thanks for helping the brain grow. Booboo is a pnpm monorepo of seven small packages — the
 fastest way to contribute is to keep changes small and verified.
 
 ## Dev setup
@@ -31,7 +31,8 @@ node packages/cli/dist/cli.js view --demo   # run the built CLI locally
 | `@booboo-brain/build` | config-driven adapters (postgres, json) → snapshot |
 | `@booboo-brain/serve` | REST + MCP query layer over a snapshot |
 | `@booboo-brain/viewer` | the R3F 3D renderer + standalone app |
-| `@booboo-brain/cli` | the unified `booboo` bin: build / serve / mcp / view |
+| `@booboo-brain/panel` | the organigram — agent fleet as an org chart over an org file + snapshot |
+| `@booboo-brain/cli` | the unified `booboo` bin: build / serve / mcp / view / panel |
 | `create-booboo` | project scaffolder (zero deps) |
 
 `SPEC.md` is the contract; `BLUEPRINT.md` is the architecture; `docs/CONFIG.md` is the

@@ -21,9 +21,9 @@ The entire contract. Every adapter emits this; every consumer reads it. Keep it 
   "nodes": [
     {
       "id":     "agent:writer",         // unique string — REQUIRED
-      "type":   "agent",                // your taxonomy (root|agent|memory|entity|…) — REQUIRED
+      "type":   "agent",                // your taxonomy (root|agent|memory|entity|…) — expected (warning if absent)
       "layer":  "agents",               // must match a meta.layers[].name — REQUIRED
-      "label":  "Writer",               // display name — REQUIRED
+      "label":  "Writer",               // display name — expected (warning if absent)
       "weight": 0.6,                    // 0..1 importance → drives size + opacity (default 0.3)
       "tier":   1,                      // optional discrete importance band (0 = apex)
       "parent": "core",                 // optional — draws a spine edge + sets hierarchy
@@ -44,6 +44,7 @@ The entire contract. Every adapter emits this; every consumer reads it. Keep it 
 
 1. **`id` is unique.** Convention: `type:slug` (e.g. `agent:writer`, `mem:1832`). The root id has no prefix.
 2. **Every `node.layer` exists in `meta.layers`.** Layer order = Z-plane order (first = back, last = front).
+   - **Required vs expected.** `id`, `layer`, and `meta.root` are hard requirements — the validator errors without them. `type` and `label` are *expected*: the validator stays lenient and only emits a **warning** if they're absent (consumers fall back to generic rendering), so a graph missing them is still valid.
 3. **`parent`/`link.source`/`link.target` reference real node ids.** Dangling refs are dropped by the builder (logged, never silently rendered).
 4. **`weight` ∈ [0,1]** → node size + opacity. **`tier`** is an optional coarse band for LOD/labeling (smaller = more important).
 5. **`type` is free-form** — your own taxonomy. Consumers render generically by `layer`/`weight`/`tier`; they only special-case types you opt into (icons, dossier templates).

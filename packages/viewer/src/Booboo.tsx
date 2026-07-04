@@ -110,7 +110,7 @@ function PulseLinks({ laid, cfg }: { laid: Laid; cfg: BoobooCfg }) {
   if (cfg.lines <= 0 || laid.linkCount === 0) return null;
   return (
     <lineSegments geometry={geo} frustumCulled={false}>
-      <shaderMaterial ref={matRef} uniforms={uni} vertexShader={PULSE_VERT} fragmentShader={PULSE_FRAG} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+      <shaderMaterial ref={matRef} uniforms={uni} vertexShader={PULSE_VERT} fragmentShader={PULSE_FRAG} transparent depthWrite={false} blending={cfg.bloom > 0 ? THREE.AdditiveBlending : THREE.NormalBlending} />
     </lineSegments>
   );
 }

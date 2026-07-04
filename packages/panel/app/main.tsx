@@ -51,9 +51,17 @@ function nodeAt(n: BNode): string {
 // fresh · amber: latest was a warn, or silent past ~2× cadence · red: latest
 // failed · gray: never reported. Older failures inside the window never tint
 // the light — they only add a subtle "recent instability" ring on the dot.
-type Pulse = { lastAt: string; lastStatus: string; n: number; fails: number };
+type Pulse = { lastAt: string; lastMs: number; lastStatus: string; n: number; fails: number };
 type HealthMap = Map<string, Pulse>;
 type Light = "ok" | "warn" | "fail" | "none";
+
+// Parse a timestamp to epoch ms. Adapters emit ISO, epoch, or locale strings;
+// compare on parsed TIME, never lexically (string ">=" mis-orders mixed formats).
+function timeMs(at: string): number {
+  if (!at) return NaN;
+  const t = Date.parse(at);
+  return Number.isFinite(t) ? t : Number(at); // fall back to a bare epoch number if Date.parse fails
+}
 
 function buildHealthMap(nodes: BNode[]): HealthMap {
   const m: HealthMap = new Map();
@@ -65,10 +73,13 @@ function buildHealthMap(nodes: BNode[]): HealthMap {
     if (typeof d.status !== "string") continue;
     const status = d.status;
     const at = nodeAt(r);
-    const cur = m.get(r.cluster) ?? { lastAt: "", lastStatus: "", n: 0, fails: 0 };
+    const atMs = timeMs(at);
+    const cur = m.get(r.cluster) ?? { lastAt: "", lastMs: -Infinity, lastStatus: "", n: 0, fails: 0 };
     cur.n++;
     if (status === "fail") cur.fails++;
-    if (at >= cur.lastAt) { cur.lastAt = at; cur.lastStatus = status; }
+    // Only a dated, newer row becomes the "latest": undated rows count but never
+    // overwrite a real verdict, and the comparison is on parsed time not string order.
+    if (Number.isFinite(atMs) && atMs >= cur.lastMs) { cur.lastMs = atMs; cur.lastAt = at; cur.lastStatus = status; }
     m.set(r.cluster, cur);
   }
   return m;
@@ -80,7 +91,7 @@ function pulseFor(a: BOrgAgent, health: HealthMap | null): Pulse | null {
   let best: Pulse | null = null;
   for (const k of keys) {
     const p = health.get(k);
-    if (p && (!best || p.lastAt > best.lastAt)) best = p;
+    if (p && (!best || p.lastMs > best.lastMs)) best = p;
   }
   return best;
 }
@@ -89,7 +100,7 @@ function lightFor(a: BOrgAgent, health: HealthMap | null): Light {
   const p = pulseFor(a, health);
   if (!p || !p.lastAt) return "none";
   if (p.lastStatus === "fail") return "fail";
-  const ageH = (Date.now() - new Date(p.lastAt).getTime()) / 3600e3;
+  const ageH = (Date.now() - p.lastMs) / 3600e3;
   const cadence = typeof a.cadence === "number" && a.cadence > 0 ? a.cadence : 26;
   if (ageH > cadence * 2) return "warn";
   if (p.lastStatus === "warn") return "warn";

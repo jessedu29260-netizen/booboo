@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { BoobooView } from "../src/index";
+import { validate } from "@booboo-brain/spec";
 import type { BoobooGraph, BNode, BLink } from "@booboo-brain/spec";
 
 // The shipped, self-contained viewer app. `booboo view` serves this and loads
@@ -90,10 +91,22 @@ function placeholder(): BoobooGraph {
   };
 }
 
+// Thrown when a fetched snapshot fails spec validation; carries the error list to render.
+class InvalidSnapshot extends Error {
+  constructor(public errors: string[]) {
+    super("snapshot failed validation");
+  }
+}
+
 async function load(): Promise<BoobooGraph> {
   const file = q.get("file"); // ?file=<url> — what `booboo view --snapshot` points at
   const n = q.get("n");
-  if (file) return (await (await fetch(file)).json()) as BoobooGraph;
+  if (file) {
+    const data = (await (await fetch(file)).json()) as unknown;
+    const v = validate(data); // never throws — bad data gets a clean error state, not a white screen
+    if (!v.ok) throw new InvalidSnapshot(v.errors);
+    return data as BoobooGraph;
+  }
   if (n) return synth(parseInt(n, 10));
   return placeholder();
 }
@@ -103,12 +116,19 @@ const box: React.CSSProperties = {
   color: "#9fb2c8", fontFamily: "ui-sans-serif, system-ui, sans-serif", textAlign: "center", padding: 24,
 };
 
-function Failed({ msg }: { msg: string }) {
+function Failed({ msg, errors }: { msg: string; errors?: string[] }) {
   return (
     <div style={box}>
       <div>
-        <div style={{ fontSize: 18, color: "#e6a0a0" }}>Couldn't load the snapshot</div>
+        <div style={{ fontSize: 18, color: "#e6a0a0" }}>{errors ? "Invalid snapshot" : "Couldn't load the snapshot"}</div>
         <div style={{ marginTop: 8, fontSize: 13, opacity: 0.8, maxWidth: 520, wordBreak: "break-word" }}>{msg}</div>
+        {errors && errors.length > 0 && (
+          <ul style={{ marginTop: 12, textAlign: "left", fontSize: 12.5, color: "#e6a0a0", opacity: 0.9, maxWidth: 520, lineHeight: 1.6, paddingLeft: 18 }}>
+            {errors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
@@ -118,4 +138,10 @@ const sel = q.get("node"); // ?node=<id> pre-opens a node's dossier (demos/scree
 const root = createRoot(document.getElementById("root")!);
 load()
   .then((data) => root.render(<BoobooView data={data} initialSel={sel} />))
-  .catch((e) => root.render(<Failed msg={String(e?.message ?? e)} />));
+  .catch((e) =>
+    root.render(
+      e instanceof InvalidSnapshot
+        ? <Failed msg="This snapshot doesn't match the Booboo spec:" errors={e.errors} />
+        : <Failed msg={String(e?.message ?? e)} />,
+    ),
+  );

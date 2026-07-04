@@ -284,10 +284,11 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .pending-item { font-size: 11.5px; color: var(--warn); font-family: var(--mono); }
 .pnl-err { position: relative; z-index: 2; padding: 10px 26px; color: #e07b6a; font-size: 12.5px; }
 
-/* layout */
-.pnl { height: 100vh; }
+/* layout — 100% so a HOST container decides the height (embedded panel);
+   the standalone app gives html/body/#root 100%, so served behaviour is unchanged. */
+.pnl { height: 100%; min-height: 480px; }
 .body { position: relative; z-index: 1; flex: 1; display: flex; min-height: 0; }
-.tree { flex: 1; min-width: 0; padding: 24px 26px 24px; overflow: hidden;
+.tree { position: relative; flex: 1; min-width: 0; padding: 24px 26px 24px; overflow: hidden;
   display: flex; flex-direction: column;
   /* the ground plane: a faint dot grid (engineered surface, drag affordance)
      + a verdigris pool anchoring the eye at the root. Static — capture-safe. */
@@ -304,11 +305,23 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 /* the measuring viewport — flex:1 + min-height:0 lets it consume the height
    .tree gives it; align/justify center the scaled block for narrow orgs. */
 .chart-fit { position: relative; flex: 1; min-height: 0; display: flex; align-items: flex-start; justify-content: center; overflow: hidden; }
-.fit-badge {
-  position: absolute; right: 10px; bottom: 8px; font-size: 10px; font-family: var(--mono);
-  color: var(--ink-3); background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px;
-  padding: 2px 7px; opacity: 0.7; pointer-events: none; animation: settle 0.4s ease both;
+/* user-zoomed: native scroll is the pan; top-left origin keeps the scaled
+   overflow fully reachable (top/center origin would clip the left half). */
+.chart-fit.zoomed { overflow: auto; justify-content: flex-start; }
+.chart-fit.zoomed .chart { transform-origin: top left; }
+.zoomer {
+  position: absolute; right: 34px; bottom: 32px; z-index: 3; display: flex; align-items: center; gap: 2px;
+  font-family: var(--mono); font-size: 11px; color: var(--ink-2);
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; padding: 3px 6px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
 }
+.zoomer button {
+  all: unset; cursor: pointer; padding: 2px 8px; border-radius: 5px; color: var(--ink-2);
+  font-family: var(--mono); font-size: 12px; line-height: 1.4;
+}
+.zoomer button:hover { background: var(--accent-dim); color: var(--ink); }
+.zoomer button.on { color: var(--accent); }
+.zoomer-pct { min-width: 40px; text-align: center; color: var(--ink-3); }
 /* min-width:max-content keeps connectors geometrically correct at natural size
    BEFORE scaling; the measured --fit shrinks the whole block toward its head. */
 .chart {

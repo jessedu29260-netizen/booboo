@@ -194,18 +194,23 @@ function Spin({ orbit, drift, peel, children }: { orbit: number; drift: number; 
   return <group ref={grp} scale={[1, 1, Math.max(0.05, peel)]}>{children}</group>;
 }
 
+// Absolute cap on DOM label portals: many sparse layers could otherwise spawn thousands of
+// per-frame <Html> portals. Keep the per-layer count gate; cap the total at top-N by weight.
+const MAX_LABELS = 150;
+
 // Labels for nodes in sparse tiers (+ the root) — the structural nodes. Dense tiers stay unlabelled (no clutter).
 function NodeLabels({ data, laid }: { data: BoobooGraph; laid: Laid }) {
   const items = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const n of data.nodes) counts[n.layer] = (counts[n.layer] ?? 0) + 1;
-    const out: { id: string; label: string; pos: [number, number, number] }[] = [];
+    let out: { id: string; label: string; pos: [number, number, number]; weight: number }[] = [];
     for (const n of data.nodes) {
       if ((counts[n.layer] ?? 0) > 12 && n.id !== data.meta.root) continue; // ponytail: count gate, no de-clutter solver
       const i = laid.index.get(n.id);
       if (i == null) continue;
-      out.push({ id: n.id, label: n.label, pos: [laid.positions[i * 3], laid.positions[i * 3 + 1], laid.positions[i * 3 + 2]] });
+      out.push({ id: n.id, label: n.label, pos: [laid.positions[i * 3], laid.positions[i * 3 + 1], laid.positions[i * 3 + 2]], weight: n.weight ?? 0 });
     }
+    if (out.length > MAX_LABELS) out = out.sort((a, b) => b.weight - a.weight).slice(0, MAX_LABELS); // global cap: top-N by weight
     return out;
   }, [data, laid]);
   return (

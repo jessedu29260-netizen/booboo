@@ -11,7 +11,8 @@ export type NodeSpec = {
   weight?: number; // constant weight
   weight_from?: string; // OR a numeric column, normalised 0..1
   tier?: number;
-  cluster?: string; // column → grouping key (also the wall field)
+  cluster?: string; // column → grouping key (also the default wall field)
+  wall_field?: string; // column whose value is matched against config.walls; defaults to cluster
   icon?: string; // column → emoji/asset
   color?: string; // column → hex
   parent?: string; // literal node id (e.g. "core")

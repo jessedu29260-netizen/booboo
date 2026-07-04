@@ -1,0 +1,10 @@
+# The build only COPYs examples/demo.booboo.json — keep the context tiny.
+node_modules
+**/node_modules
+packages/*/dist
+packages/*/dist-app
+.git
+.github
+*.log
+*.md
+stress

@@ -4,8 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>🐾 Booboo Panel</title>
+    <script>
+      /* set the theme before first paint so surfaces never flash the wrong colour */
+      try { document.documentElement.setAttribute("data-theme", localStorage.getItem("booboo-theme") === "light" ? "light" : "dark"); } catch (e) {}
+    </script>
     <style>
-      html, body, #root { margin: 0; height: 100%; background: #0b0c10; }
+      html, body, #root { margin: 0; height: 100%; background: var(--bg, #0b0c10); }
+      :root[data-theme="light"] { --bg: #f5f7f9; } /* so the fallback resolves light before panel.css loads */
     </style>
   </head>
   <body>

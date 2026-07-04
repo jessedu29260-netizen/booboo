@@ -5,7 +5,7 @@ Symptom → cause → fix. Grounded in how the build/serve/MCP layers actually b
 ## Install & setup
 
 **`npm install` fails — `@booboo-brain/build` / `@booboo-brain/serve` not found (404).**
-The packages aren't on the public npm registry yet (pre-release). Until they're published, run from the cloned monorepo (`pnpm install` at the repo root) rather than a scaffolded project, or link the local packages. A scaffolded `create-booboo` project becomes installable once the registry publish lands.
+The packages are published under the `@booboo-brain` scope — check for a typo (e.g. the old `@booboo/…` scope, which doesn't exist). Scaffold a fresh project with `npx create-booboo my-brain` (`create-booboo` is unscoped), then `cd my-brain && npm install`. To add a package directly: `npm i @booboo-brain/serve`. A brand-new scope can take a few minutes to propagate on first publish — if a `GET` 404s right after a release, wait and retry rather than assuming it's unpublished.
 
 **`booboo: command not found` after install.**
 The CLI is one bin — `booboo` (from `@booboo-brain/cli`) — with subcommands `build` / `serve` / `mcp` / `view`. Run them via your project's npm scripts (`npm run build` / `npm run serve`) or with `npx booboo serve …`.
@@ -57,7 +57,7 @@ MCP speaks JSON-RPC on **stdout**; only stderr may carry human logs (the server 
 ## Viewer (the 3D brain)
 
 **How do I actually see it today?**
-The viewer is the `@booboo-brain/viewer` React component (`<BoobooView data={graph} />`). In the repo, run the playground: `pnpm -F @booboo-brain/viewer dev`, then open the local Vite URL. Load data with `?file=<url-to-a-snapshot>` or a synthetic graph with `?n=100000`. A standalone, scaffold-included viewer command is on the roadmap (see `LAUNCH_CHECKLIST.md`).
+`booboo view --snapshot my.booboo.json` serves the `@booboo-brain/viewer` static app + your snapshot locally and opens the browser — no monorepo, no build step. Use `--demo [--nodes N]` for a no-data synthetic brain (e.g. `booboo view --demo --nodes 50000`). The scaffold wires it as `npm run view`. You can also embed the `<BoobooView data={graph} />` React component directly, or run the viewer playground in the repo: `pnpm -F @booboo-brain/viewer dev`, then open with `?file=<url-to-a-snapshot>` or `?n=100000`.
 
 **Slow / janky on a big graph.** Drop the node count or use a machine with a real GPU; a weak-GPU 2D fallback is planned.
 

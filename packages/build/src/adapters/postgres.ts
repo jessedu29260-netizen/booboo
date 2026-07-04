@@ -33,19 +33,21 @@ export async function postgresAdapter(src: { url: string; nodes?: NodeSpec[]; li
   try {
     for (const ns of src.nodes ?? []) {
       const cols = new Set<string>([ns.id, ns.label]);
-      for (const c of [ns.cluster, ns.icon, ns.color, ns.weight_from]) if (c) cols.add(c);
+      for (const c of [ns.cluster, ns.icon, ns.color, ns.weight_from, ns.wall_field]) if (c) cols.add(c);
       for (const c of ns.data ?? []) cols.add(c);
       const sel = [...cols].map(q).join(", ");
       const sql = `SELECT ${sel} FROM ${ns.table}${ns.where ? ` WHERE ${ns.where}` : ""}`;
       const { rows } = await client.query(sql);
 
-      let maxW = 1;
+      let maxW = 0; // start at 0 so a source whose max value is < 1 still normalizes up to 1.0
       if (ns.weight_from) for (const r of rows) maxW = Math.max(maxW, Number(r[ns.weight_from]) || 0);
 
       for (const r of rows) {
         const rawId = String(r[ns.id]);
         const id = (ns.prefix ?? "") + rawId;
-        const weight = ns.weight_from ? Math.min(1, (Number(r[ns.weight_from]) || 0) / maxW) : ns.weight ?? 0.3;
+        const weight = ns.weight_from
+          ? (maxW > 0 ? Math.min(1, (Number(r[ns.weight_from]) || 0) / maxW) : 0.3) // guard divide-by-zero (all-zero column)
+          : ns.weight ?? 0.3;
         nodes.push({
           id,
           type: ns.type ?? ns.layer,
@@ -59,6 +61,14 @@ export async function postgresAdapter(src: { url: string; nodes?: NodeSpec[]; li
           parent: ns.parent ?? null,
           data: ns.data ? Object.fromEntries(ns.data.map((c) => [c, (r as Record<string, unknown>)[c] ?? null])) : (r as Record<string, unknown>),
         });
+        // stamp the build-time-only wall marker (stripped after the walls filter, never emitted)
+        if (ns.wall_field) {
+          const wv = (r as Record<string, unknown>)[ns.wall_field];
+          if (wv != null) {
+            const last = nodes[nodes.length - 1];
+            (last.data ??= {}).__wall = String(wv);
+          }
+        }
       }
     }
 

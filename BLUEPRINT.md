@@ -53,17 +53,31 @@ output:
 
 ## 3 · API + MCP surface (the query layer)
 
-**REST** (`@booboo-brain/serve`):
-- `GET  /graph` → the full graph (Booboo JSON)
-- `GET  /graph/node/:id` → one node + its relations (the dossier payload)
+### Shipped today (`@booboo-brain/serve`)
+
+**REST:**
+- `GET /graph` → the full graph (Booboo JSON)
+- `GET /stats` → node/link/layer counts
+- `GET /search?q=…` → ranked node search
+- `GET /nodes/:id` → one node + its relations (the dossier payload)
+- `GET /neighbors/:id` → a node's immediate neighbours
+- `GET /path/:from/:to` → shortest path between two nodes
+
+**MCP** (stdio, same logic): `booboo_stats` · `booboo_search` · `booboo_node` · `booboo_neighbors` · `booboo_path`. Passing `mcp --org <org.booboo.json>` additionally exposes `booboo_boot` (agents boot FROM the org) and `booboo_org`. All read-only.
+
+### Target / roadmap (not yet shipped)
+
+The verb-oriented, agent-native surface below is the direction of travel — the `boot`/`recall`/`resolve` orientation verbs and the opt-in write-backs. **None of these routes/tools exist today**; they are tracked, not built.
+
+**REST (roadmap):**
+- `GET  /graph/node/:id` → dossier payload (shipped equivalent: `GET /nodes/:id`)
 - `POST /graph/boot` → orientation: root + layer counts + top nodes per layer + recent (a single-call summary for agent boot)
-- `POST /graph/recall` `{ q, layer?, limit? }` → ranked node search
+- `POST /graph/recall` `{ q, layer?, limit? }` → ranked node search (shipped equivalent: `GET /search`)
 - `GET  /graph/resolve?role=…` → look up a node/edge by a `data.role` key (canonical resolution)
 
-**MCP** (`@booboo-brain/serve`, same logic, stdio + HTTP):
-- `boot(scope?)` · `recall(q, scope?)` · `resolve(role)` · `remember(text, kind?)` · `report(text)`
-  - `boot/recall/resolve` are read-only and always available.
-  - `remember/report` are **opt-in write-backs** (need a writable source + a configured sink) — off by default.
+**MCP (roadmap):**
+- `boot(scope?)` · `recall(q, scope?)` · `resolve(role)` — read-only orientation verbs.
+- `remember(text, kind?)` · `report(text)` — **opt-in write-backs** (need a writable source + a configured sink) — off by default.
 
 ## 4 · Requirements
 

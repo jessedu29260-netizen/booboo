@@ -9,7 +9,7 @@ Named after a dachshund who never forgets where the treats are buried. Fitting, 
 
 Most tools show you *one* slice: a knowledge graph, an agent flow chart, a memory store, a trace viewer. Booboo fuses all of them into **one graph rooted at a single point**, so you can see — and query — how the whole system actually hangs together.
 
-> **Status:** alpha — six packages published: [`@booboo-brain/spec`](https://www.npmjs.com/package/@booboo-brain/spec) (the contract), [`@booboo-brain/build`](https://www.npmjs.com/package/@booboo-brain/build) (config-driven postgres/json adapters), [`@booboo-brain/serve`](https://www.npmjs.com/package/@booboo-brain/serve) (REST + MCP query layer), [`@booboo-brain/viewer`](https://www.npmjs.com/package/@booboo-brain/viewer) (million-node 3D render), [`@booboo-brain/cli`](https://www.npmjs.com/package/@booboo-brain/cli) (the unified `booboo` command), and [`create-booboo`](https://www.npmjs.com/package/create-booboo) (project scaffolder) — plus `@booboo-brain/panel` (the organigram, in-repo, npm imminent). MIT.
+> **Status:** alpha — seven packages published: [`@booboo-brain/spec`](https://www.npmjs.com/package/@booboo-brain/spec) (the contract), [`@booboo-brain/build`](https://www.npmjs.com/package/@booboo-brain/build) (config-driven postgres/json adapters), [`@booboo-brain/serve`](https://www.npmjs.com/package/@booboo-brain/serve) (REST + MCP query layer), [`@booboo-brain/viewer`](https://www.npmjs.com/package/@booboo-brain/viewer) (million-node 3D render), [`@booboo-brain/panel`](https://www.npmjs.com/package/@booboo-brain/panel) (the organigram), [`@booboo-brain/cli`](https://www.npmjs.com/package/@booboo-brain/cli) (the unified `booboo` command), and [`create-booboo`](https://www.npmjs.com/package/create-booboo) (project scaffolder). Per-package semver — see each `package.json`. MIT.
 
 ---
 
@@ -56,6 +56,25 @@ booboo panel --org org.booboo.json --snapshot my.booboo.json  # THE ORGANIGRAM �
 `booboo view` serves the `@booboo-brain/viewer` 3D renderer as a standalone app — any snapshot (or `?n=1000000` synthetic) in your browser, no monorepo. The build engine was
 proven on a real **4,469-node production brain** assembled straight from Supabase by config alone —
 privacy-walled, validated, served. See each package's README for the details.
+
+### Connect it to Claude / Cursor (MCP)
+
+`booboo mcp` speaks MCP over stdio. Point any MCP client at it — no server to host, it runs on demand:
+
+```jsonc
+// Claude Desktop: claude_desktop_config.json · Cursor: .cursor/mcp.json · Claude Code: .mcp.json
+{
+  "mcpServers": {
+    "booboo": {
+      "command": "npx",
+      "args": ["-y", "@booboo-brain/cli", "mcp",
+               "--snapshot", "my.booboo.json", "--org", "org.booboo.json"]
+    }
+  }
+}
+```
+
+Your agent can now query the whole system — `search`, `neighbors`, `path`, `stats` — and `booboo_boot('<agent-id>')` returns an agent's rules, memory reach, and reports so it **boots from the org**. Point `--snapshot`/`--org` at absolute paths if the client's working directory differs.
 
 ## The Organigram — run your agents like a company
 

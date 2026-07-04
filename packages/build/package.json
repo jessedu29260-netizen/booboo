@@ -1,7 +1,7 @@
 {
   "name": "@booboo-brain/build",
   "version": "0.1.1",
-  "description": "Booboo build engine — config-driven adapters (postgres, json) + merge/walls → emits a Booboo graph.",
+  "description": "Booboo build engine \u2014 config-driven adapters (postgres, json) + merge/walls \u2192 emits a Booboo graph.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -39,5 +39,11 @@
     "tsup": "^8",
     "typescript": "^5",
     "vitest": "^2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

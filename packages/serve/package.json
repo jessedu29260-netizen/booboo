@@ -39,5 +39,11 @@
     "tsup": "^8",
     "typescript": "^5",
     "vitest": "^2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

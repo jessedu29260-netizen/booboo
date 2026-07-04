@@ -1,4 +1,4 @@
-import { StrictMode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { StrictMode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { BNode, BOrg, BOrgAgent } from "@booboo-brain/spec";
 import { orgBootSlice } from "@booboo-brain/spec";
@@ -47,23 +47,39 @@ function nodeAt(n: BNode): string {
 }
 
 // ── HEALTH — reports are the heartbeat ─────────────────────────────────────
-// green: last report ok and fresh for its cadence · amber: stale or last was a
-// warn · red: last report failed · gray: never reported.
-type Pulse = { lastAt: string; lastStatus: string; n: number; fails: number };
+// Recency-weighted: the LATEST report decides the light. green: latest ok and
+// fresh · amber: latest was a warn, or silent past ~2× cadence · red: latest
+// failed · gray: never reported. Older failures inside the window never tint
+// the light — they only add a subtle "recent instability" ring on the dot.
+type Pulse = { lastAt: string; lastMs: number; lastStatus: string; n: number; fails: number };
 type HealthMap = Map<string, Pulse>;
 type Light = "ok" | "warn" | "fail" | "none";
+
+// Parse a timestamp to epoch ms. Adapters emit ISO, epoch, or locale strings;
+// compare on parsed TIME, never lexically (string ">=" mis-orders mixed formats).
+function timeMs(at: string): number {
+  if (!at) return NaN;
+  const t = Date.parse(at);
+  return Number.isFinite(t) ? t : Number(at); // fall back to a bare epoch number if Date.parse fails
+}
 
 function buildHealthMap(nodes: BNode[]): HealthMap {
   const m: HealthMap = new Map();
   for (const r of nodes) {
     if (!r.cluster) continue;
     const d = (r.data ?? {}) as Record<string, unknown>;
-    const status = typeof d.status === "string" ? d.status : "ok";
+    // Only rows with an explicit status are heartbeats. Close-notes/decisions
+    // carry none — defaulting them to ok let one overwrite a run's verdict.
+    if (typeof d.status !== "string") continue;
+    const status = d.status;
     const at = nodeAt(r);
-    const cur = m.get(r.cluster) ?? { lastAt: "", lastStatus: "", n: 0, fails: 0 };
+    const atMs = timeMs(at);
+    const cur = m.get(r.cluster) ?? { lastAt: "", lastMs: -Infinity, lastStatus: "", n: 0, fails: 0 };
     cur.n++;
     if (status === "fail") cur.fails++;
-    if (at >= cur.lastAt) { cur.lastAt = at; cur.lastStatus = status; }
+    // Only a dated, newer row becomes the "latest": undated rows count but never
+    // overwrite a real verdict, and the comparison is on parsed time not string order.
+    if (Number.isFinite(atMs) && atMs >= cur.lastMs) { cur.lastMs = atMs; cur.lastAt = at; cur.lastStatus = status; }
     m.set(r.cluster, cur);
   }
   return m;
@@ -75,7 +91,7 @@ function pulseFor(a: BOrgAgent, health: HealthMap | null): Pulse | null {
   let best: Pulse | null = null;
   for (const k of keys) {
     const p = health.get(k);
-    if (p && (!best || p.lastAt > best.lastAt)) best = p;
+    if (p && (!best || p.lastMs > best.lastMs)) best = p;
   }
   return best;
 }
@@ -84,11 +100,16 @@ function lightFor(a: BOrgAgent, health: HealthMap | null): Light {
   const p = pulseFor(a, health);
   if (!p || !p.lastAt) return "none";
   if (p.lastStatus === "fail") return "fail";
-  const ageH = (Date.now() - new Date(p.lastAt).getTime()) / 3600e3;
+  const ageH = (Date.now() - p.lastMs) / 3600e3;
   const cadence = typeof a.cadence === "number" && a.cadence > 0 ? a.cadence : 26;
-  if (ageH > cadence * 1.5) return "warn";
+  if (ageH > cadence * 2) return "warn";
   if (p.lastStatus === "warn") return "warn";
   return "ok";
+}
+
+// Green but with failures earlier in the window — recovered, worth a glance.
+function unstableFor(a: BOrgAgent, health: HealthMap | null): boolean {
+  return lightFor(a, health) === "ok" && (pulseFor(a, health)?.fails ?? 0) > 0;
 }
 
 const worst = (ls: Light[]): Light =>
@@ -105,9 +126,23 @@ function nodeSummary(n: BNode): string {
 
 // "What the agent closed" lives as type `report` — or `decision` in systems
 // that record decisions. Both count; query both and merge, newest first.
+// The server caps a page at 1000, so page by offset up to `limit` — truncation
+// here once dropped the newest runs and froze stale FAIL lights on the chart.
 async function fetchReports(cluster: string | null, limit = 500): Promise<{ total: number; nodes: BNode[] }> {
-  const q = (t: string) =>
-    api(`/nodes?type=${t}${cluster ? `&cluster=${encodeURIComponent(cluster)}` : ""}&limit=${limit}`).catch(() => ({ total: 0, nodes: [] }));
+  const q = async (t: string) => {
+    try {
+      const base = `/nodes?type=${t}${cluster ? `&cluster=${encodeURIComponent(cluster)}` : ""}`;
+      const first = await api(`${base}&limit=${limit}`);
+      const nodes: BNode[] = first.nodes ?? [];
+      const want = Math.min(first.total ?? 0, limit);
+      while (nodes.length < want) {
+        const page = await api(`${base}&limit=${limit}&offset=${nodes.length}`);
+        if (!page.nodes?.length) break;
+        nodes.push(...page.nodes);
+      }
+      return { total: first.total ?? 0, nodes };
+    } catch { return { total: 0, nodes: [] as BNode[] }; }
+  };
   const [r, d] = await Promise.all([q("report"), q("decision")]);
   const nodes = [...(r.nodes ?? []), ...(d.nodes ?? [])].sort((a: BNode, b: BNode) => nodeAt(b).localeCompare(nodeAt(a)));
   return { total: (r.total ?? 0) + (d.total ?? 0), nodes };
@@ -118,6 +153,19 @@ function slugify(s: string): string {
 }
 
 const REDUCED = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+// Light / dark — dark by default, persisted, applied to <html data-theme> so the CSS vars swap.
+function readTheme(): "dark" | "light" {
+  try { return localStorage.getItem("booboo-theme") === "light" ? "light" : "dark"; } catch { return "dark"; }
+}
+function useTheme(): ["dark" | "light", () => void] {
+  const [theme, setTheme] = useState<"dark" | "light">(readTheme);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("booboo-theme", theme); } catch { /* private mode */ }
+  }, [theme]);
+  return [theme, () => setTheme((t) => (t === "dark" ? "light" : "dark"))];
+}
 
 function useCountUp(target: number, ms = 900): number {
   const [v, setV] = useState(REDUCED ? target : 0);
@@ -276,7 +324,7 @@ function ChartNode({
               title={`${m.name}${m.role ? ` — ${m.role}` : ""}`}
               onClick={(e) => { e.stopPropagation(); cardProps.onSelect(m.id); }}
             >
-              <i className={`mac-dot ${lightFor(m, cardProps.health)}`} />
+              <i className={`mac-dot ${lightFor(m, cardProps.health)}${unstableFor(m, cardProps.health) ? " unstable" : ""}`} />
               <span className="mac-emoji">{m.emoji || "⚙️"}</span>
               <span className="mac-name">{m.name}</span>
             </button>
@@ -298,7 +346,7 @@ function ChartNode({
           <div className="oc-down" />
           {/* ≤4 children: the classic fan with connector bars. More: a compact
               grid block that grows DOWN instead of spreading the page sideways. */}
-          <div className={`oc-row${kids.length > 4 ? " wrap" : ""}`}>
+          <div className={`oc-row${kids.length > 3 ? " wrap" : ""}`}>
             {kids.map((k, i) => (
               <div className="oc-child" key={k.id} style={{ ["--h" as string]: bucketHue(k.id) }}>
                 <ChartNode org={org} a={k} depth={depth + 1} order={i} {...cardProps} />
@@ -354,8 +402,11 @@ function Dossier({
   const [reports, setReports] = useState<BNode[] | null>(null);
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
+  const [openRep, setOpenRep] = useState<string | null>(null);
+  const [editContract, setEditContract] = useState(false);
+  const [contractText, setContractText] = useState("");
 
-  useEffect(() => { setEdit(false); }, [id]);
+  useEffect(() => { setEdit(false); setOpenRep(null); setEditContract(false); }, [id]);
 
   useEffect(() => {
     setMemCount(null);
@@ -444,9 +495,7 @@ function Dossier({
           <label>skills <em>comma-separated</em>
             <input value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} placeholder="humanizer, deep-research" />
           </label>
-          <label>boot prompt
-            <textarea rows={3} value={form.boot} onChange={(e) => setForm({ ...form, boot: e.target.value })} placeholder="who this agent is, first thing every session" />
-          </label>
+          <p className="doss-edit-hint">↓ edit the contract below — the agent's operating prompt lives in its own section.</p>
           <div className="doss-edit-actions">
             <button className="btn primary" onClick={saveEdit}>save to draft</button>
             <button className="btn ghost" onClick={() => setEdit(false)}>cancel</button>
@@ -508,13 +557,32 @@ function Dossier({
               {reports.map((r) => {
                 const when = relTime(nodeAt(r));
                 const sum = nodeSummary(r);
+                const st = typeof (r.data as Record<string, unknown> | undefined)?.status === "string"
+                  ? String((r.data as Record<string, unknown>).status) : undefined;
+                const open = openRep === r.id;
+                const skip = new Set(["summary", "status", "at", "ts", "time", "created_at", "date", "bst", "ts_bst", "finished_at"]);
+                const extra = r.data ? Object.entries(r.data).filter(([k, v]) => !skip.has(k) && v != null && v !== "") : [];
                 return (
-                  <div className="doss-rep" key={r.id}>
+                  <div className={`doss-rep tap${open ? " open" : ""}`} key={r.id} role="button" tabIndex={0}
+                    aria-expanded={open} title="click for the full report"
+                    onClick={() => setOpenRep(open ? null : r.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpenRep(open ? null : r.id); } }}>
                     <div className="doss-rep-top">
+                      {st && <span className={`rep-dot ${st}`} aria-label={st} />}
                       {when && <span className="doss-rep-when">{when}</span>}
                       <span className="doss-rep-label">{r.label}</span>
+                      <span className="doss-rep-caret" aria-hidden>{open ? "▾" : "▸"}</span>
                     </div>
                     {sum && <p className="doss-rep-sum">{sum}</p>}
+                    {open && (
+                      <div className="doss-rep-detail">
+                        {st && <div><span className="doss-l">status</span> <b className={`rep-${st}`}>{st}</b></div>}
+                        {extra.map(([k, v]) => (
+                          <div key={k}><span className="doss-l">{k}</span> {String(v)}</div>
+                        ))}
+                        {extra.length === 0 && !st && <div className="doss-empty">no extra detail on this report</div>}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -531,7 +599,7 @@ function Dossier({
               const p = pulseFor(m, health);
               return (
                 <button className="doss-auto" key={m.id} onClick={() => onSelect(m.id)}>
-                  <i className={`mac-dot ${lightFor(m, health)}`} />
+                  <i className={`mac-dot ${lightFor(m, health)}${unstableFor(m, health) ? " unstable" : ""}`} />
                   <span className="doss-auto-emoji">{m.emoji || "⚙️"}</span>
                   <span className="doss-auto-name">{m.name}</span>
                   {m.role && <span className="doss-auto-role">{m.role}</span>}
@@ -580,10 +648,36 @@ function Dossier({
         )}
       </section>
 
-      {a.boot && !edit && (
-        <section>
-          <h3>boot</h3>
-          <p className="doss-boot">{a.boot}</p>
+      {!edit && (
+        <section className="doss-contract">
+          <h3>contract <em>the operating prompt — loaded first, every session</em></h3>
+          {editContract ? (
+            <div className="contract-edit">
+              <textarea
+                className="contract-ta"
+                autoFocus
+                value={contractText}
+                onChange={(e) => setContractText(e.target.value)}
+                placeholder="Who this agent is · what it decides · how it verifies · when it stops. This is the first thing it reads."
+              />
+              <div className="doss-edit-actions">
+                <button className="btn primary" onClick={() => { onUpdate(id, { boot: contractText.trim() || undefined }); setEditContract(false); }}>save to draft</button>
+                <button className="btn ghost" onClick={() => setEditContract(false)}>cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className={`contract-card${a.boot ? "" : " empty"}`}
+              title="click to open · edit this agent's contract"
+              onClick={() => { setContractText(a.boot ?? ""); setEditContract(true); }}
+            >
+              {a.boot
+                ? <p className="doss-boot">{a.boot}</p>
+                : <p className="doss-empty">no contract yet — click to write one.</p>}
+              <span className="contract-hint">✎ edit</span>
+            </button>
+          )}
         </section>
       )}
 
@@ -615,29 +709,60 @@ function OrgScreen({
   const [health, setHealth] = useState<HealthMap | null>(null);
   useEffect(() => {
     if (!hasSnapshot) return;
-    fetchReports(null, 2000).then(({ nodes }) => setHealth(buildHealthMap(nodes))).catch(() => {});
+    fetchReports(null, 10000).then(({ nodes }) => setHealth(buildHealthMap(nodes))).catch(() => {});
   }, [hasSnapshot]);
+
+  // Measured fit-to-viewport: scale the whole chart so the full org is always
+  // visible on both axes with no page scroll. We read the chart's NATURAL
+  // scrollWidth/scrollHeight (CSS transforms don't affect scroll metrics) against
+  // the wrapper's available box, and set --fit = min(1, availW/natW, availH/natH).
+  // Capped at 1 — small orgs are never upscaled. A ResizeObserver on both the
+  // wrapper (window resize + dossier open/close) and the chart (org-size change)
+  // keeps it correct; the [draft, health, selected] deps cover data + toggles.
+  const fitRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(1);
+  useLayoutEffect(() => {
+    const vp = fitRef.current, chart = chartRef.current;
+    if (!vp || !chart) return;
+    const PAD = 24;
+    const measure = () => {
+      const natW = chart.scrollWidth, natH = chart.scrollHeight;
+      const availW = vp.clientWidth - PAD * 2, availH = vp.clientHeight - PAD * 2;
+      if (natW <= 0 || natH <= 0) return;
+      const k = Math.min(1, availW / natW, availH / natH);
+      setFit(k > 0 ? k : 1);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(vp);
+    ro.observe(chart);
+    return () => ro.disconnect();
+  }, [draft, health, selected]);
 
   const root = draft.agents.find((a) => a.id === draft.root);
   return (
     <div className="body" onClick={() => setSelected(null)}>
       <main className="tree" onClick={(e) => e.stopPropagation()}>
         <p className="tree-hint">drag an agent onto its new parent · click for its dossier · machine trays show live health</p>
-        <div className="chart">
-          {root && (
-            <ChartNode
-              org={draft}
-              a={root}
-              depth={0}
-              order={0}
-              selected={selected}
-              dragId={dragId}
-              health={health}
-              onSelect={setSelected}
-              onDragStart={setDragId}
-              onDropOn={dropOn}
-            />
-          )}
+        <div className="chart-fit" ref={fitRef}>
+          <div className="chart" ref={chartRef} style={{ ["--fit" as string]: fit }}>
+            {root && (
+              <ChartNode
+                org={draft}
+                a={root}
+                depth={0}
+                order={0}
+                selected={selected}
+                dragId={dragId}
+                health={health}
+                onSelect={setSelected}
+                onDragStart={setDragId}
+                onDropOn={dropOn}
+              />
+            )}
+          </div>
+          {fit < 0.999 && <span className="fit-badge">fit {Math.round(fit * 100)}%</span>}
         </div>
       </main>
       {selected && (
@@ -1043,6 +1168,7 @@ function App() {
   const nodeCount = useCountUp(stats?.nodes ?? 0, 1200);
   const memTotal = useCountUp(totals?.mem ?? 0, 1100);
   const repTotal = useCountUp(totals?.rep ?? 0, 1300);
+  const [theme, toggleTheme] = useTheme();
 
   if (err && !draft) return <div className="pnl-fatal">{err}</div>;
   if (!draft) return <div className="pnl-fatal calm">waking the organigram…</div>;
@@ -1059,6 +1185,7 @@ function App() {
           {totals && <span onClick={() => nav("/reports")} className="tap"><b>{repTotal.toLocaleString()}</b> reports</span>}
         </div>
         <div className="bar-actions">
+          <button className="btn ghost theme-toggle" title="light / dark" aria-label="toggle light or dark theme" onClick={toggleTheme}>{theme === "dark" ? "☀" : "☾"}</button>
           {changes.length > 0 ? (
             <>
               <span className="bar-draft">{changes.length} unapplied change{changes.length > 1 ? "s" : ""}</span>

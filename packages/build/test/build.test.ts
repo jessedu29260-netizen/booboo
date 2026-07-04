@@ -20,6 +20,10 @@ describe("build (json adapter + engine)", () => {
     expect(ids).toContain("core"); // root added
     expect(ids).toContain("n1");
     expect(ids).not.toContain("n2"); // walled (cluster=secret) → never emitted
+    expect(ids).not.toContain("n3"); // walled via wall_field marker (data.__wall=secret) → never emitted
+    expect(ids).toContain("n4"); // data.__wall=open is not walled → kept
+    // the build-time-only marker must never leak into emitted node.data
+    expect(g.nodes.every((n) => !(n.data && "__wall" in n.data))).toBe(true);
     expect(g.links.some((l) => l.source === "core" && l.target === "n1" && l.type === "spine")).toBe(true); // spine auto-wired
     expect(g.links.some((l) => l.target === "ghost")).toBe(false); // dangling dropped
     expect(g.meta.counts!.nodes).toBe(g.nodes.length);

@@ -60,25 +60,28 @@ const PULSE_FRAG = /* glsl */ `
     gl_FragColor=vec4(vColor*(1.0+pulse*1.5), a); }`;
 
 function Field({ laid, cfg, onPick }: { laid: Laid; cfg: BoobooCfg; onPick?: (i: number) => void }) {
+  // Sizes are baked into the geometry (not mutated via needsUpdate, which didn't reliably
+  // re-upload) so the cloud rebuilds — and re-renders — whenever a size/scale/visibility
+  // slider changes. Rebuild only on size-affecting cfg, not on every cfg tick.
   const geo = useMemo(() => {
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(laid.positions, 3));
     g.setAttribute("color", new THREE.BufferAttribute(laid.colors, 3));
-    g.setAttribute("size", new THREE.BufferAttribute(new Float32Array(laid.count), 1));
-    return g;
-  }, [laid]);
-  useEffect(() => () => geo.dispose(), [geo]);
-  useEffect(() => {
-    const attr = geo.getAttribute("size") as THREE.BufferAttribute;
-    const arr = attr.array as Float32Array;
+    const sizeArr = new Float32Array(laid.count);
     for (let i = 0; i < laid.count; i++) {
       const layer = laid.nodeLayer[i];
       const vis = cfg.layers[layer] !== false;
-      arr[i] = vis ? laid.sizes[i] * cfg.nodeScale * (cfg.sizes[layer] ?? 1) : 0;
+      sizeArr[i] = vis ? laid.sizes[i] * cfg.nodeScale * (cfg.sizes[layer] ?? 1) : 0;
     }
-    attr.needsUpdate = true;
-  }, [geo, laid, cfg.nodeScale, cfg.sizes, cfg.layers]);
-  const mat = useMemo(() => new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }), []);
+    g.setAttribute("size", new THREE.BufferAttribute(sizeArr, 1));
+    return g;
+  }, [laid, cfg.nodeScale, cfg.sizes, cfg.layers]);
+  useEffect(() => () => geo.dispose(), [geo]);
+  // Additive glow is gorgeous on sparse graphs but saturates dense clusters to white.
+  // In the de-bloomed look (bloom 0) fall back to normal blending so a 16k-node layer
+  // reads as a coloured mass, not a blown-out core (matches the Operational Atlas cloud).
+  // de-bloomed look (bloom 0) → normal blending so a dense layer reads as a colour mass, not a white core
+  const mat = useMemo(() => new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: cfg.bloom > 0 ? THREE.AdditiveBlending : THREE.NormalBlending }), [cfg.bloom > 0]);
   useEffect(() => () => mat.dispose(), [mat]);
   return <points geometry={geo} material={mat} frustumCulled={false} onClick={(e) => { if (e.index != null && onPick) { onPick(e.index); e.stopPropagation(); } }} />;
 }
@@ -106,7 +109,7 @@ function PulseLinks({ laid, cfg }: { laid: Laid; cfg: BoobooCfg }) {
   if (cfg.lines <= 0 || laid.linkCount === 0) return null;
   return (
     <lineSegments geometry={geo} frustumCulled={false}>
-      <shaderMaterial ref={matRef} uniforms={uni} vertexShader={PULSE_VERT} fragmentShader={PULSE_FRAG} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+      <shaderMaterial ref={matRef} uniforms={uni} vertexShader={PULSE_VERT} fragmentShader={PULSE_FRAG} transparent depthWrite={false} blending={cfg.bloom > 0 ? THREE.AdditiveBlending : THREE.NormalBlending} />
     </lineSegments>
   );
 }

@@ -98,9 +98,11 @@ export function layout(g: BoobooGraph): Laid {
     if (Math.abs(y) > bounds) bounds = Math.abs(y);
 
     const col = nd.color ? hex2rgb(nd.color) : layerColor[nd.layer] ?? [0.7, 0.7, 0.7];
-    colors[i * 3] = col[0];
-    colors[i * 3 + 1] = col[1];
-    colors[i * 3 + 2] = col[2];
+    // tier-dim (from the Atlas): deep-tier noise recedes, structure lifts — the graph reads at scale.
+    const dim = (nd.tier ?? 2) >= 3 ? 0.34 : (nd.tier ?? 2) === 2 ? 0.6 : 1.05;
+    colors[i * 3] = col[0] * dim;
+    colors[i * 3 + 1] = col[1] * dim;
+    colors[i * 3 + 2] = col[2] * dim;
 
     const w = nd.weight ?? 0.3;
     sizes[i] = 3.5 + w * w * 46; // apex big, noise small
@@ -116,17 +118,23 @@ export function layout(g: BoobooGraph): Laid {
     const a = index.get(l.source);
     const b = index.get(l.target);
     if (a == null || b == null) continue;
+    // edge declutter (from the Atlas): keep structural spines + backbone-touching "rivers";
+    // drop deep-to-deep edges so the graph reads as structure, not a hairball.
+    const spine = l.type === "spine" || l.type === "tether";
+    const ta = nodes[a].tier ?? 2, tb = nodes[b].tier ?? 2;
+    if (!spine && ta > 1 && tb > 1) continue;
     linkPos[k * 6] = positions[a * 3];
     linkPos[k * 6 + 1] = positions[a * 3 + 1];
     linkPos[k * 6 + 2] = positions[a * 3 + 2];
     linkPos[k * 6 + 3] = positions[b * 3];
     linkPos[k * 6 + 4] = positions[b * 3 + 1];
     linkPos[k * 6 + 5] = positions[b * 3 + 2];
-    const lc = l.color ? hex2rgb(l.color) : l.type === "spine" ? [0.16, 0.14, 0.2] : [0.3, 0.34, 0.42];
+    const base = l.color ? hex2rgb(l.color) : spine ? [0.16, 0.14, 0.2] : [0.3, 0.34, 0.42];
+    const boost = spine ? 1 : ta <= 1 || tb <= 1 ? 0.7 : 0.4; // rivers dimmer than the backbone
     for (let e = 0; e < 2; e++) {
-      linkColors[k * 6 + e * 3] = lc[0];
-      linkColors[k * 6 + e * 3 + 1] = lc[1];
-      linkColors[k * 6 + e * 3 + 2] = lc[2];
+      linkColors[k * 6 + e * 3] = base[0] * boost;
+      linkColors[k * 6 + e * 3 + 1] = base[1] * boost;
+      linkColors[k * 6 + e * 3 + 2] = base[2] * boost;
     }
     k++;
   }

@@ -75,13 +75,17 @@ export function BoobooView({
   persistKey = "booboo-cfg-v3",
   persist = true,
   initialSel = null,
+  initialCfg,
 }: {
   data: BoobooGraph;
   persistKey?: string;
   persist?: boolean;
   initialSel?: string | null;
+  // Opening overrides merged over defaultCfg — lets a host set its own look
+  // (e.g. a de-bloomed, peeled-wide layered view) without forking the viewer.
+  initialCfg?: Partial<BoobooCfg>;
 }) {
-  const initial = useMemo(() => defaultCfg(data), [data]);
+  const initial = useMemo(() => ({ ...defaultCfg(data), ...(initialCfg ?? {}) }), [data, initialCfg]);
   const [cfg, setCfg, resetCfg] = usePersisted<BoobooCfg>(persistKey, initial, persist, mergeCfg, urlCfg());
   const [sel, setSel] = useState<string | null>(initialSel);
 
@@ -201,7 +205,7 @@ function Controls({
       </Section>
       <Section label="node sizes">
         {data.meta.layers.map((l) => (
-          <Slider key={l.name} label={l.label ?? l.name} v={cfg.sizes[l.name] ?? 1} min={0.2} max={3} step={0.05} on={(v) => setSize(l.name, v)} />
+          <Slider key={l.name} label={l.label ?? l.name} v={cfg.sizes[l.name] ?? 1} min={0} max={8} step={0.1} on={(v) => setSize(l.name, v)} />
         ))}
       </Section>
       <button onClick={copyWallpaper} title="copy a link that reopens this exact view" style={{ ...btn(), padding: "7px", marginTop: 2 }}>⊕ copy wallpaper link</button>

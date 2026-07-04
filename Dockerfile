@@ -4,6 +4,10 @@
 #   docker run -i -v ./my.booboo.json:/data/brain.json booboo
 FROM node:22-slim
 WORKDIR /app
-RUN npm install -g @booboo-brain/cli
+# Pin the CLI to an exact published version for reproducible builds.
+# BUMP THIS on every @booboo-brain/cli release (keep in sync with packages/cli/package.json "version").
+RUN npm install -g @booboo-brain/cli@0.3.0
 COPY examples/demo.booboo.json /data/brain.json
+# Drop root — the node:22-slim base ships a non-root "node" user.
+USER node
 CMD ["booboo", "mcp", "--snapshot", "/data/brain.json"]

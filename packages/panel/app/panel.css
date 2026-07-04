@@ -18,6 +18,28 @@
   --mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
+/* LIGHT theme — same verdigris accent, swapped surfaces. Toggle in the top bar. */
+:root[data-theme="light"] {
+  --bg: #f5f7f9;
+  --bg-1: #ffffff;
+  --bg-2: #eef1f4;
+  --line: #dbe1e8;
+  --ink: #182029;
+  --ink-2: #55636f;
+  --ink-3: #8b97a3;
+  --accent: #1e8f79;
+  --accent-2: #12796a;
+  --accent-dim: rgba(30, 143, 121, 0.12);
+  --warn: #b57b1e;
+}
+[data-theme="light"] .bar,
+[data-theme="light"] .tabs { background: rgba(255, 255, 255, 0.82); }
+[data-theme="light"] .btn.primary { color: #ffffff; }
+[data-theme="light"] .pnl-aurora { opacity: 0.32; }
+[data-theme="light"] .doss-rep.tap:hover { background: rgba(0, 0, 0, 0.03); }
+[data-theme="light"] .bk-card:hover,
+[data-theme="light"] .mem-row:hover { box-shadow: 0 8px 22px rgba(20, 40, 60, 0.08); }
+
 * { box-sizing: border-box; }
 body { font-family: var(--font); color: var(--ink); background: var(--bg); overflow-x: hidden; }
 
@@ -42,6 +64,9 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
   .pnl-aurora, .ag.root::before, .ag.root::after, .ag, .content, .bk-card, .tl-row, .mem-row,
   .rule-card, .doss, .doss-rep, .bar-draft, .ag-light.fail, .mac-dot.fail { animation: none !important; }
 }
+/* the fit is a TRANSITION not an animation — suppress it explicitly so the org
+   snaps to its fitted size instantly under reduced-motion (honest for captures) */
+@media (prefers-reduced-motion: reduce) { .chart { transition: none !important; } }
 
 /* top bar */
 .bar {
@@ -188,7 +213,7 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 /* the machine rack — a recessed slot flush under the owner's card */
 .oc-tray {
   display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;
-  max-width: 264px; margin-top: -6px; padding: 10px 8px 7px;
+  max-width: 210px; margin-top: -6px; padding: 10px 8px 7px;
   background: linear-gradient(180deg, #0a0c11, #0d1017);
   border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px;
   box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.55);
@@ -252,7 +277,8 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 /* layout */
 .pnl { height: 100vh; }
 .body { position: relative; z-index: 1; flex: 1; display: flex; min-height: 0; }
-.tree { flex: 1; min-width: 0; padding: 24px 26px 60px; overflow: auto;
+.tree { flex: 1; min-width: 0; padding: 24px 26px 24px; overflow: hidden;
+  display: flex; flex-direction: column;
   /* the ground plane: a faint dot grid (engineered surface, drag affordance)
      + a verdigris pool anchoring the eye at the root. Static — capture-safe. */
   background:
@@ -265,18 +291,32 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 /* THE COMPANY CHART — root on top, branches fanning beneath. Connectors are
    crafted: curved elbows at the row's ends, branch-hued drops, a glowing
    junction node where the parent's line meets the bar. Pure CSS. */
-.chart { min-width: max-content; margin: 0 auto; padding: 8px 20px 40px; }
+/* the measuring viewport — flex:1 + min-height:0 lets it consume the height
+   .tree gives it; align/justify center the scaled block for narrow orgs. */
+.chart-fit { position: relative; flex: 1; min-height: 0; display: flex; align-items: flex-start; justify-content: center; overflow: hidden; }
+.fit-badge {
+  position: absolute; right: 10px; bottom: 8px; font-size: 10px; font-family: var(--mono);
+  color: var(--ink-3); background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px;
+  padding: 2px 7px; opacity: 0.7; pointer-events: none; animation: settle 0.4s ease both;
+}
+/* min-width:max-content keeps connectors geometrically correct at natural size
+   BEFORE scaling; the measured --fit shrinks the whole block toward its head. */
+.chart {
+  min-width: max-content; padding: 8px 14px 20px;
+  transform: scale(var(--fit, 1)); transform-origin: top center;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform;
+}
 .ocn { display: flex; flex-direction: column; align-items: center; }
-.oc-down { width: 1.5px; height: 26px; position: relative;
+.oc-down { width: 1.5px; height: 18px; position: relative;
   background: linear-gradient(180deg, hsl(165 40% 45% / 0.5), var(--line)); }
 .oc-down::after { content: ""; position: absolute; bottom: -2px; left: 50%;
   width: 5px; height: 5px; transform: translateX(-50%); border-radius: 50%;
   background: var(--accent); box-shadow: 0 0 8px rgba(79, 184, 160, 0.5); }
 .oc-row { display: flex; align-items: flex-start; }
-.oc-child { position: relative; padding: 26px 9px 0; display: flex; flex-direction: column; align-items: center; }
-.oc-child::before { content: ""; position: absolute; top: 0; left: 50%; width: 1.5px; height: 26px;
+.oc-child { position: relative; padding: 18px 5px 0; display: flex; flex-direction: column; align-items: center; }
+.oc-child::before { content: ""; position: absolute; top: 0; left: 50%; width: 1.5px; height: 18px;
   background: linear-gradient(180deg, var(--line), hsl(var(--h, 165) 32% 34%)); }
-.oc-child::after { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 24px;
+.oc-child::after { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 16px;
   border-top: 1.5px solid var(--line); }
 .oc-child:first-child::after { left: 50%; border-left: 1.5px solid var(--line); border-top-left-radius: 14px; }
 .oc-child:last-child::after { right: 50%; border-right: 1.5px solid var(--line); border-top-right-radius: 14px; }
@@ -291,20 +331,20 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 
 /* wide sibling sets — a grouped grid growing downward, one page wide */
 .oc-row.wrap {
-  display: grid; grid-template-columns: repeat(3, auto); justify-content: center;
-  gap: 2px 14px; margin-top: 0; padding: 10px 14px 14px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); justify-content: center;
+  gap: 2px 10px; margin-top: 0; padding: 10px 12px 12px;
+  max-width: min(100%, 660px); margin-left: auto; margin-right: auto;
   border: 1px solid var(--line); border-radius: 18px; background: rgba(16, 19, 26, 0.35);
 }
 .oc-row.wrap > .oc-child { padding: 8px 0 0; }
 .oc-row.wrap > .oc-child::before, .oc-row.wrap > .oc-child::after { display: none; }
-@media (max-width: 1500px) { .oc-row.wrap { grid-template-columns: repeat(2, auto); } }
 
 /* agent cards — company badges with a rank system (size + saturation recede
    with depth) and a light-from-above material model. */
 .ag {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  width: calc(196px - min(var(--d, 0), 2) * 16px); /* 196 / 180 / 164 by rank */
-  padding: 16px 14px 12px; text-align: center;
+  width: calc(160px - min(var(--d, 0), 2) * 12px); /* 160 / 148 / 136 by rank */
+  padding: 13px 11px 10px; text-align: center;
   background: linear-gradient(180deg, hsl(var(--h) 30% 14% / 0.55), var(--bg-1) 55%);
   border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 15px; cursor: grab; overflow: hidden;
   filter: saturate(calc(1 - min(var(--d, 0), 2) * 0.15));
@@ -333,11 +373,11 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .ag-light.warn { background: var(--warn); box-shadow: 0 0 6px rgba(224, 180, 95, 0.7); }
 .ag-light.fail { background: #e07b6a; box-shadow: 0 0 8px rgba(224, 123, 106, 0.9); animation: pulse 1.4s ease-in-out infinite; }
 
-.ag.root { cursor: default; width: 240px; padding: 20px 16px 14px;
+.ag.root { cursor: default; width: 200px; padding: 16px 13px 11px;
   border-color: rgba(79, 184, 160, 0.35); filter: none;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 0 1px rgba(79, 184, 160, 0.25), 0 24px 60px -20px rgba(79, 184, 160, 0.35); }
-.ag.root .ag-ava { width: 54px; height: 54px; font-size: 27px; }
-.ag.root .ag-name { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.ag.root .ag-ava { width: 46px; height: 46px; font-size: 23px; }
+.ag.root .ag-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
 .ag.root::after {
   content: ""; position: absolute; inset: 0; border-radius: 15px; pointer-events: none;
   box-shadow: inset 0 0 26px rgba(79, 184, 160, 0.08); animation: ring 3.2s ease-in-out infinite;
@@ -345,12 +385,12 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 @keyframes ring { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
 
 .ag-ava {
-  width: 44px; height: 44px; display: grid; place-items: center; font-size: 22px; margin-top: 2px;
+  width: 38px; height: 38px; display: grid; place-items: center; font-size: 19px; margin-top: 2px;
   border-radius: 13px; background: linear-gradient(140deg, hsl(var(--h) 42% 26% / 0.85), hsl(var(--h) 45% 14% / 0.9));
   border: 1px solid hsl(var(--h) 45% 45% / 0.35);
   box-shadow: inset 0 1px 0 hsl(var(--h) 50% 60% / 0.25), 0 4px 10px -4px hsl(var(--h) 50% 30% / 0.6);
 }
-.ag-name { font-size: 14px; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.ag-name { font-size: 13px; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .ag-role { font-size: 11px; color: var(--ink-2); line-height: 1.35;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ag-meta { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 2px; }
@@ -399,6 +439,15 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .doss-rep-when { font-size: 10px; color: var(--accent-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .doss-rep-label { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .doss-rep-sum { margin: 5px 0 0; font-size: 11.5px; color: var(--ink-2); line-height: 1.55; }
+.doss-rep.tap { cursor: pointer; transition: border-color .12s ease, background .12s ease; }
+.doss-rep.tap:hover { border-left-color: var(--warn); background: rgba(255, 255, 255, 0.03); }
+.doss-rep.tap:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.doss-rep-caret { margin-left: auto; font-size: 10px; color: var(--ink-2); align-self: center; }
+.rep-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; align-self: center; }
+.rep-dot.ok { background: var(--accent); } .rep-dot.warn { background: var(--warn); } .rep-dot.fail { background: #e07b6a; }
+.rep-ok { color: var(--accent); } .rep-warn { color: var(--warn); } .rep-fail { color: #e07b6a; }
+.doss-rep-detail { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 11px; line-height: 1.7; color: var(--ink-2); font-family: var(--mono); word-break: break-word; }
+.doss-rep-detail .doss-l { display: inline-block; min-width: 74px; opacity: .6; text-transform: uppercase; letter-spacing: .04em; font-size: 9.5px; }
 .chip { font-size: 11px; background: var(--accent-dim); color: var(--accent-2); border-radius: 7px; padding: 4px 10px; }
 .chip.alt { background: var(--bg-2); color: var(--ink-2); }
 .doss-boot { font-size: 12px; color: var(--ink-2); line-height: 1.6; margin: 0; white-space: pre-wrap; }

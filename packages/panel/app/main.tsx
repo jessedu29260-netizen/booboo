@@ -1,4 +1,4 @@
-import { StrictMode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { StrictMode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { BNode, BOrg, BOrgAgent } from "@booboo-brain/spec";
 import { orgBootSlice } from "@booboo-brain/spec";
@@ -153,6 +153,19 @@ function slugify(s: string): string {
 }
 
 const REDUCED = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+// Light / dark — dark by default, persisted, applied to <html data-theme> so the CSS vars swap.
+function readTheme(): "dark" | "light" {
+  try { return localStorage.getItem("booboo-theme") === "light" ? "light" : "dark"; } catch { return "dark"; }
+}
+function useTheme(): ["dark" | "light", () => void] {
+  const [theme, setTheme] = useState<"dark" | "light">(readTheme);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("booboo-theme", theme); } catch { /* private mode */ }
+  }, [theme]);
+  return [theme, () => setTheme((t) => (t === "dark" ? "light" : "dark"))];
+}
 
 function useCountUp(target: number, ms = 900): number {
   const [v, setV] = useState(REDUCED ? target : 0);
@@ -333,7 +346,7 @@ function ChartNode({
           <div className="oc-down" />
           {/* ≤4 children: the classic fan with connector bars. More: a compact
               grid block that grows DOWN instead of spreading the page sideways. */}
-          <div className={`oc-row${kids.length > 4 ? " wrap" : ""}`}>
+          <div className={`oc-row${kids.length > 3 ? " wrap" : ""}`}>
             {kids.map((k, i) => (
               <div className="oc-child" key={k.id} style={{ ["--h" as string]: bucketHue(k.id) }}>
                 <ChartNode org={org} a={k} depth={depth + 1} order={i} {...cardProps} />
@@ -389,8 +402,9 @@ function Dossier({
   const [reports, setReports] = useState<BNode[] | null>(null);
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
+  const [openRep, setOpenRep] = useState<string | null>(null);
 
-  useEffect(() => { setEdit(false); }, [id]);
+  useEffect(() => { setEdit(false); setOpenRep(null); }, [id]);
 
   useEffect(() => {
     setMemCount(null);
@@ -543,13 +557,32 @@ function Dossier({
               {reports.map((r) => {
                 const when = relTime(nodeAt(r));
                 const sum = nodeSummary(r);
+                const st = typeof (r.data as Record<string, unknown> | undefined)?.status === "string"
+                  ? String((r.data as Record<string, unknown>).status) : undefined;
+                const open = openRep === r.id;
+                const skip = new Set(["summary", "status", "at", "ts", "time", "created_at", "date", "bst", "ts_bst", "finished_at"]);
+                const extra = r.data ? Object.entries(r.data).filter(([k, v]) => !skip.has(k) && v != null && v !== "") : [];
                 return (
-                  <div className="doss-rep" key={r.id}>
+                  <div className={`doss-rep tap${open ? " open" : ""}`} key={r.id} role="button" tabIndex={0}
+                    aria-expanded={open} title="click for the full report"
+                    onClick={() => setOpenRep(open ? null : r.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpenRep(open ? null : r.id); } }}>
                     <div className="doss-rep-top">
+                      {st && <span className={`rep-dot ${st}`} aria-label={st} />}
                       {when && <span className="doss-rep-when">{when}</span>}
                       <span className="doss-rep-label">{r.label}</span>
+                      <span className="doss-rep-caret" aria-hidden>{open ? "▾" : "▸"}</span>
                     </div>
                     {sum && <p className="doss-rep-sum">{sum}</p>}
+                    {open && (
+                      <div className="doss-rep-detail">
+                        {st && <div><span className="doss-l">status</span> <b className={`rep-${st}`}>{st}</b></div>}
+                        {extra.map(([k, v]) => (
+                          <div key={k}><span className="doss-l">{k}</span> {String(v)}</div>
+                        ))}
+                        {extra.length === 0 && !st && <div className="doss-empty">no extra detail on this report</div>}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -653,26 +686,57 @@ function OrgScreen({
     fetchReports(null, 10000).then(({ nodes }) => setHealth(buildHealthMap(nodes))).catch(() => {});
   }, [hasSnapshot]);
 
+  // Measured fit-to-viewport: scale the whole chart so the full org is always
+  // visible on both axes with no page scroll. We read the chart's NATURAL
+  // scrollWidth/scrollHeight (CSS transforms don't affect scroll metrics) against
+  // the wrapper's available box, and set --fit = min(1, availW/natW, availH/natH).
+  // Capped at 1 — small orgs are never upscaled. A ResizeObserver on both the
+  // wrapper (window resize + dossier open/close) and the chart (org-size change)
+  // keeps it correct; the [draft, health, selected] deps cover data + toggles.
+  const fitRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(1);
+  useLayoutEffect(() => {
+    const vp = fitRef.current, chart = chartRef.current;
+    if (!vp || !chart) return;
+    const PAD = 24;
+    const measure = () => {
+      const natW = chart.scrollWidth, natH = chart.scrollHeight;
+      const availW = vp.clientWidth - PAD * 2, availH = vp.clientHeight - PAD * 2;
+      if (natW <= 0 || natH <= 0) return;
+      const k = Math.min(1, availW / natW, availH / natH);
+      setFit(k > 0 ? k : 1);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(vp);
+    ro.observe(chart);
+    return () => ro.disconnect();
+  }, [draft, health, selected]);
+
   const root = draft.agents.find((a) => a.id === draft.root);
   return (
     <div className="body" onClick={() => setSelected(null)}>
       <main className="tree" onClick={(e) => e.stopPropagation()}>
         <p className="tree-hint">drag an agent onto its new parent · click for its dossier · machine trays show live health</p>
-        <div className="chart">
-          {root && (
-            <ChartNode
-              org={draft}
-              a={root}
-              depth={0}
-              order={0}
-              selected={selected}
-              dragId={dragId}
-              health={health}
-              onSelect={setSelected}
-              onDragStart={setDragId}
-              onDropOn={dropOn}
-            />
-          )}
+        <div className="chart-fit" ref={fitRef}>
+          <div className="chart" ref={chartRef} style={{ ["--fit" as string]: fit }}>
+            {root && (
+              <ChartNode
+                org={draft}
+                a={root}
+                depth={0}
+                order={0}
+                selected={selected}
+                dragId={dragId}
+                health={health}
+                onSelect={setSelected}
+                onDragStart={setDragId}
+                onDropOn={dropOn}
+              />
+            )}
+          </div>
+          {fit < 0.999 && <span className="fit-badge">fit {Math.round(fit * 100)}%</span>}
         </div>
       </main>
       {selected && (
@@ -1078,6 +1142,7 @@ function App() {
   const nodeCount = useCountUp(stats?.nodes ?? 0, 1200);
   const memTotal = useCountUp(totals?.mem ?? 0, 1100);
   const repTotal = useCountUp(totals?.rep ?? 0, 1300);
+  const [theme, toggleTheme] = useTheme();
 
   if (err && !draft) return <div className="pnl-fatal">{err}</div>;
   if (!draft) return <div className="pnl-fatal calm">waking the organigram…</div>;
@@ -1094,6 +1159,7 @@ function App() {
           {totals && <span onClick={() => nav("/reports")} className="tap"><b>{repTotal.toLocaleString()}</b> reports</span>}
         </div>
         <div className="bar-actions">
+          <button className="btn ghost theme-toggle" title="light / dark" aria-label="toggle light or dark theme" onClick={toggleTheme}>{theme === "dark" ? "☀" : "☾"}</button>
           {changes.length > 0 ? (
             <>
               <span className="bar-draft">{changes.length} unapplied change{changes.length > 1 ? "s" : ""}</span>

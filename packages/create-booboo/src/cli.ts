@@ -4,7 +4,7 @@
 import { mkdirSync, writeFileSync, existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-const BOOBOO_VERSION = "^0.3.0"; // @booboo-brain/* range the scaffolded project depends on (organigram-capable). Keep the minor in sync with @booboo-brain/cli.
+const BOOBOO_VERSION = "^0.4.0"; // @booboo-brain/* range the scaffolded project depends on (vault-capable). Keep the minor in sync with @booboo-brain/cli.
 const VERSION = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 
 const args = process.argv.slice(2);
@@ -50,6 +50,10 @@ layers:
 # Namespaces that must NEVER be emitted (filtered in the builder, before JSON/API/MCP).
 walls: [private, sealed]
 
+# Parse [[wikilinks]] in node text into first-class \`authored\` edges — the links
+# a writer CHOSE while understanding the source outrank any harvested relation.
+wikilinks: true
+
 sources:
   # 1) JSON starter — works immediately, no database. Edit data.booboo.json.
   - adapter: json
@@ -87,8 +91,8 @@ const dataJson = JSON.stringify(
       { id: "agent:researcher", type: "agent", layer: "agents", label: "Researcher", weight: 0.6, tier: 1, parent: "core", icon: "🔎", data: { role: "gathers sources" } },
       { id: "kb:spec", type: "entity", layer: "knowledge", label: "Spec", weight: 0.4, tier: 2, parent: "core" },
       { id: "kb:brand", type: "entity", layer: "knowledge", label: "Brand", weight: 0.4, tier: 2, parent: "core" },
-      { id: "mem:1", type: "memory", layer: "memory", label: "shipped v1", weight: 0.2, tier: 3, parent: "agent:writer" },
-      { id: "mem:2", type: "memory", layer: "memory", label: "found source", weight: 0.2, tier: 3, parent: "agent:researcher" },
+      { id: "mem:1", type: "memory", layer: "memory", label: "shipped v1", weight: 0.2, tier: 3, parent: "agent:writer", data: { text: "v1 shipped against [[kb:spec]] — the launch note the Writer drafted." } },
+      { id: "mem:2", type: "memory", layer: "memory", label: "found source", weight: 0.2, tier: 3, parent: "agent:researcher", data: { text: "primary source located; informs [[kb:brand]]." } },
     ],
     links: [
       { source: "agent:writer", target: "kb:spec", type: "uses" },
@@ -129,6 +133,7 @@ const pkgJson = JSON.stringify(
       mcp: "booboo mcp --snapshot brain.json --org org.booboo.json",
       view: "booboo view --snapshot brain.json",
       panel: "booboo panel --org org.booboo.json --snapshot brain.json",
+      vault: "booboo vault --snapshot brain.json --org org.booboo.json --out vault",
     },
     dependencies: {
       "@booboo-brain/cli": BOOBOO_VERSION,
@@ -170,16 +175,72 @@ latest reports. This file is a **source** (commit it) — the snapshot is derive
 
 > **Privacy:** anything whose \`cluster\` is in \`walls:\` is filtered *before* emit — sealed data never reaches the snapshot, API, or MCP.
 
+## The vault — your brain as plain markdown
+
+\`npm run vault\` emits the whole brain as a wiki-linked markdown vault (\`vault/\`):
+one page per node, index pages per layer/cluster, an agent dossier per org member.
+Open it as an Obsidian vault, read it on a couch, or hand it to ANY agent — plain
+files survive every provider. It is derived: regenerate, never hand-edit.
+
+## The agent contract
+
+**AGENTS.md** (imported by CLAUDE.md) is the operating doctrine an AI agent working
+this folder reads first: boot from the org, author \`[[wikilinks]]\`, one atomic fact
+per note, corrections replace, respect the walls, watch the quality gate. Edit it as
+your conventions evolve — it IS your system's constitution.
+
 ## MCP
 
 \`npm run mcp\` exposes \`booboo_stats · booboo_search · booboo_node · booboo_neighbors · booboo_path\`
-so an AI client can query the brain. See the Booboo repo for client config.
+(+ \`booboo_boot · booboo_org\` with \`--org\`) so an AI client can query the brain. See the Booboo repo for client config.
 `;
 
 const gitignore = `node_modules/
 # the built snapshot can contain real/private data — don't commit it
 brain.json
+# the vault is derived from the snapshot — regenerate, never commit
+vault/
 *.log
+`;
+
+// The AGENT CONTRACT — the operating doctrine any AI agent working this folder
+// reads first (Claude Code reads CLAUDE.md, Codex reads AGENTS.md; CLAUDE.md
+// imports this so there is ONE source). A fresh install must leave the user's
+// agent knowing exactly how to behave — conventions matching the setup.
+const agentsMd = `# ${TITLE} — the agent contract
+*Any AI agent working in this folder reads this first, every session. It is the
+operating doctrine for this brain — the conventions match the setup.*
+
+## What this folder is
+- \`booboo.config.yaml\` — build config (layers · sources · walls · wikilinks). Edit to shape the brain.
+- \`org.booboo.json\` — **SOURCE**: the agent organigram you boot from. Versioned, validated, edited via the panel or a reviewed change — never ad-hoc.
+- \`brain.json\` — **DERIVED** snapshot. Regenerate with \`npm run build\`; never hand-edit.
+- \`vault/\` — **DERIVED** markdown mirror of the brain (Obsidian-compatible). Regenerate with \`npm run vault\`; never hand-edit.
+
+## The loop (every non-trivial task)
+1. **ORIENT** — never assume what the brain knows: boot as your agent (\`booboo_boot('<agent-id>')\` over MCP) for your identity, inherited rules and buckets; then \`booboo_search\`/\`booboo_neighbors\` for the facts you need. *Assumption is not recall.*
+2. **ACT** — the smallest correct change.
+3. **VERIFY against reality** — \`npm run build\` and read the \`quality\` line; open \`npm run view\` or \`npm run panel\` when the change is visual. Introspection is not verification.
+4. **RECORD** — write what you learned into your source data as a memory node.
+
+## Writing memories (the conventions that keep the brain curated)
+- **One atomic fact per note**, written for the future reader. Never dump a transcript — the quality gate counts \`dump-suspects\` and they are a smell.
+- **Author your links**: put \`[[node-id]]\` (or \`[[exact label]]\`) refs in the note text where you KNOW the connection. \`wikilinks: true\` turns them into first-class \`authored\` edges that outrank any harvested relation.
+- **Corrections replace**: when a note corrects an earlier fact, remove or supersede the old one in the same act. A brain that only accumulates is not curated — stale truth next to live truth is worse than either.
+- **Respect the walls**: anything in a \`walls:\` cluster never leaves the builder. Never move data out of a walled cluster; never widen the walls without the human.
+
+## The org is law
+Rules in \`org.booboo.json\` inherit top-down — \`booboo_boot\` returns yours; obey them. Reorganising the fleet (reparenting, new agents, rule changes) goes through the panel (\`npm run panel\`) or a reviewed edit so the change is validated and diffable.
+
+## Quality gate (read it every build)
+\`npm run build\` prints \`quality · authored:N · orphans:N · dump-suspects:N\`.
+Authored should grow; orphans and dumps should not. Rising orphans/dumps = accumulating, not curating — fix the notes before adding more.
+
+## Honest close
+End substantial work by reporting plainly: what changed, what you verified against the running thing, what you couldn't verify, and any note you superseded.
+`;
+
+const claudeMd = `@AGENTS.md
 `;
 
 const files: Record<string, string> = {
@@ -189,6 +250,8 @@ const files: Record<string, string> = {
   "package.json": pkgJson,
   "README.md": readme,
   ".gitignore": gitignore,
+  "AGENTS.md": agentsMd,
+  "CLAUDE.md": claudeMd,
 };
 for (const [f, content] of Object.entries(files)) writeFileSync(path.join(dir, f), content, "utf8");
 
@@ -200,5 +263,8 @@ console.log("  npm run build      # build the graph snapshot");
 console.log("  npm run serve      # REST API on http://localhost:8787");
 console.log("  npm run mcp        # MCP over stdio (Claude / Cursor / Claude Code)");
 console.log("  npm run view       # see your brain in 3D (opens your browser)");
-console.log("  npm run panel      # the organigram — run your agents like a company\n");
+console.log("  npm run panel      # the organigram — run your agents like a company");
+console.log("  npm run vault      # the brain as a wiki-linked markdown vault (Obsidian-ready)\n");
+console.log("Your agent's contract is AGENTS.md (CLAUDE.md imports it) — Claude/Codex read it");
+console.log("automatically in this folder and will follow the brain's conventions.\n");
 console.log("Then edit booboo.config.yaml to point at your own data — a postgres example is included.\n");

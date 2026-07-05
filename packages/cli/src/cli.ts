@@ -27,6 +27,8 @@ async function build(): Promise<void> {
   for (const n of graph.nodes) by[n.layer] = (by[n.layer] ?? 0) + 1;
   console.log(`🐾 built ${graph.nodes.length.toLocaleString()} nodes · ${graph.links.length.toLocaleString()} links · ${graph.meta.layers.length} layers`);
   console.log("   " + Object.entries(by).map(([l, c]) => `${l}:${c}`).join(" · "));
+  const q = graph.meta.quality;
+  if (q) console.log(`   quality · authored:${q.authored} · orphans:${q.orphans} · dump-suspects:${q.dumps}`);
   if (snapshotPath) console.log("   → " + snapshotPath);
 }
 
@@ -52,6 +54,22 @@ async function serve(kind: "rest" | "mcp"): Promise<void> {
   }
 }
 
+async function vault(): Promise<void> {
+  const snap = flag("--snapshot");
+  if (!snap) {
+    console.error("usage: booboo vault --snapshot graph.json [--org org.booboo.json] [--out vault]");
+    process.exit(1);
+  }
+  const { loadSnapshot, loadOrg } = await import("@booboo-brain/serve");
+  const { emitVault } = await import("@booboo-brain/vault");
+  const orgPath = flag("--org");
+  const r = emitVault(loadSnapshot(snap), orgPath ? loadOrg(orgPath) : undefined, {
+    out: flag("--out", "vault")!,
+  });
+  console.log(`🐾 vault · ${r.pages.toLocaleString()} pages · ${r.layers} layers · ${r.agents} agent dossiers`);
+  console.log(`   → ${r.dir}  (open as an Obsidian vault, or read it with any agent)`);
+}
+
 function usage(): void {
   console.log(`booboo — the unified operational brain
 
@@ -64,7 +82,10 @@ usage: booboo <command> [options]
          --demo [--nodes 100000]              a synthetic brain, no data needed
   panel  --org org.booboo.json [--snapshot graph.json] [--port 8990]
                                               the organigram — drag-drop your agent
-                                              hierarchy; apply rewrites the org file`);
+                                              hierarchy; apply rewrites the org file
+  vault  --snapshot graph.json [--org org.booboo.json] [--out vault]
+                                              emit the brain as a wiki-linked markdown
+                                              vault (Obsidian-compatible, agent-portable)`);
 }
 
 async function main(): Promise<void> {
@@ -88,6 +109,8 @@ async function main(): Promise<void> {
       });
       return;
     }
+    case "vault":
+      return vault();
     case "panel": {
       const { panel } = await import("./panel.js");
       await panel({

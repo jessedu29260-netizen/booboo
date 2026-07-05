@@ -8,6 +8,11 @@ export type BMeta = {
   layers: BLayer[];
   generated?: string;
   counts?: { nodes: number; links: number };
+  /** ingestion-quality stats the builder computes (all optional, non-breaking):
+   *  orphans = non-root nodes with no non-spine link · authored = deliberate
+   *  [[wikilink]] edges · dumps = nodes carrying a text blob that looks like a
+   *  transcript dump instead of an atomic note. Curation needs a number. */
+  quality?: { orphans: number; authored: number; dumps: number };
 };
 
 export type BNode = {

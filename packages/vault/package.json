@@ -1,12 +1,12 @@
 {
-  "name": "@booboo-brain/spec",
-  "version": "0.3.0",
-  "description": "Booboo graph spec — the JSON contract every adapter emits and every consumer reads.",
+  "name": "@booboo-brain/vault",
+  "version": "0.1.0",
+  "description": "Booboo vault — emit the brain as a wiki-linked markdown vault (Obsidian-compatible). Plain files, portable to any agent, readable by any human.",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jessedu29260-netizen/booboo.git",
-    "directory": "packages/spec"
+    "directory": "packages/vault"
   },
   "bugs": {
     "url": "https://github.com/jessedu29260-netizen/booboo/issues"
@@ -29,7 +29,11 @@
     "build": "tsup src/index.ts --format esm --dts --clean",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@booboo-brain/spec": "workspace:*"
+  },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "tsup": "^8",
     "typescript": "^5",
     "vitest": "^2"

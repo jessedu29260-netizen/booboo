@@ -51,6 +51,7 @@ booboo serve --snapshot my.booboo.json --port 8787   # REST: /graph /stats /sear
 booboo mcp   --snapshot my.booboo.json --org org.booboo.json  # MCP over stdio (+ booboo_boot: agents boot FROM the org)
 booboo view  --snapshot my.booboo.json               # 3D viewer in your browser — no monorepo, no build step
 booboo panel --org org.booboo.json --snapshot my.booboo.json  # THE ORGANIGRAM — see below
+booboo vault --snapshot my.booboo.json --org org.booboo.json --out vault  # the brain as a markdown vault — see below
 ```
 
 `booboo view` serves the `@booboo-brain/viewer` 3D renderer as a standalone app — any snapshot (or `?n=1000000` synthetic) in your browser, no monorepo. The build engine was
@@ -88,6 +89,31 @@ Your agent can now query the whole system — `search`, `neighbors`, `path`, `st
 
 Five tabs over one org file + one snapshot: **organigram** (drag-drop hierarchy) · **buckets** (who remembers what) · **reports** (what the fleet closed, newest first) · **rules** (who declares, who inherits) · **graph** (the 3D brain, embedded). Rules inherit top-down — declare once at a branch, everyone beneath is bound; every dossier shows the inherited stack in boot order.
 
+## The vault — your brain as plain markdown (Obsidian-ready)
+
+`booboo vault` emits the same snapshot as a **wiki-linked markdown vault**: one page per
+node with frontmatter and its links, index pages per layer and cluster, an agent dossier
+per org member (chain of command, inherited rules, buckets, machines, contract). Open the
+folder as an Obsidian vault and you have the "LLM second brain" pattern — except generated
+from your *real* system instead of hand-fed notes. Plain files are the ultimate portability:
+any human can read them, any agent from any provider can too. Emit it nightly and the vault
+doubles as your insurance copy.
+
+Author links yourself: put `[[node-id]]` (or `[[exact label]]`) refs inside a note's text and
+set `wikilinks: true` in the config — the builder turns them into first-class `authored` edges
+that outrank harvested relations, in the graph, the API, the 3D view and the vault. Every build
+also prints an **ingestion-quality line** (`authored · orphans · dump-suspects`) so curation is
+a number, not a vibe.
+
+## Your agent knows what to do — the contract ships with the scaffold
+
+`npx create-booboo` scaffolds **AGENTS.md** (imported by **CLAUDE.md**) into the project: the
+operating doctrine any AI agent working that folder reads automatically — boot from the org,
+one atomic fact per note, author your `[[links]]`, corrections replace, respect the walls,
+watch the quality gate, close honestly. A fresh install leaves your agent already fluent in
+the brain's conventions; edit the file as your own rules evolve — it is your system's
+constitution, versioned next to the org.
+
 ## Why it's different
 
 The closest things on GitHub each do *one* layer — good tools, all of them, for their slice:
@@ -96,7 +122,7 @@ The closest things on GitHub each do *one* layer — good tools, all of them, fo
 |---|:---:|:---:|:---:|:---:|:---:|
 | **Booboo** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Graph viewers (`3d-force-graph`) | render only | — | — | ✅ | — |
-| Note graphs (Obsidian, Logseq) | your notes, not your system | — | plugins | — | — |
+| Note graphs (Obsidian, Logseq) | your notes, not your system (booboo *emits* an Obsidian vault: `booboo vault`) | — | plugins | — | — |
 | Agent frameworks (LangGraph, traces) | flows & runs | ✅ | partial | — | — |
 | Memory stores (Graphiti, Cognee) | memory only | ✅ | ✅ | — | — |
 

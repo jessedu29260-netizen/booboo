@@ -32,6 +32,9 @@ export type BoobooConfig = {
   walls?: string[];
   sources: Source[];
   output?: { snapshot?: string };
+  /** parse [[wikilinks]] out of node labels/data strings into `authored` edges —
+   *  deliberate links a writer chose, ranked above harvested relations. */
+  wikilinks?: boolean;
 };
 
 const envSub = (s: string): string => s.replace(/\$\{([^}]+)\}/g, (_, k) => process.env[k] ?? "");

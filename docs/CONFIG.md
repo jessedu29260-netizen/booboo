@@ -85,3 +85,17 @@ sources:
 6. **Privacy walls** match a node's `cluster` value. To seal a namespace, make sure those rows carry a `cluster` you list in `walls`.
 
 See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for symptoms → fixes.
+
+## `wikilinks: true` — authored edges
+
+Set `wikilinks: true` at the top level and the builder scans every node's `label` and
+string `data` fields for `[[refs]]`, emitting them as first-class `authored` edges
+(weight 1). A ref resolves against a node **id** first, then an **exact label**; the
+alias form `[[target|shown text]]` works. Unresolvable refs are skipped silently.
+Authored links are the ones a writer *chose* — rank them above harvested relations in
+your consumers (the vault lists them first; the viewer weights them fully).
+
+Every build also emits `meta.quality` — `{ authored, orphans, dumps }`:
+`orphans` = non-root nodes with no non-spine link · `dumps` = nodes carrying a text
+field over ~4000 chars (a transcript, not an atomic note). Watch the numbers: authored
+should grow, orphans and dumps should not.

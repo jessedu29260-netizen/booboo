@@ -29,3 +29,22 @@ describe("build (json adapter + engine)", () => {
     expect(g.meta.counts!.nodes).toBe(g.nodes.length);
   });
 });
+
+describe("wikilinks + quality", () => {
+  it("parses [[refs]] into authored edges (id first, label fallback) and computes quality stats", async () => {
+    const cfg: BoobooConfig = {
+      root: { id: "core", type: "root", label: "ROOT", layer: "a" },
+      layers: [{ name: "a" }],
+      wikilinks: true,
+      sources: [{ adapter: "json", path: "wikilinks.fixture.json" }],
+    };
+    const g = await build(cfg, dir);
+    // [[m2]] resolves by id; [[note three]] resolves by label; [[nowhere]] is skipped
+    expect(g.links.filter((l) => l.type === "authored").map((l) => `${l.source}->${l.target}`).sort())
+      .toEqual(["m1->m2", "m1->m3"]);
+    expect(g.meta.quality!.authored).toBe(2);
+    // m4 has no non-spine link → orphan; m4's body is 5000 chars → dump suspect
+    expect(g.meta.quality!.orphans).toBe(1);
+    expect(g.meta.quality!.dumps).toBe(1);
+  });
+});

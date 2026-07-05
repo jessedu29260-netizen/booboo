@@ -59,6 +59,30 @@ export async function build(config: BoobooConfig, baseDir = process.cwd()): Prom
     if (n.parent && n.parent !== n.id && seen.has(n.parent)) links.push({ source: n.parent, target: n.id, type: "spine" });
   }
 
+  // AUTHORED links: [[refs]] a writer chose while understanding the source —
+  // higher signal than any harvested relation, so they carry full weight.
+  // A ref resolves by node id first, then by exact label (deduped per pair).
+  if (config.wikilinks) {
+    const byLabel = new Map<string, string>();
+    for (const n of finalNodes) if (!byLabel.has(n.label)) byLabel.set(n.label, n.id);
+    const emitted = new Set<string>();
+    for (const n of finalNodes) {
+      const texts: string[] = [n.label];
+      for (const v of Object.values(n.data ?? {})) if (typeof v === "string") texts.push(v);
+      for (const t of texts) {
+        for (const m of t.matchAll(/\[\[([^[\]|]+?)(?:\|[^[\]]*)?\]\]/g)) {
+          const ref = m[1].trim();
+          const target = seen.has(ref) ? ref : byLabel.get(ref);
+          const key = target && `${n.id}→${target}`;
+          if (target && target !== n.id && key && !emitted.has(key)) {
+            emitted.add(key);
+            links.push({ source: n.id, target, type: "authored", weight: 1 });
+          }
+        }
+      }
+    }
+  }
+
   // drop dangling links (endpoints that don't resolve to a kept node)
   const finalLinks = links.filter((l) => seen.has(l.source) && seen.has(l.target));
 
@@ -80,9 +104,21 @@ export async function build(config: BoobooConfig, baseDir = process.cwd()): Prom
   if (addedLayers.length)
     console.warn(`booboo: added ${addedLayers.length} layer(s) used by nodes but absent from config.layers: ${addedLayers.join(", ")}.`);
 
+  // ingestion-quality stats — curation needs a number, not a vibe.
+  // orphans: nothing deliberate or derived touches them (spine alone ≠ connected).
+  // dumps: a text blob that big is a transcript, not an atomic note.
+  const DUMP_CHARS = 4000;
+  const linked = new Set<string>();
+  for (const l of finalLinks) if (l.type !== "spine") { linked.add(l.source); linked.add(l.target); }
+  const quality = {
+    orphans: finalNodes.filter((n) => n.id !== config.root.id && !linked.has(n.id)).length,
+    authored: finalLinks.filter((l) => l.type === "authored").length,
+    dumps: finalNodes.filter((n) => Object.values(n.data ?? {}).some((v) => typeof v === "string" && v.length > DUMP_CHARS)).length,
+  };
+
   const graph: BoobooGraph = {
     booboo: "1.0",
-    meta: { root: config.root.id, title: config.title, layers, counts: { nodes: finalNodes.length, links: finalLinks.length } },
+    meta: { root: config.root.id, title: config.title, layers, counts: { nodes: finalNodes.length, links: finalLinks.length }, quality },
     nodes: finalNodes,
     links: finalLinks,
   };

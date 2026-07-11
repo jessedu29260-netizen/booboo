@@ -12,11 +12,11 @@ fired autonomously. Do them in one guided pass (Claude drives Chrome; Jesse auth
 | # | Directory | How to submit | Needs | Status |
 |---|-----------|---------------|-------|--------|
 | 1 | **punkpeye/awesome-mcp-servers** | PR (already open) | GitHub | ✅ [PR #9087](https://github.com/punkpeye/awesome-mcp-servers/pull/9087) — OPEN, awaiting merge |
-| 2 | **Glama.ai** | "Add server" form → GitHub OAuth, they verify repo admin + auto-index | GitHub login (repo owner) | ☐ TODO |
-| 3 | **Smithery.ai** | `smithery mcp publish` CLI (add a `smithery.yaml` at that point) or web dashboard | Smithery account | ☐ TODO — write `smithery.yaml` when we do this |
-| 4 | **mcp.so** | Community submit form (repo URL + description + tags) | Site account (likely) | ☐ TODO |
-| 5 | **PulseMCP** | Web submission form | Site account (likely) | ☐ TODO |
-| 6 | **modelcontextprotocol/servers** + official Registry | PR adding a YAML entry (name/description/repo/transport); the Registry ingests from there | GitHub | ☐ TODO — confirm current entry file before PR |
+| 2 | **Glama.ai** | "Add server" form → GitHub OAuth, they verify repo admin + auto-index | GitHub login (repo owner) | ✅ **LIVE 2026-07-11** — approved + indexed (quality **B**, MIT); [glama.ai/mcp/servers?query=booboo](https://glama.ai/mcp/servers?query=booboo). Approval email received. |
+| 3 | **Smithery.ai** | now **remote-only**: the Publish form (`/servers/new`) takes only an HTTPS **MCP Server URL** it proxies via its gateway | a hosted HTTPS endpoint | ⛔ **NOT A FIT (2026-07-11)** — Booboo is local-stdio (reads your private brain files); no endpoint to hand over. Skip, or later deploy a hosted *demo* instance (needs HTTP transport in `serve` + a public URL) purely for the Smithery playground. Jesse's call. |
+| 4 | **mcp.so** | Submit form → paste public GitHub repo URL → auto-drafts from README → save publishes | GitHub-connected mcp.so account | ✅ **LIVE 2026-07-11** — [mcp.so/servers/booboo](https://mcp.so/servers/booboo) · category Memory & Knowledge · homepage fractionalhq.uk |
+| 5 | **PulseMCP** | **no direct submit / no login**: PulseMCP **ingests from the Official MCP Registry daily** (`hello@pulsemcp.com` for edits) | nothing — downstream of #6 | ✅ **LIVE (auto-ingested)** — confirmed on [pulsemcp.com](https://www.pulsemcp.com/servers?q=booboo) (Booboo · jessedu29260-netizen · Community). Ingested the Jul-5 registry entry with zero action; the 0.4.0 refresh follows on its next daily pull. |
+| 6 | **Official MCP Registry** (registry.modelcontextprotocol.io) | `mcp-publisher` CLI reads `server.json` → `login github` (device flow) → `publish` | GitHub auth (repo owner) + `mcp-publisher` binary | ✅ **LIVE at 0.4.0** — published 2026-07-11 19:09 BST via `mcp-publisher` v1.7.9 (bumped from the 0.3.1 that had been there since Jul 5). Verified on the registry API: `status=active`, `isLatest=true`. This is the source that feeds PulseMCP + aggregators. |
 
 Notes:
 - No `server.json` needed for any of these — Glama infers the schema from the repo, the
@@ -28,6 +28,36 @@ Notes:
   Jul-3 submission never indexed; redo it first. PR #9087 carries the `missing-glama`
   label, so **Glama is the gate for the whole chain**. Order of the guided pass:
   Glama → (label clears / re-trigger) → Smithery → mcp.so → PulseMCP → official registry.
+- **2026-07-11 re-submit (Frankie + Jesse, guided pass):** verified booboo still NOT on Glama
+  (search "booboo" → only unrelated `booboooking`; empty match list). Jesse signed into Glama via
+  GitHub (jessedu29260-netizen, repo owner); Claude drove the **Add Server → Server tab** form:
+  Name `Booboo`, repo `https://github.com/jessedu29260-netizen/booboo`, 2-sentence MCP-forward
+  description. **Submit for Review accepted** (dialog closed, no validation error). Glama reviews
+  before public, so it is NOT yet searchable and the direct slug 404s — that is expected pending
+  state, not a failure. Glama exposes no submitter-side "my submissions" view to confirm from.
+  **WATCH:** (a) `glama.ai/mcp/servers?query=booboo` for booboo to appear (hours–days), then
+  (b) the red `missing-glama` label on [PR #9087](https://github.com/punkpeye/awesome-mcp-servers/pull/9087)
+  should auto-clear → PR mergeable (comment to re-trigger the bot if it lingers after Glama indexes).
+  Only THEN proceed down the chain: Smithery → mcp.so → PulseMCP → official registry.
+- **2026-07-11 evening — GLAMA LIVE ✅ (milestone):** approval email from Glama; verified on
+  `glama.ai/mcp/servers?query=booboo` — Booboo listed (owner `jessedu29260-netizen`, quality **B**,
+  MIT, correct description). **The Glama gate is cleared.** PR #9087 `missing-glama` label is still
+  on as of ~18:30 BST (maintainer bot hasn't re-evaluated since indexing) — if it lingers >24h,
+  comment on the PR to re-trigger the bot (Jesse-gated public write). Routing task
+  `booboo-mcp-dir-next` filed (owner=both, P2) → next guided pass: Smithery → mcp.so → PulseMCP → registry.
+- **2026-07-11 evening — directory pass ran (Frankie + Jesse), chain re-mapped:** the ecosystem moved since
+  the Jul-4 notes. **mcp.so is LIVE** ([mcp.so/servers/booboo](https://mcp.so/servers/booboo)). **Smithery** is now a
+  remote-gateway (HTTPS-URL only) — a dead end for a local-first tool, parked as Jesse's call (skip vs hosted demo).
+  **PulseMCP** has no submit form / no login — it auto-ingests from the **Official MCP Registry**. So the real order
+  collapses to: **Official Registry is the linchpin** (feeds PulseMCP + others). Booboo is publish-ready there —
+  `server.json` valid + bumped to 0.4.0, published `@booboo-brain/cli@0.4.0` carries `mcpName`, so no npm republish.
+  Remaining: `mcp-publisher login github` (Jesse device-flow) + `publish`. Then PulseMCP follows automatically.
+- **2026-07-11 ~20:09 BST — REGISTRY PUBLISHED + PulseMCP confirmed (DONE):** fetched `mcp-publisher` v1.7.9
+  (win amd64), `validate` ✅, Jesse authorized the GitHub device flow (code 29F7-C87F), `publish` ✅ →
+  `io.github.jessedu29260-netizen/booboo` **0.4.0** live (superseded the Jul-5 0.3.1). Verified via the registry
+  API (`status=active`, `isLatest=true`). Then confirmed **PulseMCP already lists Booboo** (auto-ingested the
+  Jul-5 entry) — so #5 and #6 are both DONE. **Live coverage now: Glama · mcp.so · PulseMCP · Official Registry.**
+  Open: awesome-mcp-servers PR #9087 (missing-glama label, pending bot re-eval). Not pursuing: Smithery (remote-only).
 
 ## Paste-ready copy (one guided pass — Claude drives, Jesse authenticates)
 

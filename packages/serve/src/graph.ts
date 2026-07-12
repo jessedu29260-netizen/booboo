@@ -14,12 +14,13 @@ export class BoobooIndex {
 
   constructor(graph: BoobooGraph) {
     this.graph = graph;
-    let dupes = 0;
+    const dupes: string[] = [];
     for (const n of graph.nodes) {
-      if (this.byId.has(n.id)) dupes++; // last-wins; loadSnapshot already validates
+      if (this.byId.has(n.id)) dupes.push(n.id); // loadSnapshot() rejects these too — this catches direct construction
       this.byId.set(n.id, n);
     }
-    if (dupes) console.warn(`[booboo] ${dupes} duplicate node id(s) in snapshot — last definition wins`);
+    if (dupes.length)
+      throw new Error(`refusing to index a graph with duplicate node id(s): ${[...new Set(dupes)].slice(0, 10).join(", ")}${dupes.length > 10 ? ", …" : ""}`);
     for (const l of graph.links) {
       if (!this.byId.has(l.source) || !this.byId.has(l.target)) continue; // skip dangling
       this.edge(l.source).push({ link: l, other: l.target, dir: "out" });

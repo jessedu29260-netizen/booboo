@@ -10,13 +10,16 @@ Decisions locked: **full framework v1**, **TypeScript-only** (one `npx`/Node too
 
 | Package | Responsibility | Key deps |
 |---|---|---|
-| `@booboo-brain/spec` | The Booboo JSON types + a validator (`validate(g): Result`). Zero deps. The contract. | `zod` |
+| `@booboo-brain/spec` | The Booboo JSON types + a validator (`validate(g): Result`). Zero deps. The contract. | — |
 | `@booboo-brain/build` | Config loader + **adapters** (postgres, json) + the merge/layout/weight/wall engine → emits Booboo JSON. | `pg`, `yaml`, `@booboo-brain/spec` |
 | `@booboo-brain/viewer` | The R3F 3D component (`<BoobooView data={} cfg={} />`) — dossier, controls, command palette, kiosk/wallpaper mode. Framework-agnostic React. | `three`, `@react-three/fiber`, `@react-three/drei` |
-| `@booboo-brain/serve` | REST API + **MCP server** over a Booboo JSON (static file or a live `@booboo-brain/build` run). | `hono` (or `express`), `@modelcontextprotocol/sdk` |
-| `create-booboo` | Scaffolder/CLI: `init` (wizard), `build`, `serve`, `mcp`. Ships a **demo dataset**. | `prompts`, `@booboo-brain/*` |
+| `@booboo-brain/serve` | REST API + **MCP server** over a Booboo JSON (static file or a live `@booboo-brain/build` run). Pure Node `http` stdlib — no framework dep. | `@modelcontextprotocol/sdk`, `zod` |
+| `@booboo-brain/panel` | The organigram — a drag-drop agent hierarchy served alongside the graph; `PUT /api/org` validates + backs up + rewrites the org file. | `@booboo-brain/spec` |
+| `@booboo-brain/vault` | Emits the brain as a wiki-linked markdown vault (Obsidian-compatible), agent-portable. | `@booboo-brain/spec` |
+| `@booboo-brain/cli` | The unified `booboo` command: `build \| serve \| mcp \| view \| panel \| vault`. Lazy-loads each subcommand's package. | `@booboo-brain/*` |
+| `create-booboo` | Scaffolder: `npx create-booboo my-brain`. Ships a **demo dataset**. Zero deps. | — |
 
-Flow: `@booboo-brain/build` → Booboo JSON → consumed by `@booboo-brain/viewer` + `@booboo-brain/serve`. `create-booboo` wires them into a one-command experience.
+Flow: `@booboo-brain/build` → Booboo JSON → consumed by `@booboo-brain/viewer` + `@booboo-brain/serve` + `@booboo-brain/vault`. `@booboo-brain/cli` wires every package into one command; `create-booboo` scaffolds a new brain that uses it.
 
 ## 2 · The config (`booboo.config.yaml`)
 

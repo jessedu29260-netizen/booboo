@@ -33,7 +33,7 @@ Privacy `walls`: any node whose `cluster` value is in `walls:` is filtered befor
 ## Postgres source
 
 **Connection / SSL errors against Supabase or Neon.**
-Use the pooled `postgres://…` URL; URL-encode special characters in the password. Remote connections use `ssl: { rejectUnauthorized: false }` (works with managed poolers); strict cert validation isn't configurable yet.
+Use the pooled `postgres://…` URL; URL-encode special characters in the password. Remote connections verify the server certificate by default (`rejectUnauthorized: true`) — managed providers like Supabase/Neon present publicly-trusted certs, so this works out of the box. If you're connecting to a self-signed/internal Postgres and hit a cert error, set `BOOBOO_PG_INSECURE_TLS=1` to skip verification — this only disables identity checking (TLS still encrypts the connection), so only use it on a network you trust.
 
 **`relation "x" does not exist`.**
 Use the schema-qualified table name (e.g. `public.my_table`). `table` and `where` are interpolated as raw SQL — they must be valid as written.

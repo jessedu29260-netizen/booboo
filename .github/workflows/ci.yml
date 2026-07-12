@@ -28,3 +28,39 @@ jobs:
           node packages/cli/dist/cli.js build --config /tmp/smoke/booboo.config.yaml
           test -f /tmp/smoke/brain.json
           node -e "const g=require('/tmp/smoke/brain.json'); if(!g.nodes?.length) throw new Error('empty snapshot'); console.log('smoke ok:', g.nodes.length, 'nodes')"
+
+      # The steps above only prove the BUILD pipeline works. serve/view/panel/mcp are
+      # what users actually run — boot each one for real and hit a real endpoint,
+      # instead of trusting that a successful `pnpm build` means they still work.
+      - name: booboo serve/view/panel smoke (boot each + hit a real endpoint)
+        run: |
+          set -e
+          wait_http() {
+            for i in $(seq 1 30); do
+              curl -sf "$1" >/dev/null 2>&1 && return 0
+              sleep 0.5
+            done
+            echo "timed out waiting for $1" >&2
+            return 1
+          }
+
+          node packages/cli/dist/cli.js serve --snapshot /tmp/smoke/brain.json --port 8787 &
+          SERVE_PID=$!
+          wait_http http://localhost:8787/graph
+          curl -sf http://localhost:8787/graph | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); if(!d.counts?.nodes) throw new Error('serve /graph: missing counts.nodes'); console.log('serve smoke ok:', JSON.stringify(d.counts))"
+          kill $SERVE_PID
+
+          node packages/cli/dist/cli.js view --snapshot /tmp/smoke/brain.json --port 8989 --no-open &
+          VIEW_PID=$!
+          wait_http http://localhost:8989/snapshot.json
+          echo "view smoke ok: /snapshot.json is live"
+          kill $VIEW_PID
+
+          node packages/cli/dist/cli.js panel --org examples/org.example.json --snapshot /tmp/smoke/brain.json --port 8990 --no-open &
+          PANEL_PID=$!
+          wait_http http://localhost:8990/api/org
+          curl -sf http://localhost:8990/api/org | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); if(!Array.isArray(d.agents)) throw new Error('panel /api/org: missing agents[]'); console.log('panel smoke ok:', d.agents.length, 'agents')"
+          kill $PANEL_PID
+
+      - name: booboo mcp smoke (boot + initialize handshake over stdio)
+        run: node scripts/ci-mcp-smoke.mjs /tmp/smoke/brain.json

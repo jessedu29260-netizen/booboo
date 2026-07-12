@@ -1,6 +1,6 @@
 # Contributing to Booboo
 
-Thanks for helping the brain grow. Booboo is a pnpm monorepo of seven small packages — the
+Thanks for helping the brain grow. Booboo is a pnpm monorepo of eight small packages — the
 fastest way to contribute is to keep changes small and verified.
 
 ## Dev setup

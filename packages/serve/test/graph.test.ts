@@ -49,4 +49,18 @@ describe("BoobooIndex", () => {
     expect(ix.path("core", "z")).toBeNull(); // z is isolated
     expect(ix.path("core", "nope")).toBeNull();
   });
+
+  it("refuses to index a graph with duplicate node ids", () => {
+    const dup: BoobooGraph = {
+      booboo: "1.0",
+      meta: { root: "core", layers: [{ name: "a" }] },
+      nodes: [
+        { id: "core", type: "root", layer: "a", label: "Core", weight: 1 },
+        { id: "x", type: "agent", layer: "a", label: "First", weight: 0.5 },
+        { id: "x", type: "agent", layer: "a", label: "Second", weight: 0.5 }, // duplicate id
+      ],
+      links: [],
+    };
+    expect(() => new BoobooIndex(dup)).toThrow(/duplicate node id/);
+  });
 });

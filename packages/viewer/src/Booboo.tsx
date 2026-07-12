@@ -6,6 +6,7 @@ import { ToneMappingMode } from "postprocessing";
 import * as THREE from "three";
 import type { BoobooGraph } from "@booboo-brain/spec";
 import { layout, planeZ, PLANE_GAP, type Laid } from "./layout";
+import { truncateLabel } from "./label";
 
 // Effect intensities are numbers (sliders): 0 = off, 1 = default, >1 = more.
 export type BoobooCfg = {
@@ -211,7 +212,7 @@ function NodeLabels({ data, laid }: { data: BoobooGraph; laid: Laid }) {
       if ((counts[n.layer] ?? 0) > 12 && n.id !== data.meta.root) continue; // ponytail: count gate, no de-clutter solver
       const i = laid.index.get(n.id);
       if (i == null) continue;
-      out.push({ id: n.id, label: n.label, pos: [laid.positions[i * 3], laid.positions[i * 3 + 1], laid.positions[i * 3 + 2]], weight: n.weight ?? 0 });
+      out.push({ id: n.id, label: truncateLabel(n.label), pos: [laid.positions[i * 3], laid.positions[i * 3 + 1], laid.positions[i * 3 + 2]], weight: n.weight ?? 0 });
     }
     if (out.length > MAX_LABELS) out = out.sort((a, b) => b.weight - a.weight).slice(0, MAX_LABELS); // global cap: top-N by weight
     return out;

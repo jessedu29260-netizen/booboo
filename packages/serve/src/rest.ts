@@ -1,5 +1,15 @@
 import http from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import type { BoobooIndex } from "./graph.js";
+
+/** Constant-time compare — a plain `!==` on the bearer token leaks its length/prefix
+ *  via response timing. Buffers must be equal length for timingSafeEqual, so a length
+ *  mismatch is rejected first (itself constant-time relative to the token, not the input). */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && timingSafeEqual(ab, bb);
+}
 
 const num = (u: URLSearchParams, k: string, d: number) => {
   const v = parseInt(u.get(k) ?? "", 10);
@@ -29,7 +39,7 @@ export function createRestServer(ix: BoobooIndex): http.Server {
       res.writeHead(code, { "content-type": "application/json", "access-control-allow-origin": cors });
       res.end(JSON.stringify(body));
     };
-    if (token && req.headers.authorization !== `Bearer ${token}`) return send(401, { error: "unauthorized" });
+    if (token && !safeEqual(req.headers.authorization ?? "", `Bearer ${token}`)) return send(401, { error: "unauthorized" });
     const seg = url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
     try {
       if (seg.length === 0 || seg[0] === "graph") return send(200, ix.meta());

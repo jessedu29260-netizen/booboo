@@ -29,7 +29,8 @@ Emit the JSON → get the viewer, the API, and the MCP server **for free**. Weir
 ## Quickstart
 
 ```bash
-npx create-booboo my-brain       # scaffold a project (json starter + postgres upgrade path)
+# scaffold a project (json starter + postgres upgrade path)
+npx create-booboo my-brain
 cd my-brain
 npm install
 npm run build                    # booboo.config.yaml → brain.json (the snapshot)
@@ -76,6 +77,18 @@ privacy-walled, validated, served. See each package's README for the details.
 ```
 
 Your agent can now query the whole system — `search`, `neighbors`, `path`, `stats` — and `booboo_boot('<agent-id>')` returns an agent's rules, memory reach, and reports so it **boots from the org**. Point `--snapshot`/`--org` at absolute paths if the client's working directory differs.
+
+## Tools
+
+| Tool | What it does |
+|---|---|
+| `booboo_stats` | Node/link counts for the whole graph, broken down by layer. |
+| `booboo_search` | Search nodes by label or id (ranked: exact > prefix > substring). Use this first to find a node's id. |
+| `booboo_node` | Fetch a single node (all fields + data) by its exact id. |
+| `booboo_neighbors` | The neighbourhood around a node: connected nodes + links out to `depth` hops. |
+| `booboo_path` | Shortest path (chain of nodes) between two node ids; null if unreachable. |
+| `booboo_boot` *(with `--org`)* | An agent's boot slice of the organigram: identity, authority chain, inherited rules, bucket access, skills, children. Call this first, every session. |
+| `booboo_org` *(with `--org`)* | The full organigram: every agent, the hierarchy, buckets and rule refs. |
 
 ## The Organigram — run your agents like a company
 

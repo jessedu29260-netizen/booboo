@@ -33,7 +33,7 @@
 - ☑ **P2.4 · CI** — `.github/workflows/ci.yml` runs frozen-install + `pnpm build` + `pnpm test` + a create-booboo scaffold smoke on push/PR. Every step verified locally; the live run fires once the repo is public (P0.4).
 - ☑ **P2.5 · `create-booboo` smoke test** — encoded in ci.yml (scaffold → `booboo build` → assert a non-empty snapshot).
 - ☑ **P2.6 · Repo URL — DONE (2026-07-02).** All placeholder links filled with `https://github.com/jessedu29260-netizen/booboo`; every `packages/*/package.json` (and the root) now carries `repository` (with per-package `directory`), `bugs`, and `homepage`.
-- ☐ **P2.7 · `ssl: rejectUnauthorized:false`** — document the trade-off (done) and consider a `sslmode`/strict opt-in.
+- ☑ **P2.7 · `ssl: rejectUnauthorized:false` — DONE (2026-07-12).** Non-local Postgres now defaults to `rejectUnauthorized: true`; `BOOBOO_PG_INSECURE_TLS=1` is the explicit opt-in for self-signed/internal Postgres.
 - ☑ **P2.8 · CONTRIBUTING.md + issue templates — DONE (2026-07-02).** `CONTRIBUTING.md` (pnpm setup, build/test, PR expectations, code style) + `.github/ISSUE_TEMPLATE/bug_report.md` + `feature_request.md`; `ci.yml` YAML-validated.
 
 ## Deliverables — documentation

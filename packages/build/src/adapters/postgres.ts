@@ -26,7 +26,13 @@ function normalizeDsn(url: string): string {
 export async function postgresAdapter(src: { url: string; nodes?: NodeSpec[]; links?: LinkSpec[] }): Promise<{ nodes: BNode[]; links: BLink[] }> {
   const url = normalizeDsn(src.url);
   const isLocal = /localhost|127\.0\.0\.1/.test(url);
-  const client = new pg.Client({ connectionString: url, ssl: isLocal ? undefined : { rejectUnauthorized: false } });
+  // Remote connections verify the server cert by default (managed providers like Supabase/Neon
+  // present publicly-trusted certs, so this just works). Self-signed/internal Postgres needs an
+  // explicit opt-out — never silent, since disabling cert verification defeats TLS entirely.
+  const insecureTls = process.env.BOOBOO_PG_INSECURE_TLS === "1";
+  if (insecureTls && !isLocal) console.error("booboo: BOOBOO_PG_INSECURE_TLS=1 — skipping Postgres certificate verification (TLS provides encryption only, no server identity check).");
+  const ssl = isLocal ? undefined : { rejectUnauthorized: !insecureTls };
+  const client = new pg.Client({ connectionString: url, ssl });
   await client.connect();
   const nodes: BNode[] = [];
   const links: BLink[] = [];

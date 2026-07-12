@@ -81,7 +81,7 @@ sources:
 2. **Declare every layer.** Nodes whose `layer` isn't in `layers[]` still build, but the viewer has no colour/plane for them. The builder does not auto-union source layers when you've declared your own.
 3. **`parent` is table-level, not per-row.** For per-row hierarchy, model it as `links` instead.
 4. **`where` and `table` are raw SQL**, interpolated, not parameterised. The config is trusted (you write it) — never build it from untrusted input.
-5. **Non-local SSL.** For remote URLs the adapter connects with `rejectUnauthorized: false` (works out-of-the-box with Supabase/Neon poolers). If you need strict cert validation, that's a planned option.
+5. **Non-local SSL.** For remote URLs the adapter connects with `rejectUnauthorized: true` — Supabase/Neon poolers present publicly-trusted certs, so this works out-of-the-box. Connecting to a self-signed/internal Postgres instead? Set `BOOBOO_PG_INSECURE_TLS=1` to skip cert verification (encryption still applies; only the identity check is skipped).
 6. **Privacy walls** match a node's `cluster` value. To seal a namespace, make sure those rows carry a `cluster` you list in `walls`.
 
 See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for symptoms → fixes.

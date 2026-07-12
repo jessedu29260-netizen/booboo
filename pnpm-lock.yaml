@@ -205,6 +205,9 @@ importers:
       vite:
         specifier: ^6.0.0
         version: 6.4.3(@types/node@26.0.0)(yaml@2.9.0)
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@26.0.0)
 
 packages:
 

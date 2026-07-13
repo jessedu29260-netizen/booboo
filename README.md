@@ -76,7 +76,7 @@ privacy-walled, validated, served. See each package's README for the details.
 }
 ```
 
-Your agent can now query the whole system — `search`, `neighbors`, `path`, `stats` — and `booboo_boot('<agent-id>')` returns an agent's rules, memory reach, and reports so it **boots from the org**. Point `--snapshot`/`--org` at absolute paths if the client's working directory differs.
+Your agent can now query the whole system — `search`, `neighbors`, `path`, `stats` — `booboo_boot('<agent-id>')` returns an agent's rules, memory reach, and reports so it **boots from the org**, and `booboo_remember` / `booboo_report` let it **write back** durable memories and reports that persist across rebuilds (the live memory system). Point `--snapshot`/`--org` at absolute paths if the client's working directory differs.
 
 ## Tools
 
@@ -89,6 +89,10 @@ Your agent can now query the whole system — `search`, `neighbors`, `path`, `st
 | `booboo_path` | Shortest path (chain of nodes) between two node ids; null if unreachable. |
 | `booboo_boot` *(with `--org`)* | An agent's boot slice of the organigram: identity, authority chain, inherited rules, bucket access, skills, children. Call this first, every session. |
 | `booboo_org` *(with `--org`)* | The full organigram: every agent, the hierarchy, buckets and rule refs. |
+| `booboo_remember` | **Write** a durable memory — one atomic fact, tied to an agent. Appended to the journal beside the snapshot; queryable the same session, survives every rebuild. |
+| `booboo_report` | **Write** a report — what an agent just closed. Lands on the panel's Reports timeline. |
+
+> `booboo_remember` / `booboo_report` are on by default — the live half of the memory system. Pass `--no-write` (or `BOOBOO_READONLY=1`) for a read-only server (public/locked-down deployments); it still *reads* the journal but refuses writes.
 
 ## The Organigram — run your agents like a company
 
@@ -102,7 +106,7 @@ Your agent can now query the whole system — `search`, `neighbors`, `path`, `st
 
 Five tabs over one org file + one snapshot: **organigram** (drag-drop hierarchy) · **buckets** (who remembers what) · **reports** (what the fleet closed, newest first) · **rules** (who declares, who inherits) · **graph** (the 3D brain, embedded). Rules inherit top-down — declare once at a branch, everyone beneath is bound; every dossier shows the inherited stack in boot order.
 
-Reports and buckets populate from your own data via config, not a live write call — see [docs/CONFIG.md § Wiring fleet reports & memory](docs/CONFIG.md#wiring-fleet-reports--memory-the-panels-reportsbuckets-tabs).
+Reports and buckets fill two ways: **live**, when an agent calls `booboo_remember` / `booboo_report` (durable journal writes, no rebuild), or **in bulk** from your own tables via config — see [docs/CONFIG.md § Wiring fleet reports & memory](docs/CONFIG.md#wiring-fleet-reports--memory-the-panels-reportsbuckets-tabs).
 
 ## The vault — your brain as plain markdown (Obsidian-ready)
 

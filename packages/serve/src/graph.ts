@@ -33,6 +33,24 @@ export class BoobooIndex {
     return a;
   }
 
+  /** Add a node (+ optional link) to the live index — the write path behind
+   *  remember()/report() and journal replay. Returns false if the id already
+   *  exists (idempotent replay). Mutates the underlying graph so meta()/counts()
+   *  stay truthful and the node is immediately searchable/servable. */
+  add(node: BNode, link?: BLink): boolean {
+    if (this.byId.has(node.id)) return false;
+    this.byId.set(node.id, node);
+    this.graph.nodes.push(node);
+    if (link) {
+      this.graph.links.push(link);
+      if (this.byId.has(link.source) && this.byId.has(link.target)) {
+        this.edge(link.source).push({ link, other: link.target, dir: "out" });
+        this.edge(link.target).push({ link, other: link.source, dir: "in" });
+      }
+    }
+    return true;
+  }
+
   meta() { return { ...this.graph.meta, counts: this.counts() }; }
 
   counts() {

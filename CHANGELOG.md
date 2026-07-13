@@ -9,6 +9,22 @@ it is not a single version line.
 
 ## [Unreleased]
 
+### Added — the live memory system (write-back)
+
+- **`booboo_remember` / `booboo_report`** MCP tools + **`POST /remember` · `/report`**
+  REST routes: agents now WRITE durable memories and reports mid-session, not just
+  read. (`@booboo-brain/serve` 0.4.0, `@booboo-brain/cli` 0.5.0, `create-booboo` 0.4.0.)
+- **The journal** — writes append to `brain.journal.jsonl` beside the snapshot but
+  *outside* it: `booboo build` rewrites `brain.json` and never touches the journal,
+  so live memories **survive every rebuild**. `serve`/`mcp`/`panel` replay it at load,
+  so a written memory is queryable the same session and shows on the panel's
+  Reports/Buckets tabs next load. Append-only JSONL — atomic appends, a torn line is
+  skipped not fatal.
+- **Read-only posture** — `--no-write` / `BOOBOO_READONLY=1` omits the write tools
+  and 403s the REST write routes (public/locked-down deployments); reads unaffected.
+- **Scaffold cascade** — `create-booboo`'s `AGENTS.md` now teaches the live
+  remember/report loop, and `.gitignore` protects the durable journal.
+
 ### Fixed / Hardened (audit pass)
 
 - **Validation guards** — the spec validator errors on the hard requirements

@@ -5,6 +5,7 @@ import { validate, validateOrg } from "@booboo-brain/spec";
 export { BoobooIndex, type ListOpts, type Neighborhood } from "./graph.js";
 export { createRestServer } from "./rest.js";
 export { runMcp } from "./mcp.js";
+export { journalPathFor, loadJournal, replayJournal, JournalWriter, type JournalEntry, type WriteInput } from "./journal.js";
 
 /** Read + validate a Booboo snapshot JSON from disk. Throws a contextual error on a
  *  missing/corrupt/invalid snapshot (rather than NPE-ing deep inside the index). */

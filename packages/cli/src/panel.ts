@@ -86,6 +86,14 @@ export async function panel(opts: PanelOpts): Promise<void> {
     console.error(`booboo panel: snapshot not found — ${opts.snapshot}`);
     process.exit(1);
   }
+  // Merge the live-write journal so the Reports/Buckets tabs reflect what agents
+  // have remembered/filed since the last build. The panel READS these; writes
+  // come via `booboo mcp`/`serve`. Merged at load — restart the panel to pick up
+  // writes made while it was open.
+  if (ix && opts.snapshot) {
+    const merged = serve.replayJournal(ix, serve.journalPathFor(opts.snapshot));
+    if (merged) console.error(`🐾 journal · merged ${merged} live write(s)`);
+  }
 
   const dir = distApp("@booboo-brain/panel");
   const dirPrefix = dir.endsWith(sep) ? dir : dir + sep;

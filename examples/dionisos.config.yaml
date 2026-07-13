@@ -1,6 +1,23 @@
 # Live example: build a Booboo graph from the real Dionisos Supabase.
 #   DATABASE_URL=postgres://USER:PASS@HOST:PORT/postgres  booboo build --config examples/dionisos.config.yaml
 # (the password's special chars must be URL-encoded). Aegis/personal memory is walled out.
+#
+# TLS: this Supabase connection presents a self-signed chain, so prefix the build with
+#   BOOBOO_PG_INSECURE_TLS=1 (encryption stays on; only the identity check is skipped).
+#
+# Verified 2026-07-13: 8,495 nodes across 8 tiers build clean, walls applied, live
+# write-back (remember/report) works against the result. BUT the `links` block below —
+# mapping the real Cortex wiring from dionisos_edges (960 edges) — currently drops ALL
+# 960 as dangling. WHY (measured, not guessed): the edges reference entities at a finer
+# grain than this config ingests as nodes —
+#   • canon: endpoints (972) span every canonical, but the cortex source below ingests
+#     only is_primary non-contract canonicals (754 nodes) → most canon: endpoints miss;
+#   • host:/svc:/repo:/dom:/content:/cron: endpoints (~90) have NO node source at all.
+# So every edge has ≥1 unmatched endpoint. TO WIRE THE BRAIN: broaden the node sources to
+# cover every entity the edges reference (all referenced canonicals + host/svc/repo/dom/
+# content/cron tables), then these links resolve. The block is left in as the correct
+# target shape; it is a no-op until the node coverage catches up. (This is Booboo working
+# as designed — dangling endpoints are dropped + counted, not silently mis-joined.)
 
 title: "Dionisos · via Booboo"
 root: { id: dionisos, type: core, label: DIONISOS, layer: dionisos }
@@ -40,6 +57,12 @@ sources:
       - { table: public.dionisos_canonicals, type: canonical, layer: cortex, id: key, label: label, cluster: role, parent: dionisos, prefix: "canon:", where: "is_primary AND coalesce(role,'') NOT LIKE 'contract:%'" }
       # ARGUS — recent decisions / history
       - { table: public.dionisos_cross_decisions, type: decision, layer: argus, id: id, label: title, cluster: project, prefix: "dec:", where: "created_at > now() - interval '14 days'" }
+
+    # CORTEX wiring — the real edges between nodes (produces/feeds/depends_on/…).
+    # Endpoints already carry their prefix (canon:/proj:/…), matching the node ids
+    # above; endpoints with no ingested node are dropped as dangling (see header).
+    links:
+      - { table: public.dionisos_edges, source: src, target: dst, type: rel }
 
 output:
   snapshot: ./dionisos.booboo.json

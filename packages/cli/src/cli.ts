@@ -39,18 +39,27 @@ async function serve(kind: "rest" | "mcp"): Promise<void> {
     console.error(`usage: booboo ${verb} --snapshot graph.json${kind === "rest" ? " [--port 8787]" : ""}`);
     process.exit(1);
   }
-  const { loadSnapshot, loadOrg, BoobooIndex, createRestServer, runMcp } = await import("@booboo-brain/serve");
+  const { loadSnapshot, loadOrg, BoobooIndex, createRestServer, runMcp, journalPathFor, replayJournal, JournalWriter } = await import("@booboo-brain/serve");
   const ix = new BoobooIndex(loadSnapshot(snap!));
+
+  // The live memory system: replay past writes from the durable journal beside
+  // the snapshot, then (unless read-only) hand serve/mcp a writer for new ones.
+  const readonly = rest.includes("--no-write") || process.env.BOOBOO_READONLY === "1";
+  const journalPath = flag("--journal", journalPathFor(snap!))!;
+  const replayed = replayJournal(ix, journalPath);
+  if (replayed) console.error(`🐾 journal · replayed ${replayed} live write(s) from ${journalPath}`);
+  const writer = readonly ? undefined : new JournalWriter(ix, journalPath);
+
   if (kind === "rest") {
     const port = intFlag("--port", 8787);
-    createRestServer(ix).listen(port, () =>
-      console.error(`🐾 booboo REST · ${ix.counts().nodes.toLocaleString()} nodes · http://localhost:${port}`),
+    createRestServer(ix, writer).listen(port, () =>
+      console.error(`🐾 booboo REST · ${ix.counts().nodes.toLocaleString()} nodes · ${readonly ? "read-only" : "writable"} · http://localhost:${port}`),
     );
   } else {
     // MCP speaks JSON-RPC on stdout — every human log MUST go to stderr.
     // With --org, agents boot from the organigram (booboo_boot / booboo_org).
     const orgPath = flag("--org");
-    await runMcp(ix, "booboo", orgPath ? loadOrg(orgPath) : undefined);
+    await runMcp(ix, "booboo", orgPath ? loadOrg(orgPath) : undefined, writer);
   }
 }
 
@@ -76,8 +85,10 @@ function usage(): void {
 usage: booboo <command> [options]
 
   build  --config booboo.config.yaml          build the graph snapshot
-  serve  --snapshot graph.json [--port 8787]  REST API
-  mcp    --snapshot graph.json [--org org.booboo.json]  MCP server (stdio; --org adds booboo_boot)
+  serve  --snapshot graph.json [--port 8787] [--no-write]  REST API (+ POST /remember /report)
+  mcp    --snapshot graph.json [--org org.booboo.json] [--no-write]
+                                              MCP server (stdio; --org adds booboo_boot;
+                                              writable — adds booboo_remember/booboo_report)
   view   --snapshot graph.json [--port 8989]  3D viewer in your browser
          --demo [--nodes 100000]              a synthetic brain, no data needed
   panel  --org org.booboo.json [--snapshot graph.json] [--port 8990]

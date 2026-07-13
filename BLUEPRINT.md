@@ -58,7 +58,7 @@ output:
 
 ### Shipped today (`@booboo-brain/serve`)
 
-**REST:**
+**REST (read):**
 - `GET /graph` → the full graph (Booboo JSON)
 - `GET /stats` → node/link/layer counts
 - `GET /search?q=…` → ranked node search
@@ -66,11 +66,16 @@ output:
 - `GET /neighbors/:id` → a node's immediate neighbours
 - `GET /path/:from/:to` → shortest path between two nodes
 
-**MCP** (stdio, same logic): `booboo_stats` · `booboo_search` · `booboo_node` · `booboo_neighbors` · `booboo_path`. Passing `mcp --org <org.booboo.json>` additionally exposes `booboo_boot` (agents boot FROM the org) and `booboo_org`. All read-only.
+**REST (write — the live memory system):**
+- `POST /remember` `{ text, agent?, kind?, bucket?, title? }` → append a durable memory
+- `POST /report` `{ text, agent?, status? }` → file a report
+- Both append to `brain.journal.jsonl` (beside the snapshot, outside it — survives rebuilds) and are queryable immediately. Disabled under `--no-write` / `BOOBOO_READONLY=1` (→ 403).
+
+**MCP** (stdio, same logic): `booboo_stats` · `booboo_search` · `booboo_node` · `booboo_neighbors` · `booboo_path` (read); `booboo_remember` · `booboo_report` (write — the memory system; omitted under `--no-write`). Passing `mcp --org <org.booboo.json>` additionally exposes `booboo_boot` (agents boot FROM the org) and `booboo_org`.
 
 ### Target / roadmap (not yet shipped)
 
-The verb-oriented, agent-native surface below is the direction of travel — the `boot`/`recall`/`resolve` orientation verbs and the opt-in write-backs. **None of these routes/tools exist today**; they are tracked, not built.
+The verb-oriented orientation aliases below are still the direction of travel — the `boot`/`recall`/`resolve` naming. The **write-backs are now shipped** (see above); what remains is the read-verb aliasing.
 
 **REST (roadmap):**
 - `GET  /graph/node/:id` → dossier payload (shipped equivalent: `GET /nodes/:id`)
@@ -79,8 +84,7 @@ The verb-oriented, agent-native surface below is the direction of travel — the
 - `GET  /graph/resolve?role=…` → look up a node/edge by a `data.role` key (canonical resolution)
 
 **MCP (roadmap):**
-- `boot(scope?)` · `recall(q, scope?)` · `resolve(role)` — read-only orientation verbs.
-- `remember(text, kind?)` · `report(text)` — **opt-in write-backs** (need a writable source + a configured sink) — off by default.
+- `boot(scope?)` · `recall(q, scope?)` · `resolve(role)` — read-only orientation verbs (aliases over the shipped `booboo_*` tools).
 
 ## 4 · Requirements
 

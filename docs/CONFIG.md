@@ -96,11 +96,19 @@ A full worked example (18 report nodes + memory nodes, correct shape) ships at
 [`examples/demo.booboo.json`](../examples/demo.booboo.json) — copy the shape from there
 rather than guessing the fields.
 
-**This is populate-by-rebuild, not a live write.** There is no `booboo_remember` /
-`booboo_report` MCP tool yet (tracked in BLUEPRINT.md §3, not built) — your agents write
-report/memory rows to *their own* source (a table, or hand-edit the JSON source), then
-`booboo build` picks them up on the next run. Don't expect an in-session "remember this"
-call to appear in the panel until you rebuild.
+### Two ways memory & reports get in
+
+1. **Live, per-write (the memory system):** an agent calls **`booboo_remember`** / **`booboo_report`**
+   over MCP (or `POST /remember` · `/report` on the REST server). Each write is appended to an
+   **append-only journal** — `brain.journal.jsonl`, sitting *beside* the snapshot — and is
+   queryable the same session. `booboo build` rewrites `brain.json` but **never touches the
+   journal**, so live memories survive every rebuild; `serve`/`mcp`/`panel` replay the journal
+   at load. This is on by default; pass `--no-write` (or `BOOBOO_READONLY=1`) for a read-only
+   server that still *reads* the journal but refuses writes (a public/locked-down deployment).
+2. **Bulk, at build time:** map an existing table (or JSON) as a `type: report` / `type: memory`
+   source, as above — for importing history you already have in a database.
+
+The two coexist: the journal is your live write sink, a source is your bulk import.
 
 ## Gotchas (read before you build)
 

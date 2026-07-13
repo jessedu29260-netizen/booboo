@@ -5,19 +5,18 @@
 # TLS: this Supabase connection presents a self-signed chain, so prefix the build with
 #   BOOBOO_PG_INSECURE_TLS=1 (encryption stays on; only the identity check is skipped).
 #
-# Verified 2026-07-13: 8,495 nodes across 8 tiers build clean, walls applied, live
-# write-back (remember/report) works against the result. BUT the `links` block below —
-# mapping the real Cortex wiring from dionisos_edges (960 edges) — currently drops ALL
-# 960 as dangling. WHY (measured, not guessed): the edges reference entities at a finer
-# grain than this config ingests as nodes —
-#   • canon: endpoints (972) span every canonical, but the cortex source below ingests
-#     only is_primary non-contract canonicals (754 nodes) → most canon: endpoints miss;
-#   • host:/svc:/repo:/dom:/content:/cron: endpoints (~90) have NO node source at all.
-# So every edge has ≥1 unmatched endpoint. TO WIRE THE BRAIN: broaden the node sources to
-# cover every entity the edges reference (all referenced canonicals + host/svc/repo/dom/
-# content/cron tables), then these links resolve. The block is left in as the correct
-# target shape; it is a no-op until the node coverage catches up. (This is Booboo working
-# as designed — dangling endpoints are dropped + counted, not silently mis-joined.)
+# Verified 2026-07-13: 8,675 nodes across 8 tiers build clean, walls applied, live
+# write-back (remember/report) works against the result. The `links` block below wires
+# the real Cortex graph from dionisos_edges (960 edges): 851 resolve, 109 drop as
+# dangling (the host:/svc:/repo:/dom:/content:/cron: tail — no node source yet; add those
+# tables to wire them too). KEY GOTCHA found the hard way: the edges reference canonicals
+# by their `id` column, so the cortex source below MUST use `id: id` (not `id: key`) or
+# every canon: edge dangles.
+# REMAINING ORPHANS (~7.9k): the engram (memory) + argus (decision) tiers. In Dionisos
+# these connect to a project by CLUSTER (grouping), not by graph edges, and their bodies
+# carry no [[wikilinks]] — so they are orphans by Booboo's strict metric (a non-spine
+# link). Wiring them is a DATA question (add a memory→entity edge source, or author
+# wikilinks in the notes), not a config tweak — deliberately left for a focused pass.
 
 title: "Dionisos · via Booboo"
 root: { id: dionisos, type: core, label: DIONISOS, layer: dionisos }
@@ -42,8 +41,9 @@ sources:
     nodes:
       # GOLD — apex doctrine
       - { table: public.dionisos_canonicals, type: contract, layer: gold, id: key, label: label, parent: dionisos, weight: 0.95, prefix: "gold:", where: "role = 'contract:gold'" }
-      # PROJECT — the active brands
-      - { table: public.dionisos_projects, type: project, layer: project, id: slug, label: slug, parent: dionisos, weight: 0.7, cluster: slug, prefix: "proj:", where: "status = 'active'" }
+      # PROJECT — all brands (not just active): dionisos_edges reference projects by
+      #   slug across the portfolio, so ingest them all or their edges dangle.
+      - { table: public.dionisos_projects, type: project, layer: project, id: slug, label: slug, parent: dionisos, weight: 0.7, cluster: slug, prefix: "proj:" }
       # SILVER — one overlay per cron-family (contract:cron_silver:<family>, carrying its
       #   mandate + cadence) + the 11 families. NO master node — the silver tier IS the
       #   per-family set (matches the OS Atlas).
@@ -53,8 +53,11 @@ sources:
       - { table: public.booboo_agents, type: agent, layer: agents, id: agent_slug, label: display_name, parent: dionisos, weight: 0.6, icon: emoji, color: accent_hex, cluster: project_slug, prefix: "agent:", data: [phase, status_pill, p0_count, last_move, next_plan, prompt] }
       # ENGRAM — memory
       - { table: public.dionisos_brain_memory, type: memory, layer: engram, id: id, label: title, cluster: project, prefix: "mem:" }
-      # CORTEX — canonical wiring (non-contract primaries)
-      - { table: public.dionisos_canonicals, type: canonical, layer: cortex, id: key, label: label, cluster: role, parent: dionisos, prefix: "canon:", where: "is_primary AND coalesce(role,'') NOT LIKE 'contract:%'" }
+      # CORTEX — canonical wiring. id: id (NOT key) — dionisos_edges reference canonicals
+      #   by their id column, so the node id must be canon:<id> for the edges to resolve.
+      #   No is_primary/contract filter here: the edges span the full canonical set, so the
+      #   node set must too, or their edges dangle (measured: filtering drops ~761 edges).
+      - { table: public.dionisos_canonicals, type: canonical, layer: cortex, id: id, label: label, cluster: role, parent: dionisos, prefix: "canon:" }
       # ARGUS — recent decisions / history
       - { table: public.dionisos_cross_decisions, type: decision, layer: argus, id: id, label: title, cluster: project, prefix: "dec:", where: "created_at > now() - interval '14 days'" }
 

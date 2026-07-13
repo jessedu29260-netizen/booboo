@@ -1,5 +1,13 @@
 # 🐾 Booboo Panel — spec (v1)
 
+> **This doc predates what actually shipped and does not match it.** The panel that
+> exists today is the **Organigram** — five tabs (organigram · buckets · reports ·
+> rules · graph) over `org.booboo.json` + a snapshot — documented in the main
+> [README.md](../README.md#the-organigram--run-your-agents-like-a-company) and
+> implemented in `packages/panel/src/Panel.tsx`. Everything below (Home/Memory/
+> Prompts/Sessions/MCP screens) is an earlier, unbuilt direction — read it as
+> **roadmap ideas**, not current behaviour.
+
 > The graph gets the applause; the dossier gets the renewal.
 
 Everyone in this space ships a force-graph. Nobody ships the boring, workable

@@ -102,6 +102,8 @@ Your agent can now query the whole system — `search`, `neighbors`, `path`, `st
 
 Five tabs over one org file + one snapshot: **organigram** (drag-drop hierarchy) · **buckets** (who remembers what) · **reports** (what the fleet closed, newest first) · **rules** (who declares, who inherits) · **graph** (the 3D brain, embedded). Rules inherit top-down — declare once at a branch, everyone beneath is bound; every dossier shows the inherited stack in boot order.
 
+Reports and buckets populate from your own data via config, not a live write call — see [docs/CONFIG.md § Wiring fleet reports & memory](docs/CONFIG.md#wiring-fleet-reports--memory-the-panels-reportsbuckets-tabs).
+
 ## The vault — your brain as plain markdown (Obsidian-ready)
 
 `booboo vault` emits the same snapshot as a **wiki-linked markdown vault**: one page per

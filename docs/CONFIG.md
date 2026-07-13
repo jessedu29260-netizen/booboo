@@ -75,6 +75,33 @@ sources:
 | `type` | column → relation type (default `"link"`) |
 | `where` | raw SQL `WHERE` |
 
+## Wiring fleet reports & memory (the panel's Reports/Buckets tabs)
+
+The panel's **reports** tab and an agent's **buckets** (memory) are just nodes with a
+convention on top of the spec — same `nodes[]` mapping as anything else, no new fields:
+
+```yaml
+sources:
+  - adapter: postgres
+    url: ${DATABASE_URL}
+    nodes:
+      - { table: agent_reports, layer: reports, id: id, label: title, parent: core, prefix: "rep:", type: report }
+      - { table: agent_memory,  layer: memory,  id: id, label: title, cluster: bucket, type: memory }
+```
+
+- **Reports**: `type: "report"`, `parent` = the *agent's node id* (e.g. `agent:writer`) so the panel's dossier can find "reports filed by this agent." `data.summary` / `data.status` / `data.at` render in the report card.
+- **Memory**: `type: "memory"`, `cluster` = the bucket name (must match a `buckets:` entry in `org.booboo.json` for that agent).
+
+A full worked example (18 report nodes + memory nodes, correct shape) ships at
+[`examples/demo.booboo.json`](../examples/demo.booboo.json) — copy the shape from there
+rather than guessing the fields.
+
+**This is populate-by-rebuild, not a live write.** There is no `booboo_remember` /
+`booboo_report` MCP tool yet (tracked in BLUEPRINT.md §3, not built) — your agents write
+report/memory rows to *their own* source (a table, or hand-edit the JSON source), then
+`booboo build` picks them up on the next run. Don't expect an in-session "remember this"
+call to appear in the panel until you rebuild.
+
 ## Gotchas (read before you build)
 
 1. **Links must use the *prefixed* id.** If your nodes set `prefix: "agent:"`, the `source`/`target` values in your links table must also be `agent:<id>` — the adapter does **not** re-apply the prefix to link endpoints. Mismatched endpoints are **silently dropped** as dangling links. If links go missing, this is almost always why.

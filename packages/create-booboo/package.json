@@ -1,6 +1,6 @@
 {
   "name": "create-booboo",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Scaffold a new Booboo brain — `npx create-booboo my-brain`. Zero deps.",
   "license": "MIT",
   "repository": {
@@ -19,6 +19,9 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsup src/cli.ts --format esm --clean"
   },

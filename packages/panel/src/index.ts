@@ -3,4 +3,5 @@
 // its own backend via the `api` prop; standalone it uses same-origin /api/*.
 export { Panel, type ApiFn } from "./Panel";
 
-export const PANEL_VERSION = "0.4.0";
+import pkg from "../package.json";
+export const PANEL_VERSION: string = pkg.version; // derived — can never drift from package.json again

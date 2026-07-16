@@ -29,7 +29,7 @@
 
 - ☑ **P2.1 · Version bump** — packages published; each on its own per-package semver (see each `package.json` / npm — no single pinned version). (Publishing them = P0.1, Jesse-gated.)
 - ☑ **P2.2 · README status line — DONE (2026-07-02).** Now reads "six packages build green" and names all six.
-- ☑ **P2.3 · Per-package READMEs — DONE (2026-07-02).** All six published packages have one (spec, viewer, create-booboo written this pass; build/serve/cli already had them; cli's refreshed).
+- ☑ **P2.3 · Per-package READMEs — DONE (2026-07-02; completed to eight 2026-07-16).** All six then-published packages had one (spec, viewer, create-booboo written that pass; build/serve/cli already had them; cli's refreshed). `panel` + `vault` (added later) got theirs 2026-07-16 — their npm pages were blank until the next publish carries them.
 - ☑ **P2.4 · CI** — `.github/workflows/ci.yml` runs frozen-install + `pnpm build` + `pnpm test` + a create-booboo scaffold smoke on push/PR. Every step verified locally; the live run fires once the repo is public (P0.4).
 - ☑ **P2.5 · `create-booboo` smoke test** — encoded in ci.yml (scaffold → `booboo build` → assert a non-empty snapshot).
 - ☑ **P2.6 · Repo URL — DONE (2026-07-02).** All placeholder links filled with `https://github.com/jessedu29260-netizen/booboo`; every `packages/*/package.json` (and the root) now carries `repository` (with per-package `directory`), `bugs`, and `homepage`.
@@ -43,7 +43,7 @@
 - ☑ **Spec** → `SPEC.md` · **Architecture/blueprint** → `BLUEPRINT.md` · **Scale story** → `SCALE.md` (reconciled 2026-07-02)
 - ☑ **README** — install/usage reconciled to reality; six-package status line, all commands verified against the CLI (2026-07-02)
 - ☐ **HOW_IT_WORKS** — covered by README "the one idea" + BLUEPRINT; expand to a standalone page only if needed
-- ☐ **MCP client setup** — copy-paste config for Claude Desktop / Cursor / Claude Code
+- ☑ **MCP client setup — DONE (2026-07-16).** README § "Connect it to Claude / Cursor (MCP)" carries the copy-paste `mcpServers` block (Claude Desktop / Cursor / Claude Code paths named inline) since 4b3277b; scaffold README repeats the pointer.
 
 ## "Config we sell" — parity
 
@@ -51,6 +51,8 @@
 - ☐ Troubleshooting + CONFIG docs are written against the **shipping** schema (done) and must be updated in lockstep if the schema changes.
 
 ---
+
+> **Gate #2 re-verified 2026-07-16 (BST)** against the real registry on Windows 11: `npx -y create-booboo@latest` → `npm install` → `build` (7 nodes, quality line) → `serve` (`/stats /search /path` all correct) → `mcp` (initialize + 9 tools; `booboo_boot` returns the boot slice; `booboo_remember` write persisted to `brain.journal.jsonl` and was found by `booboo_search` in a NEW session) → `view` (302 → app + snapshot 200, journal merged) → `panel` (200, 3 agents) → `vault` (18 pages). Zero failures.
 
 ## Go-live gate (all must be true)
 1. Every **P0** ☑ and every **P1** ☑ (or consciously deferred with a written reason).

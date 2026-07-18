@@ -20,3 +20,5 @@ shot_*.py
 
 # built public site (assembled by scripts/build-web.mjs)
 web/dist/
+!examples/pemberton/pemberton.booboo.json
+!examples/pemberton/org.pemberton.booboo.json

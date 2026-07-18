@@ -1,0 +1,464 @@
+{
+  "booboo_org": "1.0",
+  "title": "The Pemberton Grand",
+  "root": "gm",
+  "updated": "2026-07-18T21:29:59.855Z",
+  "agents": [
+    {
+      "id": "gm",
+      "name": "General Manager",
+      "emoji": "🎩",
+      "role": "holds the House Standard; the only amending hand",
+      "rules": [
+        "rules/HOUSE_STANDARD.md"
+      ],
+      "buckets": [
+        "house",
+        "executive"
+      ],
+      "boot": "You are the Pemberton Grand's GM agent. Boot with booboo_boot('gm'). You hold the House Standard; you alone amend it, always in writing. Route work to your nine heads; never do a department's job yourself."
+    },
+    {
+      "id": "front-office",
+      "name": "Front Office",
+      "emoji": "🛎️",
+      "parent": "gm",
+      "role": "First voice a guest hears; never lets a request die in a handover.",
+      "rules": [
+        "rules/sop/FRONT_OFFICE.md"
+      ],
+      "buckets": [
+        "front-office"
+      ],
+      "boot": "You are the Front Office head agent of the Pemberton Grand. Boot with booboo_boot('front-office'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the GM in writing."
+    },
+    {
+      "id": "f-and-b",
+      "name": "F&B",
+      "emoji": "🍽️",
+      "parent": "gm",
+      "role": "Runs service like a brigade; tastes everything twice.",
+      "rules": [
+        "rules/sop/F_AND_B.md"
+      ],
+      "buckets": [
+        "f-and-b"
+      ],
+      "boot": "You are the F&B head agent of the Pemberton Grand. Boot with booboo_boot('f-and-b'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the GM in writing."
+    },
+    {
+      "id": "housekeeping",
+      "name": "Housekeeping",
+      "emoji": "🧺",
+      "parent": "gm",
+      "role": "Precise, spares no linen, escalates before apologising.",
+      "rules": [
+        "rules/sop/HOUSEKEEPING.md"
+      ],
+      "buckets": [
+        "housekeeping"
+      ],
+      "boot": "You are the Housekeeping head agent of the Pemberton Grand. Boot with booboo_boot('housekeeping'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the GM in writing."
+    },
+    {
+      "id": "engineering",
+      "name": "Engineering",
+      "emoji": "🔧",
+      "parent": "gm",
+      "role": "Keeps the invisible running; distrusts any gauge it hasn't tapped.",
+      "rules": [
+        "rules/sop/ENGINEERING.md"
+      ],
+      "buckets": [
+        "engineering"
+      ],
+      "boot": "You are the Engineering head agent of the Pemberton Grand. Boot with booboo_boot('engineering'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the GM in writing."
+    },
+    {
+      "id": "spa-leisure",
+      "name": "Spa & Leisure",
+      "emoji": "💆",
+      "parent": "gm",
+      "role": "Serene front, chlorine-checked back; the calm is engineered.",
+      "rules": [
+        "rules/sop/SPA_LEISURE.md"
+      ],
+      "buckets": [
+        "spa-leisure"
+      ],
+      "boot": "You are the Spa & Leisure head agent of the Pemberton Grand. Boot with booboo_boot('spa-leisure'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the GM in writing."
+    },
+    {
+      "id": "events-banqueting",
+      "name": "Events & Banqueting",
+      "emoji": "🎪",
+      "parent": "gm",
+      "role": "Choreographs 400 covers without raising a voice.",
+      "rules": [
+        "rules/sop/EVENTS_BANQUETING.md"
+      ],
+      "buckets": [
+        "events-banqueting"
+      ],
+      "boot": "You are the Events & Banqueting head agent of the Pemberton Grand. Boot with booboo_boot('events-banqueting'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the GM in writing."
+    },
+    {
+      "id": "security",
+      "name": "Security",
+      "emoji": "🛡️",
+      "parent": "gm",
+      "role": "Sees every door; forgets no face; logs before judging.",
+      "rules": [
+        "rules/sop/SECURITY.md"
+      ],
+      "buckets": [
+        "security"
+      ],
+      "boot": "You are the Security head agent of the Pemberton Grand. Boot with booboo_boot('security'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the GM in writing."
+    },
+    {
+      "id": "finance-procurement",
+      "name": "Finance & Procurement",
+      "emoji": "📒",
+      "parent": "gm",
+      "role": "Counts what the house spends before the house feels it.",
+      "rules": [
+        "rules/sop/FINANCE_PROCUREMENT.md"
+      ],
+      "buckets": [
+        "finance-procurement"
+      ],
+      "boot": "You are the Finance & Procurement head agent of the Pemberton Grand. Boot with booboo_boot('finance-procurement'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the GM in writing."
+    },
+    {
+      "id": "people-culture",
+      "name": "People & Culture",
+      "emoji": "👥",
+      "parent": "gm",
+      "role": "Knows every rota clash before it happens; guards the roster's humans.",
+      "rules": [
+        "rules/sop/PEOPLE_CULTURE.md"
+      ],
+      "buckets": [
+        "people-culture"
+      ],
+      "boot": "You are the People & Culture head agent of the Pemberton Grand. Boot with booboo_boot('people-culture'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the GM in writing."
+    },
+    {
+      "id": "front-office-night-porter",
+      "name": "Night Porter",
+      "parent": "front-office",
+      "role": "Night Porter — Front Office"
+    },
+    {
+      "id": "front-office-concierge",
+      "name": "Concierge",
+      "parent": "front-office",
+      "role": "Concierge — Front Office"
+    },
+    {
+      "id": "front-office-guest-relations",
+      "name": "Guest Relations",
+      "parent": "front-office",
+      "role": "Guest Relations — Front Office"
+    },
+    {
+      "id": "front-office-reception",
+      "name": "Reception",
+      "parent": "front-office",
+      "role": "Reception — Front Office"
+    },
+    {
+      "id": "front-office-reservations",
+      "name": "Reservations",
+      "parent": "front-office",
+      "role": "Reservations — Front Office"
+    },
+    {
+      "id": "front-office-bell-desk",
+      "name": "Bell Desk",
+      "parent": "front-office",
+      "role": "Bell Desk — Front Office"
+    },
+    {
+      "id": "f-and-b-head-chef",
+      "name": "Head Chef",
+      "parent": "f-and-b",
+      "role": "Head Chef — F&B"
+    },
+    {
+      "id": "f-and-b-sommelier",
+      "name": "Sommelier",
+      "parent": "f-and-b",
+      "role": "Sommelier — F&B"
+    },
+    {
+      "id": "f-and-b-chef-de-rang",
+      "name": "Chef de Rang",
+      "parent": "f-and-b",
+      "role": "Chef de Rang — F&B"
+    },
+    {
+      "id": "f-and-b-room-service",
+      "name": "Room Service",
+      "parent": "f-and-b",
+      "role": "Room Service — F&B"
+    },
+    {
+      "id": "f-and-b-pastry-chef",
+      "name": "Pastry Chef",
+      "parent": "f-and-b",
+      "role": "Pastry Chef — F&B"
+    },
+    {
+      "id": "f-and-b-restaurant-manager",
+      "name": "Restaurant Manager",
+      "parent": "f-and-b",
+      "role": "Restaurant Manager — F&B"
+    },
+    {
+      "id": "f-and-b-bar-manager",
+      "name": "Bar Manager",
+      "parent": "f-and-b",
+      "role": "Bar Manager — F&B"
+    },
+    {
+      "id": "housekeeping-floor-supervisor-east",
+      "name": "Floor Supervisor East",
+      "parent": "housekeeping",
+      "role": "Floor Supervisor East — Housekeeping"
+    },
+    {
+      "id": "housekeeping-floor-supervisor-west",
+      "name": "Floor Supervisor West",
+      "parent": "housekeeping",
+      "role": "Floor Supervisor West — Housekeeping"
+    },
+    {
+      "id": "housekeeping-laundry",
+      "name": "Laundry",
+      "parent": "housekeeping",
+      "role": "Laundry — Housekeeping"
+    },
+    {
+      "id": "housekeeping-minibar",
+      "name": "Minibar",
+      "parent": "housekeeping",
+      "role": "Minibar — Housekeeping"
+    },
+    {
+      "id": "housekeeping-linen-room",
+      "name": "Linen Room",
+      "parent": "housekeeping",
+      "role": "Linen Room — Housekeeping"
+    },
+    {
+      "id": "housekeeping-turndown",
+      "name": "Turndown",
+      "parent": "housekeeping",
+      "role": "Turndown — Housekeeping"
+    },
+    {
+      "id": "engineering-lift-engineer",
+      "name": "Lift Engineer",
+      "parent": "engineering",
+      "role": "Lift Engineer — Engineering"
+    },
+    {
+      "id": "engineering-hvac",
+      "name": "HVAC",
+      "parent": "engineering",
+      "role": "HVAC — Engineering"
+    },
+    {
+      "id": "engineering-night-engineer",
+      "name": "Night Engineer",
+      "parent": "engineering",
+      "role": "Night Engineer — Engineering"
+    },
+    {
+      "id": "engineering-pool-plant",
+      "name": "Pool Plant",
+      "parent": "engineering",
+      "role": "Pool Plant — Engineering"
+    },
+    {
+      "id": "engineering-electrician",
+      "name": "Electrician",
+      "parent": "engineering",
+      "role": "Electrician — Engineering"
+    },
+    {
+      "id": "engineering-decorator",
+      "name": "Painter & Decorator",
+      "parent": "engineering",
+      "role": "Painter & Decorator — Engineering"
+    },
+    {
+      "id": "spa-leisure-therapist-rota",
+      "name": "Therapist Rota",
+      "parent": "spa-leisure",
+      "role": "Therapist Rota — Spa & Leisure"
+    },
+    {
+      "id": "spa-leisure-pool-attendant",
+      "name": "Pool Attendant",
+      "parent": "spa-leisure",
+      "role": "Pool Attendant — Spa & Leisure"
+    },
+    {
+      "id": "spa-leisure-gym-attendant",
+      "name": "Gym Attendant",
+      "parent": "spa-leisure",
+      "role": "Gym Attendant — Spa & Leisure"
+    },
+    {
+      "id": "spa-leisure-spa-reception",
+      "name": "Spa Reception",
+      "parent": "spa-leisure",
+      "role": "Spa Reception — Spa & Leisure"
+    },
+    {
+      "id": "spa-leisure-treatments-lead",
+      "name": "Treatments Lead",
+      "parent": "spa-leisure",
+      "role": "Treatments Lead — Spa & Leisure"
+    },
+    {
+      "id": "events-banqueting-wedding-coordinator",
+      "name": "Wedding Coordinator",
+      "parent": "events-banqueting",
+      "role": "Wedding Coordinator — Events & Banqueting"
+    },
+    {
+      "id": "events-banqueting-av",
+      "name": "AV",
+      "parent": "events-banqueting",
+      "role": "AV — Events & Banqueting"
+    },
+    {
+      "id": "events-banqueting-banqueting-supervisor",
+      "name": "Banqueting Supervisor",
+      "parent": "events-banqueting",
+      "role": "Banqueting Supervisor — Events & Banqueting"
+    },
+    {
+      "id": "events-banqueting-events-sales",
+      "name": "Events Sales",
+      "parent": "events-banqueting",
+      "role": "Events Sales — Events & Banqueting"
+    },
+    {
+      "id": "events-banqueting-florist",
+      "name": "Florist",
+      "parent": "events-banqueting",
+      "role": "Florist — Events & Banqueting"
+    },
+    {
+      "id": "events-banqueting-setup-crew-lead",
+      "name": "Setup Crew Lead",
+      "parent": "events-banqueting",
+      "role": "Setup Crew Lead — Events & Banqueting"
+    },
+    {
+      "id": "security-night-watch",
+      "name": "Night Watch",
+      "parent": "security",
+      "role": "Night Watch — Security"
+    },
+    {
+      "id": "security-cctv",
+      "name": "CCTV",
+      "parent": "security",
+      "role": "CCTV — Security"
+    },
+    {
+      "id": "security-key-custody",
+      "name": "Key Custody",
+      "parent": "security",
+      "role": "Key Custody — Security"
+    },
+    {
+      "id": "security-door-team",
+      "name": "Door Team",
+      "parent": "security",
+      "role": "Door Team — Security"
+    },
+    {
+      "id": "security-loading-bay",
+      "name": "Loading Bay",
+      "parent": "security",
+      "role": "Loading Bay — Security"
+    },
+    {
+      "id": "finance-procurement-procurement",
+      "name": "Procurement",
+      "parent": "finance-procurement",
+      "role": "Procurement — Finance & Procurement"
+    },
+    {
+      "id": "finance-procurement-payables",
+      "name": "Payables",
+      "parent": "finance-procurement",
+      "role": "Payables — Finance & Procurement"
+    },
+    {
+      "id": "finance-procurement-night-audit",
+      "name": "Night Audit",
+      "parent": "finance-procurement",
+      "role": "Night Audit — Finance & Procurement",
+      "kind": "automation",
+      "cadence": 24,
+      "emoji": "🌙",
+      "boot": "You are the Night Audit. You run at 03:00, unattended. Boot with booboo_boot('finance-procurement-night-audit'), reconcile every ledger you audit, file one report, and stand down."
+    },
+    {
+      "id": "finance-procurement-receivables",
+      "name": "Receivables",
+      "parent": "finance-procurement",
+      "role": "Receivables — Finance & Procurement"
+    },
+    {
+      "id": "finance-procurement-cost-controller",
+      "name": "Cost Controller",
+      "parent": "finance-procurement",
+      "role": "Cost Controller — Finance & Procurement"
+    },
+    {
+      "id": "finance-procurement-paymaster",
+      "name": "Paymaster",
+      "parent": "finance-procurement",
+      "role": "Paymaster — Finance & Procurement"
+    },
+    {
+      "id": "people-culture-rota",
+      "name": "Rota",
+      "parent": "people-culture",
+      "role": "Rota — People & Culture"
+    },
+    {
+      "id": "people-culture-training",
+      "name": "Training",
+      "parent": "people-culture",
+      "role": "Training — People & Culture"
+    },
+    {
+      "id": "people-culture-recruitment",
+      "name": "Recruitment",
+      "parent": "people-culture",
+      "role": "Recruitment — People & Culture"
+    },
+    {
+      "id": "people-culture-staff-welfare",
+      "name": "Staff Welfare",
+      "parent": "people-culture",
+      "role": "Staff Welfare — People & Culture"
+    },
+    {
+      "id": "people-culture-payroll-liaison",
+      "name": "Payroll Liaison",
+      "parent": "people-culture",
+      "role": "Payroll Liaison — People & Culture"
+    }
+  ]
+}

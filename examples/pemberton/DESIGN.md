@@ -153,6 +153,32 @@ staff + rosters + 12 buckets + ~180 documents + ~2,100 recent observations)
 years of ledger", generated in-browser with the same sectors/bands so the
 structure survives at 1M. Readability is the product; scale is a property.
 
+## The three faces (ruling 2026-07-18: keep graph AND organigram, add ask)
+
+One brain, three projections — never competitors:
+
+| face | surface | answers | ships as |
+|---|---|---|---|
+| SEE | 3D cosmos (viewer) | shape · flags · flow — the two-second test | demo front door |
+| GOVERN | organigram (panel pkg) | hierarchy · rules · bucket reach — **the harness** | "Open the chart" — mount panel's dist-app at /chart/ against the Pemberton org (same hosting trick as viewer; verify panel builds standalone) |
+| ASK | Claude over MCP | anything — "top 3 failures this week?", "who's been off sick most in 5 years?" | shown transcript + copy-paste MCP config |
+
+Doctrine lines this encodes:
+- **Roles are durable, agents are disposable.** The org defines role + rules +
+  buckets + boot order before any agent exists; whatever model boots into the
+  role becomes it. New hire = new node. This is the "harness for existing and
+  future agents."
+- **Claude IS the query language.** No BI layer: MCP tools + reasoning do the
+  aggregation. True of the shipped tools today.
+- **Bake the answers in.** The generated journal must make the flagship ASK
+  questions truly answerable: plant exactly 3 major incidents in the current
+  week; plant one staff agent with a chronic absence pattern across 5 years;
+  give every obs structured data fields (kind, date, subject). The README's
+  "connect it and ask it this" must actually work.
+- The hotel thesis, Jesse's words: "a company truly run by AI." That is the
+  copy direction for the site H1 rewrite (build step 6) — comprehension +
+  operation, not scale.
+
 ## Where it lives
 
 ```

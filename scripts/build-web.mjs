@@ -23,6 +23,8 @@ for (const f of ["index.html", "styles.css", "main.js"]) {
   await cp(path.join(root, "web", f), path.join(out, f));
 }
 await cp(viewerApp, path.join(out, "viewer"), { recursive: true });
+// the Pemberton demo brain — the default thing the site shows
+await cp(path.join(root, "examples", "pemberton", "pemberton.booboo.json"), path.join(out, "pemberton.booboo.json"));
 
 const listed = await readdir(out);
 console.log(`✓ web/dist ready → ${listed.join(", ")}`);

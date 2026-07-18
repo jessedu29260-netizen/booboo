@@ -54,11 +54,12 @@
     rNodes.textContent = "—";
     rRender.textContent = gl ? "Static" : "No WebGL";
   } else {
-    var n = HERO[t];
-    rNodes.textContent = fmt(n);
+    // The hero is the Pemberton Grand — 2,414 nodes, readable on any GPU tier.
+    // Scale proves itself behind the CTA; comprehension is the front door.
+    rNodes.textContent = fmt(2414);
     rRender.textContent = "WebGL";
     frame.addEventListener("load", function () { frame.classList.add("ready"); });
-    frame.src = "./viewer/?n=" + n + "&chrome=0";
+    frame.src = "./viewer/?file=/pemberton.booboo.json&chrome=0";
   }
 
   // Retarget every full-brain link to something this device survives.

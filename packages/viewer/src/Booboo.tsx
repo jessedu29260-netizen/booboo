@@ -261,7 +261,8 @@ function arcLabelTexture(label: string, color: string): THREE.CanvasTexture | nu
   const x = c.getContext("2d");
   if (!x) return null;
   const rad = S * 0.40;
-  const px = S * 0.044;
+  // scale with label length so long band names hold a dignified ~90° arc, never a pile
+  const px = S * Math.min(0.044, 0.6 / Math.max(8, label.length));
   x.font = `600 ${px}px ui-monospace, SFMono-Regular, monospace`;
   x.textAlign = "center";
   x.textBaseline = "middle";
@@ -286,7 +287,9 @@ function Platform({ z, color, label, radius, planes, rings, labels, introBox, in
   const grp = useRef<THREE.Group>(null);
   const tint = useMemo(() => new THREE.Color(color), [color]);
   const uni = useMemo(() => ({ uTint: { value: tint }, uOp: { value: 0.055 } }), [tint]);
-  const tex = useMemo(() => (labels ? arcLabelTexture(label, color) : null), [labels, label, color]);
+  // floor engraving carries only the short rank word; the rim label + legend carry the rest
+  const engraved = useMemo(() => label.split("·")[0].trim() || label, [label]);
+  const tex = useMemo(() => (labels ? arcLabelTexture(engraved, color) : null), [labels, engraved, color]);
   useEffect(() => () => { tex?.dispose(); }, [tex]);
   // breath ±0.3% phase-offset per band; entrance rises each disc into place bottom-up
   useFrame(({ clock }) => {

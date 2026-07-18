@@ -52,6 +52,32 @@ export class BoobooIndex {
     return { nodes: this.graph.nodes.length, links, byLayer };
   }
 
+  meta() { return { ...this.graph.meta, counts: this.counts() }; }
+
+  clusters(type) {
+    const out = {};
+    for (const n of this.graph.nodes) {
+      if (type && n.type !== type) continue;
+      if (!n.cluster) continue;
+      out[n.cluster] = (out[n.cluster] ?? 0) + 1;
+    }
+    return out;
+  }
+
+  list(o = {}) {
+    const q = o.q?.toLowerCase();
+    const all = this.graph.nodes.filter(
+      (n) =>
+        (!o.layer || n.layer === o.layer) &&
+        (!o.cluster || n.cluster === o.cluster) &&
+        (!o.type || n.type === o.type) &&
+        (!q || n.label.toLowerCase().includes(q) || n.id.toLowerCase().includes(q)),
+    );
+    const off = Math.max(0, o.offset ?? 0);
+    const lim = Math.min(1000, Math.max(1, o.limit ?? 100));
+    return { total: all.length, nodes: all.slice(off, off + lim) };
+  }
+
   node(id) { return this.byId.get(id) ?? null; }
 
   /** Ranked label/id search: exact > prefix > substring, weight as tiebreak. */

@@ -44,11 +44,14 @@ export function defaultCfg(data: BoobooGraph): BoobooCfg {
 // The sprite carries its own glow — the de-bloomed default look needs no postprocessing.
 const VERT = /* glsl */ `
   attribute float size; attribute vec3 color; attribute float focus;
+  uniform float uT; uniform float uZTop; uniform float uZSpan;
   varying vec3 vColor; varying float vFade; varying float vPx;
   void main() { vColor = color * (0.45 + 0.55 * focus); vec4 mv = modelViewMatrix * vec4(position, 1.0);
     float px = size * (340.0 / -mv.z) * (0.8 + 0.26 * focus); // dimmed points also recede in size
     gl_PointSize = px; vPx = px;
-    vFade = clamp(1.45 + mv.z / 9000.0, 0.3, 1.0) * (0.35 + 0.65 * focus);
+    // entrance: the field wakes top-down after the spines (start 1.8s, wave 1.2s + 0.6s ease)
+    float intro = clamp((uT - 1.8 - ((uZTop - position.z) / uZSpan) * 1.2) / 0.6, 0.0, 1.0);
+    vFade = clamp(1.45 + mv.z / 9000.0, 0.3, 1.0) * (0.35 + 0.65 * focus) * intro;
     gl_Position = projectionMatrix * mv; }`;
 const FRAG = /* glsl */ `
   precision mediump float; varying vec3 vColor; varying float vFade; varying float vPx;
@@ -64,17 +67,34 @@ const FRAG = /* glsl */ `
 // ── pulse-river edges: a light travels source→target along each (static) link ──
 const PULSE_VERT = /* glsl */ `
   attribute vec3 aColor; attribute float aDist; attribute float aPhase; attribute float aFocus;
-  varying vec3 vColor; varying float vDist; varying float vPhase; varying float vFocus;
+  uniform float uT; uniform float uZTop; uniform float uZSpan;
+  varying vec3 vColor; varying float vDist; varying float vPhase; varying float vFocus; varying float vIntro;
   void main(){ vColor=aColor; vDist=aDist; vPhase=aPhase; vFocus=aFocus;
+    // entrance: spines ignite top-down first — the law flows down (start 0.9s, wave 1.2s)
+    vIntro = clamp((uT - 0.9 - ((uZTop - position.z) / uZSpan) * 1.2) / 0.5, 0.0, 1.0);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
 const PULSE_FRAG = /* glsl */ `
   precision mediump float; uniform float uTime,uBase,uPulse,uSpeed,uWidth;
-  varying vec3 vColor; varying float vDist; varying float vPhase; varying float vFocus;
+  varying vec3 vColor; varying float vDist; varying float vPhase; varying float vFocus; varying float vIntro;
   void main(){ float head=fract(uTime*uSpeed+vPhase); float d=abs(vDist-head); d=min(d,1.0-d);
-    float pulse=exp(-(d*d)/(uWidth*uWidth)); float a=(uBase+uPulse*pulse)*(0.15+0.85*vFocus);
+    float pulse=exp(-(d*d)/(uWidth*uWidth)); float a=(uBase+uPulse*pulse)*(0.15+0.85*vFocus)*vIntro;
     gl_FragColor=vec4(vColor*(1.0+pulse*1.5)*(0.55+0.9*vFocus), a); }`;
 
-function Field({ laid, cfg, onPick, focus }: { laid: Laid; cfg: BoobooCfg; onPick?: (i: number) => void; focus?: Float32Array | null }) {
+type IntroUni = { uT: { value: number }; uZTop: { value: number }; uZSpan: { value: number } };
+type IntroBox = React.MutableRefObject<{ t0: number | null; skip: boolean; t: number }>;
+
+// Drives the entrance clock: one shared set of uniform objects, written once per frame.
+function IntroDriver({ uni, box }: { uni: IntroUni; box: IntroBox }) {
+  useFrame(({ clock }) => {
+    const b = box.current;
+    if (b.t0 == null) b.t0 = clock.getElapsedTime();
+    b.t = b.skip ? 1000 : clock.getElapsedTime() - b.t0;
+    uni.uT.value = b.t;
+  });
+  return null;
+}
+
+function Field({ laid, cfg, onPick, focus, introUni }: { laid: Laid; cfg: BoobooCfg; onPick?: (i: number) => void; focus?: Float32Array | null; introUni: IntroUni }) {
   // Sizes are baked into the geometry (not mutated via needsUpdate, which didn't reliably
   // re-upload) so the cloud rebuilds — and re-renders — whenever a size/scale/visibility
   // slider changes. Rebuild only on size-affecting cfg, not on every cfg tick.
@@ -98,12 +118,12 @@ function Field({ laid, cfg, onPick, focus }: { laid: Laid; cfg: BoobooCfg; onPic
   // In the de-bloomed look (bloom 0) fall back to normal blending so a 16k-node layer
   // reads as a coloured mass, not a blown-out core (matches the Operational Atlas cloud).
   // de-bloomed look (bloom 0) → normal blending so a dense layer reads as a colour mass, not a white core
-  const mat = useMemo(() => new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: cfg.bloom > 0 ? THREE.AdditiveBlending : THREE.NormalBlending }), [cfg.bloom > 0]);
+  const mat = useMemo(() => new THREE.ShaderMaterial({ uniforms: { uT: introUni.uT, uZTop: introUni.uZTop, uZSpan: introUni.uZSpan }, vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, blending: cfg.bloom > 0 ? THREE.AdditiveBlending : THREE.NormalBlending }), [cfg.bloom > 0, introUni]);
   useEffect(() => () => mat.dispose(), [mat]);
   return <points geometry={geo} material={mat} frustumCulled={false} onClick={(e) => { if (e.index != null && onPick) { onPick(e.index); e.stopPropagation(); } }} />;
 }
 
-function PulseLinks({ laid, cfg, focus }: { laid: Laid; cfg: BoobooCfg; focus?: Float32Array | null }) {
+function PulseLinks({ laid, cfg, focus, introUni }: { laid: Laid; cfg: BoobooCfg; focus?: Float32Array | null; introUni: IntroUni }) {
   const matRef = useRef<THREE.ShaderMaterial>(null);
   const geo = useMemo(() => {
     const m = laid.linkCount;
@@ -118,7 +138,7 @@ function PulseLinks({ laid, cfg, focus }: { laid: Laid; cfg: BoobooCfg; focus?: 
     return g;
   }, [laid, focus]);
   useEffect(() => () => geo.dispose(), [geo]);
-  const uni = useMemo(() => ({ uTime: { value: 0 }, uBase: { value: 0.05 }, uPulse: { value: 0.5 }, uSpeed: { value: 0.2 }, uWidth: { value: 0.14 } }), []);
+  const uni = useMemo(() => ({ uTime: { value: 0 }, uBase: { value: 0.05 }, uPulse: { value: 0.5 }, uSpeed: { value: 0.2 }, uWidth: { value: 0.14 }, uT: introUni.uT, uZTop: introUni.uZTop, uZSpan: introUni.uZSpan }), [introUni]);
   useFrame(({ clock }) => {
     const u = matRef.current?.uniforms; if (!u) return;
     u.uTime.value = clock.getElapsedTime();
@@ -185,17 +205,22 @@ function arcLabelTexture(label: string, color: string): THREE.CanvasTexture | nu
   return t;
 }
 
-function Platform({ z, color, label, radius, planes, rings, labels }: { z: number; color: string; label: string; radius: number; planes: boolean; rings: boolean; labels: boolean }) {
+function Platform({ z, color, label, radius, planes, rings, labels, introBox, introDelay = 0 }: { z: number; color: string; label: string; radius: number; planes: boolean; rings: boolean; labels: boolean; introBox?: IntroBox; introDelay?: number }) {
   const grp = useRef<THREE.Group>(null);
   const tint = useMemo(() => new THREE.Color(color), [color]);
   const uni = useMemo(() => ({ uTint: { value: tint }, uOp: { value: 0.055 } }), [tint]);
   const tex = useMemo(() => (labels ? arcLabelTexture(label, color) : null), [labels, label, color]);
   useEffect(() => () => { tex?.dispose(); }, [tex]);
-  // each band breathes ±0.3%, phase-offset by height so the stack never moves in sync
+  // breath ±0.3% phase-offset per band; entrance rises each disc into place bottom-up
   useFrame(({ clock }) => {
     const g = grp.current; if (!g) return;
-    const s = 1 + Math.sin(clock.getElapsedTime() * 0.35 + z * 0.011) * 0.003;
+    const t = introBox?.current.t ?? 1000;
+    const e = Math.min(1, Math.max(0, (t - introDelay) / 0.7));
+    const ease = 1 - Math.pow(1 - e, 3); // settle
+    const s = (1 + Math.sin(clock.getElapsedTime() * 0.35 + z * 0.011) * 0.003) * (0.94 + 0.06 * ease);
     g.scale.set(s, s, 1);
+    g.position.z = z - 50 * (1 - ease);
+    g.visible = e > 0.001;
   });
   return (
     <group ref={grp} position={[0, 0, z]}>
@@ -320,10 +345,30 @@ function NodeLabels({ data, laid }: { data: BoobooGraph; laid: Laid }) {
 }
 
 /** The core scene. Give it a Booboo graph (+ optional cfg); it lays out + renders the tiered field. */
-export function Booboo({ data, cfg, onSelect, sel }: { data: BoobooGraph; cfg?: BoobooCfg; onSelect?: (id: string | null) => void; sel?: string | null }) {
+export function Booboo({ data, cfg, onSelect, sel, intro = true }: { data: BoobooGraph; cfg?: BoobooCfg; onSelect?: (id: string | null) => void; sel?: string | null; intro?: boolean }) {
   const laid = useMemo(() => layout(data), [data]);
   const c = useMemo(() => cfg ?? defaultCfg(data), [cfg, data]);
   const nL = Math.max(1, data.meta.layers.length);
+  // ── entrance (CRAFT): discs rise bottom-up → spines ignite top-down → field wakes.
+  // Skippable on any input; prefers-reduced-motion gets the final frame immediately.
+  const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const introBox: IntroBox = useRef({ t0: null, skip: !intro || !!reduced, t: 0 });
+  const introUni = useMemo<IntroUni>(() => ({
+    uT: { value: 1000 },
+    uZTop: { value: ((nL - 1) / 2) * PLANE_GAP },
+    uZSpan: { value: Math.max(1, (nL - 1) * PLANE_GAP) },
+  }), [nL]);
+  useEffect(() => {
+    if (introBox.current.skip) return;
+    const skip = () => { introBox.current.skip = true; };
+    window.addEventListener("pointerdown", skip);
+    window.addEventListener("keydown", skip);
+    const done = setTimeout(() => {
+      window.removeEventListener("pointerdown", skip);
+      window.removeEventListener("keydown", skip);
+    }, 4200);
+    return () => { clearTimeout(done); window.removeEventListener("pointerdown", skip); window.removeEventListener("keydown", skip); };
+  }, []);
   const radius = laid.bounds;
   const platR = radius * 1.06;
   const half = ((nL - 1) / 2) * PLANE_GAP * c.peel;
@@ -361,14 +406,15 @@ export function Booboo({ data, cfg, onSelect, sel }: { data: BoobooGraph; cfg?: 
       onPointerMissed={() => onSelect?.(null)}
     >
       <color attach="background" args={["#06080e"]} />
+      <IntroDriver uni={introUni} box={introBox} />
       <Starfield scale={radius / 12} />
       <FrontierFog scale={radius / 12} amount={c.fog} />
       <Spin orbit={c.orbit} drift={c.drift} peel={c.peel}>
         {data.meta.layers.map((l, i) => (
-          (c.layers[l.name] !== false) && <Platform key={l.name} z={planeZ(i, nL)} color={l.color || "#7a8aa0"} label={l.label || l.name} radius={platR} planes={c.platforms} rings={c.rings} labels={c.labels} />
+          (c.layers[l.name] !== false) && <Platform key={l.name} z={planeZ(i, nL)} color={l.color || "#7a8aa0"} label={l.label || l.name} radius={platR} planes={c.platforms} rings={c.rings} labels={c.labels} introBox={introBox} introDelay={(nL - 1 - i) * 0.18} />
         ))}
-        <PulseLinks laid={laid} cfg={c} focus={focus.link} />
-        <Field laid={laid} cfg={c} onPick={(i) => onSelect?.(laid.ids[i])} focus={focus.node} />
+        <PulseLinks laid={laid} cfg={c} focus={focus.link} introUni={introUni} />
+        <Field laid={laid} cfg={c} onPick={(i) => onSelect?.(laid.ids[i])} focus={focus.node} introUni={introUni} />
         {c.labels && <NodeLabels data={data} laid={laid} />}
       </Spin>
       <OrbitControls autoRotate={false} enableRotate enableZoom enablePan screenSpacePanning enableDamping dampingFactor={0.08} target={[0, 0, 0]} minPolarAngle={0} maxPolarAngle={Math.PI} makeDefault />

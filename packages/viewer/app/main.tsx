@@ -1,11 +1,13 @@
 import { createRoot } from "react-dom/client";
-import { BoobooView } from "../src/index";
+import { BoobooView, Booboo, defaultCfg } from "../src/index";
 import { validate } from "@booboo-brain/spec";
 import type { BoobooGraph, BNode, BLink } from "@booboo-brain/spec";
 
 // The shipped, self-contained viewer app. `booboo view` serves this and loads
 // the user's snapshot at runtime via ?file=/snapshot.json. ?n=<count> renders a
 // synthetic brain (the scale showcase); no params → a friendly empty state.
+// ?chrome=0 drops the HUD and renders the bare scene — for embedding the brain
+// as a live background in an iframe.
 
 // Deterministic 0..1 hash for coherent (non-random) synthetic structure.
 function h(s: string): number {
@@ -135,9 +137,52 @@ function Failed({ msg, errors }: { msg: string; errors?: string[] }) {
 }
 
 const sel = q.get("node"); // ?node=<id> pre-opens a node's dossier (demos/screenshots)
+const bare = q.get("chrome") === "0"; // background embed: scene only, labels off
 const root = createRoot(document.getElementById("root")!);
+
+// R3F measures its container on mount. Inside an iframe that measurement can
+// land before R3F is listening, leaving the canvas at its 300x150 intrinsic
+// default while the wrappers are correctly sized — a tiny scene in a corner.
+// Verified: a resize event dispatched later always corrects it, so this is a
+// pure startup race. Rather than guess a frame count, poll until the canvas
+// has actually taken the container's size, then stop. Bounded at ~3s.
+// The ResizeObserver then keeps an embed responsive to real size changes.
+const nudge = () => {
+  const el = document.getElementById("root")!;
+  const settled = () => {
+    const c = document.querySelector("canvas");
+    if (!c) return false;
+    const r = el.getBoundingClientRect();
+    return Math.abs(c.clientWidth - r.width) < 2 && Math.abs(c.clientHeight - r.height) < 2;
+  };
+
+  let tries = 0;
+  const tick = () => {
+    if (settled() || tries++ > 30) return;
+    window.dispatchEvent(new Event("resize"));
+    setTimeout(tick, 100);
+  };
+  setTimeout(tick, 0);
+
+  let w = 0, h = 0;
+  new ResizeObserver(() => {
+    const r = el.getBoundingClientRect();
+    if (Math.round(r.width) === w && Math.round(r.height) === h) return;
+    w = Math.round(r.width);
+    h = Math.round(r.height);
+    window.dispatchEvent(new Event("resize"));
+  }).observe(el);
+};
+
 load()
-  .then((data) => root.render(<BoobooView data={data} initialSel={sel} />))
+  .then((data) => {
+    root.render(
+      bare
+        ? <Booboo data={data} cfg={{ ...defaultCfg(data), labels: false }} />
+        : <BoobooView data={data} initialSel={sel} />,
+    );
+    nudge();
+  })
   .catch((e) =>
     root.render(
       e instanceof InvalidSnapshot

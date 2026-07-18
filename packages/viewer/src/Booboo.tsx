@@ -129,15 +129,89 @@ function PulseLinks({ laid, cfg }: { laid: Laid; cfg: BoobooCfg }) {
   );
 }
 
-// A tier shelf: faint disc + glowing rim ring + floating layer label (the Atlas tier language).
+// ── the observatory floor (CRAFT): glass disc with a radial gradient, etched concentric
+// rules, the band name ENGRAVED on the surface clock-face style, a thin rim, and a slow
+// breath. Luminance ladder: disc 0.06 · etchings 0.10 — substrate, never spectacle.
+const DISC_FRAG = /* glsl */ `
+  precision mediump float; varying vec2 vUv; uniform vec3 uTint; uniform float uOp;
+  void main() {
+    float r = length(vUv - 0.5) * 2.0;
+    if (r > 1.0) discard;
+    // glass: dark well at the centre lifting to a tinted mid, easing off before the rim
+    float grad = smoothstep(0.05, 0.8, r) * (1.0 - 0.45 * smoothstep(0.86, 1.0, r));
+    // etched rules at quarter radii — hairlines, not rings of their own
+    float q = fract(r * 4.0); float rule = 1.0 - smoothstep(0.0, 0.016, min(q, 1.0 - q));
+    // fine minute-ticks just inside the rim: 60 thin marks, whisper-level
+    float ang = atan(vUv.y - 0.5, vUv.x - 0.5);
+    float td = abs(fract(ang * 9.5493) - 0.5) * 2.0;
+    float tick = smoothstep(0.9, 0.985, td)
+               * smoothstep(0.948, 0.956, r) * (1.0 - smoothstep(0.982, 0.996, r));
+    float a = uOp * (grad + rule * 0.3 + tick * 0.4);
+    gl_FragColor = vec4(uTint * (1.0 + rule * 0.22 + tick * 0.25), a);
+  }`;
+const DISC_VERT = /* glsl */ `varying vec2 vUv; void main(){ vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+
+// The band name drawn along an arc into a CanvasTexture — engraved into the floor.
+function arcLabelTexture(label: string, color: string): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const S = 1024;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const x = c.getContext("2d");
+  if (!x) return null;
+  const rad = S * 0.40;
+  const px = S * 0.044;
+  x.font = `600 ${px}px ui-monospace, SFMono-Regular, monospace`;
+  x.textAlign = "center";
+  x.textBaseline = "middle";
+  const chars = (label.toUpperCase()) .split("");
+  const step = (px * 1.18) / rad; // arc advance per character (incl. tracking)
+  let a = -Math.PI / 2 - (step * (chars.length - 1)) / 2;
+  for (const ch of chars) {
+    x.save();
+    x.translate(S / 2 + Math.cos(a) * rad, S / 2 + Math.sin(a) * rad);
+    x.rotate(a + Math.PI / 2);
+    x.fillStyle = "rgba(0,0,0,0.85)"; x.fillText(ch, 1.5, 1.5); // engrave shadow
+    x.fillStyle = color; x.fillText(ch, 0, 0);
+    x.restore();
+    a += step;
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = 8;
+  return t;
+}
+
 function Platform({ z, color, label, radius, planes, rings, labels }: { z: number; color: string; label: string; radius: number; planes: boolean; rings: boolean; labels: boolean }) {
+  const grp = useRef<THREE.Group>(null);
+  const tint = useMemo(() => new THREE.Color(color), [color]);
+  const uni = useMemo(() => ({ uTint: { value: tint }, uOp: { value: 0.055 } }), [tint]);
+  const tex = useMemo(() => (labels ? arcLabelTexture(label, color) : null), [labels, label, color]);
+  useEffect(() => () => { tex?.dispose(); }, [tex]);
+  // each band breathes ±0.3%, phase-offset by height so the stack never moves in sync
+  useFrame(({ clock }) => {
+    const g = grp.current; if (!g) return;
+    const s = 1 + Math.sin(clock.getElapsedTime() * 0.35 + z * 0.011) * 0.003;
+    g.scale.set(s, s, 1);
+  });
   return (
-    <group position={[0, 0, z]}>
-      {planes && <mesh><circleGeometry args={[radius, 80]} /><meshBasicMaterial color={color} transparent opacity={0.05} side={THREE.DoubleSide} depthWrite={false} toneMapped={false} /></mesh>}
-      {rings && <mesh><torusGeometry args={[radius, radius * 0.004, 8, 120]} /><meshBasicMaterial color={color} transparent opacity={0.6} toneMapped={false} /></mesh>}
+    <group ref={grp} position={[0, 0, z]}>
+      {planes && (
+        <mesh>
+          <circleGeometry args={[radius, 96]} />
+          <shaderMaterial vertexShader={DISC_VERT} fragmentShader={DISC_FRAG} uniforms={uni} transparent depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
+        </mesh>
+      )}
+      {rings && <mesh><torusGeometry args={[radius, radius * 0.0028, 8, 140]} /><meshBasicMaterial color={color} transparent opacity={0.55} toneMapped={false} /></mesh>}
+      {labels && tex && (
+        <mesh position={[0, 0, 0.6]}>
+          <circleGeometry args={[radius * 1.0, 64]} />
+          <meshBasicMaterial map={tex} transparent opacity={0.48} depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
       {labels && (
         <Html position={[radius * 1.04, 0, 0]} center style={{ pointerEvents: "none" }}>
-          <div style={{ color, font: "11px var(--font-jetbrains, ui-monospace), monospace", letterSpacing: 3, opacity: 0.85, whiteSpace: "nowrap", textShadow: "0 0 8px rgba(0,0,0,.95)" }}>{label}</div>
+          <div style={{ color, font: "10px var(--font-jetbrains, ui-monospace), monospace", letterSpacing: 3, opacity: 0.55, whiteSpace: "nowrap", textShadow: "0 0 8px rgba(0,0,0,.95)" }}>{label}</div>
         </Html>
       )}
     </group>

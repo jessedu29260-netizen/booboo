@@ -108,6 +108,8 @@ function Field({ laid, cfg, onPick, focus, introUni }: { laid: Laid; cfg: Booboo
       const vis = cfg.layers[layer] !== false;
       sizeArr[i] = vis ? laid.sizes[i] * cfg.nodeScale * (cfg.sizes[layer] ?? 1) : 0;
     }
+    // landmarks (tier<=1) render as brass objects, not points — zero them out of the cloud
+    for (let i = 0; i < laid.count; i++) if (laid.nodeTier[i] <= 1) sizeArr[i] = 0;
     g.setAttribute("size", new THREE.BufferAttribute(sizeArr, 1));
     // torch focus: 1 = lit (selection + neighbourhood), sub-1 = dimmed. All-ones when idle.
     g.setAttribute("focus", new THREE.BufferAttribute(focus ?? new Float32Array(laid.count).fill(1), 1));
@@ -149,6 +151,81 @@ function PulseLinks({ laid, cfg, focus, introUni }: { laid: Laid; cfg: BoobooCfg
     <lineSegments geometry={geo} frustumCulled={false}>
       <shaderMaterial ref={matRef} uniforms={uni} vertexShader={PULSE_VERT} fragmentShader={PULSE_FRAG} transparent depthWrite={false} blending={cfg.bloom > 0 ? THREE.AdditiveBlending : THREE.NormalBlending} />
     </lineSegments>
+  );
+}
+
+// ── landmarks (CRAFT: objects, not dots): tier<=1 nodes as faceted brass studs with a
+// soft contact shadow on their band's floor. One InstancedMesh each; instance-picked.
+const GOLD = new THREE.Color("#c9a04a");
+function Landmarks({ data, laid, cfg, focus, sel, onSelect, introBox }: { data: BoobooGraph; laid: Laid; cfg: BoobooCfg; focus: Float32Array | null; sel?: string | null; onSelect?: (id: string | null) => void; introBox: IntroBox }) {
+  const layerIdx = useMemo(() => {
+    const m: Record<string, number> = {};
+    data.meta.layers.forEach((l, i) => (m[l.name] = i));
+    return m;
+  }, [data]);
+  const nL = Math.max(1, data.meta.layers.length);
+  const items = useMemo(() => {
+    const out: { i: number; r: number; z: number }[] = [];
+    for (let i = 0; i < laid.count; i++) {
+      if (laid.nodeTier[i] > 1) continue;
+      if (cfg.layers[laid.nodeLayer[i]] === false) continue;
+      out.push({ i, r: Math.max(6.5, laid.sizes[i] * 0.85), z: planeZ(layerIdx[laid.nodeLayer[i]] ?? 0, nL) });
+    }
+    return out;
+  }, [laid, cfg.layers, layerIdx, nL]);
+  const bodyRef = useRef<THREE.InstancedMesh>(null);
+  const shadowRef = useRef<THREE.InstancedMesh>(null);
+  const M = useMemo(() => new THREE.Matrix4(), []);
+  // matrices + colours: once per items/focus change (a few hundred instances, trivial)
+  useEffect(() => {
+    const body = bodyRef.current, shadow = shadowRef.current;
+    if (!body || !shadow) return;
+    const c = new THREE.Color();
+    for (let k = 0; k < items.length; k++) {
+      const { i, r, z } = items[k];
+      const x = laid.positions[i * 3], y = laid.positions[i * 3 + 1], zz = laid.positions[i * 3 + 2];
+      M.makeScale(r, r, r).setPosition(x, y, zz);
+      body.setMatrixAt(k, M);
+      M.makeScale(r * 1.7, r * 1.7, 1).setPosition(x, y, z + 0.9);
+      shadow.setMatrixAt(k, M);
+      c.setRGB(laid.colors[i * 3], laid.colors[i * 3 + 1], laid.colors[i * 3 + 2]).lerp(GOLD, 0.3);
+      const f = focus ? focus[i] : 1;
+      c.multiplyScalar(0.35 + 0.75 * f);
+      body.setColorAt(k, c);
+    }
+    body.instanceMatrix.needsUpdate = true;
+    shadow.instanceMatrix.needsUpdate = true;
+    if (body.instanceColor) body.instanceColor.needsUpdate = true;
+    body.count = items.length;
+    shadow.count = items.length;
+  }, [items, laid, focus, M]);
+  // entrance: the cast arrives after the floors, before the field wakes (1.0 → 1.8s)
+  useFrame(() => {
+    const body = bodyRef.current; if (!body) return;
+    const t = introBox.current.t;
+    const e = Math.min(1, Math.max(0, (t - 1.0) / 0.8));
+    const s = 1 - Math.pow(1 - e, 3);
+    body.visible = s > 0.02;
+    if (shadowRef.current) shadowRef.current.visible = body.visible;
+    body.scale.setScalar(Math.max(0.001, s));
+  });
+  if (items.length === 0) return null;
+  return (
+    <>
+      <instancedMesh
+        ref={bodyRef}
+        args={[undefined, undefined, Math.max(1, items.length)]}
+        frustumCulled={false}
+        onClick={(e) => { const iid = e.instanceId; if (iid != null && onSelect) { onSelect(laid.ids[items[iid].i]); e.stopPropagation(); } }}
+      >
+        <icosahedronGeometry args={[1, 0]} />
+        <meshStandardMaterial metalness={0.82} roughness={0.34} flatShading emissive="#1a1408" emissiveIntensity={0.6} />
+      </instancedMesh>
+      <instancedMesh ref={shadowRef} args={[undefined, undefined, Math.max(1, items.length)]} frustumCulled={false} raycast={() => null}>
+        <circleGeometry args={[1, 24]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.32} depthWrite={false} toneMapped={false} />
+      </instancedMesh>
+    </>
   );
 }
 
@@ -406,6 +483,10 @@ export function Booboo({ data, cfg, onSelect, sel, intro = true }: { data: Boobo
       onPointerMissed={() => onSelect?.(null)}
     >
       <color attach="background" args={["#06080e"]} />
+      {/* lights exist for the brass landmarks only — every other material is Basic/Shader */}
+      <hemisphereLight args={["#2a3350", "#06080e", 0.85]} />
+      <directionalLight position={[radius * 0.6, -radius * 1.2, radius * 1.6]} intensity={1.25} color="#fff4e0" />
+      <directionalLight position={[-radius, radius * 0.5, radius * 0.4]} intensity={0.35} color="#c9a04a" />
       <IntroDriver uni={introUni} box={introBox} />
       <Starfield scale={radius / 12} />
       <FrontierFog scale={radius / 12} amount={c.fog} />
@@ -415,6 +496,7 @@ export function Booboo({ data, cfg, onSelect, sel, intro = true }: { data: Boobo
         ))}
         <PulseLinks laid={laid} cfg={c} focus={focus.link} introUni={introUni} />
         <Field laid={laid} cfg={c} onPick={(i) => onSelect?.(laid.ids[i])} focus={focus.node} introUni={introUni} />
+        <Landmarks data={data} laid={laid} cfg={c} focus={focus.node} sel={sel} onSelect={onSelect} introBox={introBox} />
         {c.labels && <NodeLabels data={data} laid={laid} />}
       </Spin>
       <OrbitControls autoRotate={false} enableRotate enableZoom enablePan screenSpacePanning enableDamping dampingFactor={0.08} target={[0, 0, 0]} minPolarAngle={0} maxPolarAngle={Math.PI} makeDefault />

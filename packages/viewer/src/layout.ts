@@ -7,6 +7,7 @@ export type Laid = {
   ids: string[];
   index: Map<string, number>;
   nodeLayer: string[]; // layer name per node index (for layer-isolation toggles)
+  nodeTier: Int8Array; // tier per node index (landmarks = tier <= 1)
   positions: Float32Array; // n*3
   colors: Float32Array; // n*3
   sizes: Float32Array; // n
@@ -52,10 +53,12 @@ export function layout(g: BoobooGraph): Laid {
   const index = new Map<string, number>();
   const ids: string[] = new Array(n);
   const nodeLayer: string[] = new Array(n);
+  const nodeTier = new Int8Array(n);
   for (let i = 0; i < n; i++) {
     index.set(nodes[i].id, i);
     ids[i] = nodes[i].id;
     nodeLayer[i] = nodes[i].layer;
+    nodeTier[i] = (nodes[i].tier ?? 2) as number;
   }
 
   const layerOrder: Record<string, number> = {};
@@ -196,6 +199,7 @@ export function layout(g: BoobooGraph): Laid {
     ids,
     index,
     nodeLayer,
+    nodeTier,
     positions,
     colors,
     sizes,

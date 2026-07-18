@@ -178,7 +178,11 @@ load()
   .then((data) => {
     root.render(
       bare
-        ? <Booboo data={data} cfg={{ ...defaultCfg(data), labels: false }} />
+        // orbit turns the disc away from the camera on a wandering sine, so an
+        // embedded background swings between spectacular and near-empty
+        // depending when you land on it. drift (a slow in-plane roll) keeps it
+        // alive while staying face-on, which is what a hero actually wants.
+        ? <Booboo data={data} cfg={{ ...defaultCfg(data), labels: false, orbit: 0 }} />
         : <BoobooView data={data} initialSel={sel} />,
     );
     nudge();

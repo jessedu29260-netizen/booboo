@@ -106,7 +106,7 @@ export function BoobooView({
     <div style={{ position: "absolute", inset: 0, background: T.bg, fontFamily: T.sans }}>
       <style>{PULSE_CSS}</style>
       <RenderBoundary>
-        <Booboo data={data} cfg={cfg} onSelect={setSel} />
+        <Booboo data={data} cfg={cfg} onSelect={setSel} sel={sel} />
       </RenderBoundary>
 
       {/* HUD — top-left */}

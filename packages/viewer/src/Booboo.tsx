@@ -43,12 +43,12 @@ export function defaultCfg(data: BoobooGraph): BoobooCfg {
 // appears on large (landmark-scale) sprites, and a depth fade so the far field recedes.
 // The sprite carries its own glow — the de-bloomed default look needs no postprocessing.
 const VERT = /* glsl */ `
-  attribute float size; attribute vec3 color; varying vec3 vColor;
-  varying float vFade; varying float vPx;
-  void main() { vColor = color; vec4 mv = modelViewMatrix * vec4(position, 1.0);
-    float px = size * (340.0 / -mv.z);
+  attribute float size; attribute vec3 color; attribute float focus;
+  varying vec3 vColor; varying float vFade; varying float vPx;
+  void main() { vColor = color * (0.45 + 0.55 * focus); vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    float px = size * (340.0 / -mv.z) * (0.8 + 0.26 * focus); // dimmed points also recede in size
     gl_PointSize = px; vPx = px;
-    vFade = clamp(1.45 + mv.z / 9000.0, 0.3, 1.0); // mv.z is negative: far → smaller
+    vFade = clamp(1.45 + mv.z / 9000.0, 0.3, 1.0) * (0.35 + 0.65 * focus);
     gl_Position = projectionMatrix * mv; }`;
 const FRAG = /* glsl */ `
   precision mediump float; varying vec3 vColor; varying float vFade; varying float vPx;
@@ -63,18 +63,18 @@ const FRAG = /* glsl */ `
 
 // ── pulse-river edges: a light travels source→target along each (static) link ──
 const PULSE_VERT = /* glsl */ `
-  attribute vec3 aColor; attribute float aDist; attribute float aPhase;
-  varying vec3 vColor; varying float vDist; varying float vPhase;
-  void main(){ vColor=aColor; vDist=aDist; vPhase=aPhase;
+  attribute vec3 aColor; attribute float aDist; attribute float aPhase; attribute float aFocus;
+  varying vec3 vColor; varying float vDist; varying float vPhase; varying float vFocus;
+  void main(){ vColor=aColor; vDist=aDist; vPhase=aPhase; vFocus=aFocus;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
 const PULSE_FRAG = /* glsl */ `
   precision mediump float; uniform float uTime,uBase,uPulse,uSpeed,uWidth;
-  varying vec3 vColor; varying float vDist; varying float vPhase;
+  varying vec3 vColor; varying float vDist; varying float vPhase; varying float vFocus;
   void main(){ float head=fract(uTime*uSpeed+vPhase); float d=abs(vDist-head); d=min(d,1.0-d);
-    float pulse=exp(-(d*d)/(uWidth*uWidth)); float a=uBase+uPulse*pulse;
-    gl_FragColor=vec4(vColor*(1.0+pulse*1.5), a); }`;
+    float pulse=exp(-(d*d)/(uWidth*uWidth)); float a=(uBase+uPulse*pulse)*(0.15+0.85*vFocus);
+    gl_FragColor=vec4(vColor*(1.0+pulse*1.5)*(0.55+0.9*vFocus), a); }`;
 
-function Field({ laid, cfg, onPick }: { laid: Laid; cfg: BoobooCfg; onPick?: (i: number) => void }) {
+function Field({ laid, cfg, onPick, focus }: { laid: Laid; cfg: BoobooCfg; onPick?: (i: number) => void; focus?: Float32Array | null }) {
   // Sizes are baked into the geometry (not mutated via needsUpdate, which didn't reliably
   // re-upload) so the cloud rebuilds — and re-renders — whenever a size/scale/visibility
   // slider changes. Rebuild only on size-affecting cfg, not on every cfg tick.
@@ -89,8 +89,10 @@ function Field({ laid, cfg, onPick }: { laid: Laid; cfg: BoobooCfg; onPick?: (i:
       sizeArr[i] = vis ? laid.sizes[i] * cfg.nodeScale * (cfg.sizes[layer] ?? 1) : 0;
     }
     g.setAttribute("size", new THREE.BufferAttribute(sizeArr, 1));
+    // torch focus: 1 = lit (selection + neighbourhood), sub-1 = dimmed. All-ones when idle.
+    g.setAttribute("focus", new THREE.BufferAttribute(focus ?? new Float32Array(laid.count).fill(1), 1));
     return g;
-  }, [laid, cfg.nodeScale, cfg.sizes, cfg.layers]);
+  }, [laid, cfg.nodeScale, cfg.sizes, cfg.layers, focus]);
   useEffect(() => () => geo.dispose(), [geo]);
   // Additive glow is gorgeous on sparse graphs but saturates dense clusters to white.
   // In the de-bloomed look (bloom 0) fall back to normal blending so a 16k-node layer
@@ -101,7 +103,7 @@ function Field({ laid, cfg, onPick }: { laid: Laid; cfg: BoobooCfg; onPick?: (i:
   return <points geometry={geo} material={mat} frustumCulled={false} onClick={(e) => { if (e.index != null && onPick) { onPick(e.index); e.stopPropagation(); } }} />;
 }
 
-function PulseLinks({ laid, cfg }: { laid: Laid; cfg: BoobooCfg }) {
+function PulseLinks({ laid, cfg, focus }: { laid: Laid; cfg: BoobooCfg; focus?: Float32Array | null }) {
   const matRef = useRef<THREE.ShaderMaterial>(null);
   const geo = useMemo(() => {
     const m = laid.linkCount;
@@ -112,8 +114,9 @@ function PulseLinks({ laid, cfg }: { laid: Laid; cfg: BoobooCfg }) {
     g.setAttribute("aColor", new THREE.BufferAttribute(laid.linkColors, 3));
     g.setAttribute("aDist", new THREE.BufferAttribute(aDist, 1));
     g.setAttribute("aPhase", new THREE.BufferAttribute(aPhase, 1));
+    g.setAttribute("aFocus", new THREE.BufferAttribute(focus ?? new Float32Array(m * 2).fill(1), 1));
     return g;
-  }, [laid]);
+  }, [laid, focus]);
   useEffect(() => () => geo.dispose(), [geo]);
   const uni = useMemo(() => ({ uTime: { value: 0 }, uBase: { value: 0.05 }, uPulse: { value: 0.5 }, uSpeed: { value: 0.2 }, uWidth: { value: 0.14 } }), []);
   useFrame(({ clock }) => {
@@ -317,7 +320,7 @@ function NodeLabels({ data, laid }: { data: BoobooGraph; laid: Laid }) {
 }
 
 /** The core scene. Give it a Booboo graph (+ optional cfg); it lays out + renders the tiered field. */
-export function Booboo({ data, cfg, onSelect }: { data: BoobooGraph; cfg?: BoobooCfg; onSelect?: (id: string | null) => void }) {
+export function Booboo({ data, cfg, onSelect, sel }: { data: BoobooGraph; cfg?: BoobooCfg; onSelect?: (id: string | null) => void; sel?: string | null }) {
   const laid = useMemo(() => layout(data), [data]);
   const c = useMemo(() => cfg ?? defaultCfg(data), [cfg, data]);
   const nL = Math.max(1, data.meta.layers.length);
@@ -325,6 +328,30 @@ export function Booboo({ data, cfg, onSelect }: { data: BoobooGraph; cfg?: Boobo
   const platR = radius * 1.06;
   const half = ((nL - 1) / 2) * PLANE_GAP * c.peel;
   const cam = radius * 4.0 + half * 1.0 + 300;
+  // ── torch focus (CRAFT): selection lights its neighbourhood; the rest recedes.
+  // One O(links) scan per selection change → per-node + per-link-vertex focus buffers.
+  const focus = useMemo(() => {
+    if (!sel) return { node: null as Float32Array | null, link: null as Float32Array | null };
+    const si = laid.index.get(sel);
+    if (si == null) return { node: null, link: null };
+    const nf = new Float32Array(laid.count).fill(0.12);
+    nf[si] = 1;
+    const lf = new Float32Array(laid.linkCount * 2).fill(0.06);
+    let k = 0;
+    for (const l of data.links) {
+      const a = laid.index.get(l.source), b = laid.index.get(l.target);
+      if (a == null || b == null) continue;
+      const na = data.nodes[a], nb = data.nodes[b];
+      const spine = l.type === "spine" || l.type === "tether";
+      if (!spine && (na.tier ?? 2) > 1 && (nb.tier ?? 2) > 1) continue; // mirrors layout culling
+      if (a === si || b === si) {
+        lf[k * 2] = 1; lf[k * 2 + 1] = 1;
+        nf[a] = Math.max(nf[a], 0.95); nf[b] = Math.max(nf[b], 0.95);
+      }
+      k++;
+    }
+    return { node: nf, link: lf };
+  }, [sel, laid, data]);
   return (
     <Canvas
       camera={{ position: [0, -cam * 0.55, cam * 0.82], far: cam * 22, near: cam * 0.02, fov: 24 }}
@@ -340,8 +367,8 @@ export function Booboo({ data, cfg, onSelect }: { data: BoobooGraph; cfg?: Boobo
         {data.meta.layers.map((l, i) => (
           (c.layers[l.name] !== false) && <Platform key={l.name} z={planeZ(i, nL)} color={l.color || "#7a8aa0"} label={l.label || l.name} radius={platR} planes={c.platforms} rings={c.rings} labels={c.labels} />
         ))}
-        <PulseLinks laid={laid} cfg={c} />
-        <Field laid={laid} cfg={c} onPick={(i) => onSelect?.(laid.ids[i])} />
+        <PulseLinks laid={laid} cfg={c} focus={focus.link} />
+        <Field laid={laid} cfg={c} onPick={(i) => onSelect?.(laid.ids[i])} focus={focus.node} />
         {c.labels && <NodeLabels data={data} laid={laid} />}
       </Spin>
       <OrbitControls autoRotate={false} enableRotate enableZoom enablePan screenSpacePanning enableDamping dampingFactor={0.08} target={[0, 0, 0]} minPolarAngle={0} maxPolarAngle={Math.PI} makeDefault />

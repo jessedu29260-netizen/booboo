@@ -32,6 +32,8 @@ const copy = (text: string) => {
   }
 };
 
+type Rel = { dir: "out" | "in"; rel: string; other: string };
+
 const mergeCfg = (initial: BoobooCfg, s: Partial<BoobooCfg>): BoobooCfg => ({
   ...initial,
   ...s,
@@ -88,8 +90,46 @@ export function BoobooView({
   const initial = useMemo(() => ({ ...defaultCfg(data), ...(initialCfg ?? {}) }), [data, initialCfg]);
   const [cfg, setCfg, resetCfg] = usePersisted<BoobooCfg>(persistKey, initial, persist, mergeCfg, urlCfg());
   const [sel, setSel] = useState<string | null>(initialSel);
+  const [palette, setPalette] = useState(false);
 
   const byId = useMemo(() => new Map(data.nodes.map((n) => [n.id, n])), [data]);
+
+  // semantic adjacency for the dossier — structural spines excluded so the verb
+  // list reads as meaning, not plumbing (the Atlas dossier pattern)
+  const adj = useMemo(() => {
+    const m = new Map<string, Rel[]>();
+    const push = (id: string, r: Rel) => {
+      const a = m.get(id);
+      if (a) a.push(r);
+      else m.set(id, [r]);
+    };
+    for (const l of data.links) {
+      if (l.type === "spine" || l.type === "tether") continue;
+      push(l.source, { dir: "out", rel: l.type, other: l.target });
+      push(l.target, { dir: "in", rel: l.type, other: l.source });
+    }
+    return m;
+  }, [data]);
+
+  // `/` opens the concierge palette (never while typing); Escape closes palette → dossier
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        setPalette(true);
+      } else if (e.key === "Escape") {
+        setPalette((p) => {
+          if (p) return false;
+          setSel(null);
+          return p;
+        });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
     for (const n of data.nodes) c[n.layer] = (c[n.layer] ?? 0) + 1;
@@ -127,10 +167,67 @@ export function BoobooView({
 
       <Controls data={data} cfg={cfg} setCfg={setCfg} resetCfg={resetCfg} />
 
-      {node && <Dossier key={node.id} n={node} byId={byId} links={data.links} accent={layerColor[node.layer] ?? T.gold} onClose={() => setSel(null)} onJump={setSel} />}
+      {node && <Dossier key={node.id} n={node} byId={byId} rels={adj.get(node.id) ?? []} accent={layerColor[node.layer] ?? T.gold} onClose={() => setSel(null)} onJump={setSel} />}
+
+      {palette && <Palette data={data} layerColor={layerColor} onJump={(id) => { setSel(id); setPalette(false); }} onClose={() => setPalette(false)} />}
 
       <div style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", fontSize: 10, color: T.faint, pointerEvents: "none", letterSpacing: 0.4 }}>
-        drag to rotate · scroll to zoom · click a node
+        drag to rotate · scroll to zoom · click a node · <span style={{ color: T.dim }}>press / to find</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── the concierge palette: one input — find a node, jump to it ── */
+function Palette({ data, layerColor, onJump, onClose }: { data: BoobooGraph; layerColor: Record<string, string>; onJump: (id: string) => void; onClose: () => void }) {
+  const [q, setQ] = useState("");
+  const [hi, setHi] = useState(0);
+  const results = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (s.length < 2) return [];
+    const hit = (n: BNode) => n.label.toLowerCase().includes(s) || n.id.toLowerCase().includes(s);
+    const isObs = (n: BNode) => n.type === "obs" || n.type === "observation" || n.type === "memory";
+    const prim = data.nodes.filter((n) => !isObs(n) && hit(n)).sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
+    const sec = data.nodes.filter((n) => isObs(n) && hit(n));
+    return [...prim, ...sec].slice(0, 14);
+  }, [q, data]);
+  useEffect(() => setHi(0), [q]);
+  const pick = (i: number) => { const r = results[i]; if (r) onJump(r.id); };
+  return (
+    <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,6,10,0.55)", backdropFilter: "blur(3px)", zIndex: 30 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: "16%", left: "50%", transform: "translateX(-50%)", width: 540, maxWidth: "92%", background: T.panelSolid, border: `1px solid ${T.line}`, borderRadius: 10, boxShadow: "0 24px 80px rgba(0,0,0,0.6)", overflow: "hidden" }}>
+        <input
+          autoFocus
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(h + 1, results.length - 1)); }
+            else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(h - 1, 0)); }
+            else if (e.key === "Enter") pick(hi);
+          }}
+          placeholder="Find anything in the house…"
+          style={{ width: "100%", boxSizing: "border-box", background: "transparent", border: "none", outline: "none", color: T.text, fontFamily: T.mono, fontSize: 14, padding: "14px 16px", borderBottom: results.length ? `1px solid ${T.line}` : "none" }}
+        />
+        {results.length > 0 && (
+          <div style={{ maxHeight: 380, overflowY: "auto", padding: 6 }}>
+            {results.map((r, i) => (
+              <div key={r.id} onClick={() => pick(i)} onMouseEnter={() => setHi(i)} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", borderRadius: 6, cursor: "pointer", background: i === hi ? "#141926" : "transparent" }}>
+                <span style={{ width: 7, height: 7, borderRadius: 7, flex: "0 0 auto", background: layerColor[r.layer] ?? T.dim }} />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: T.text, fontSize: 12.5 }}>{r.icon ? r.icon + " " : ""}{r.label}</span>
+                <span style={{ marginLeft: "auto", flex: "0 0 auto", color: T.faint, fontSize: 9.5, border: `1px solid ${T.line}`, borderRadius: 4, padding: "1px 6px", letterSpacing: 0.4 }}>{r.type}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {q.trim().length >= 2 && results.length === 0 && (
+          <div style={{ padding: "12px 16px", color: T.dim, fontSize: 11.5, display: "flex", alignItems: "center", gap: 8 }}>
+            No matches — the house also answers questions over MCP.
+            <button onClick={() => copy(`${location.origin}/mcp`)} style={{ ...btn(), fontSize: 9.5, flex: "0 0 auto" }}>copy endpoint</button>
+          </div>
+        )}
+        <div style={{ padding: "7px 16px", borderTop: `1px solid ${T.line}`, color: T.faint, fontSize: 9.5, letterSpacing: 0.5, display: "flex", gap: 14 }}>
+          <span>↑↓ move</span><span>↵ open</span><span>esc close</span>
+        </div>
       </div>
     </div>
   );
@@ -227,19 +324,29 @@ function healthOf(status: string | null, p0: number | null): { score: number; co
 function Dossier({
   n,
   byId,
-  links,
+  rels,
   accent,
   onClose,
   onJump,
 }: {
   n: BNode;
   byId: Map<string, BNode>;
-  links: BLink[];
+  rels: Rel[];
   accent: string;
   onClose: () => void;
   onJump: (id: string) => void;
 }) {
-  const rels = useMemo(() => links.filter((l) => l.source === n.id || l.target === n.id).slice(0, 120), [n.id, links]);
+  // relations grouped BY VERB, count-sorted — "owns 12 · reads 3 · escalates_to 1"
+  const groups = useMemo(() => {
+    const g = new Map<string, Rel[]>();
+    for (const r of rels) {
+      const a = g.get(r.rel);
+      if (a) a.push(r);
+      else g.set(r.rel, [r]);
+    }
+    return [...g.entries()].sort((a, b) => b[1].length - a[1].length);
+  }, [rels]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const d = (n.data ?? {}) as Record<string, unknown>;
   const status = typeof d.status_pill === "string" ? d.status_pill : null;
   const p0raw = d.p0_count;
@@ -308,16 +415,30 @@ function Dossier({
         {tab === "prompt" && promptEntries.map(([k, v]) => <EditableBlock key={k} label={k} value={v} accent={accent} />)}
 
         {tab === "relations" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {rels.map((l, i) => {
-              const other = l.source === n.id ? l.target : l.source;
-              const o = byId.get(other);
-              const out = l.source === n.id;
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {groups.map(([verb, list]) => {
+              const cap = expanded[verb] ? list.length : 10;
               return (
-                <div key={i} onClick={() => onJump(other)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", cursor: "pointer", borderRadius: 6 }} onMouseEnter={(e) => (e.currentTarget.style.background = "#12161f")} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-                  <span title={out ? "outgoing" : "incoming"} style={{ color: T.faint, flex: "0 0 auto", fontFamily: T.mono, fontSize: 12 }}>{out ? "→" : "←"}</span>
-                  <span style={{ color: T.faint, fontSize: 10, flex: "0 0 auto", padding: "1px 6px", border: `1px solid ${T.line}`, borderRadius: 4, letterSpacing: 0.3 }}>{l.type}</span>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: T.text }}>{o?.label ?? other}</span>
+                <div key={verb}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+                    <span style={{ color: accent, fontSize: 11, fontWeight: 600, letterSpacing: 0.6, fontFamily: T.mono }}>{verb}</span>
+                    <span style={{ color: T.faint, fontSize: 10.5, fontFamily: T.mono }}>{list.length}</span>
+                    <span style={{ flex: 1, height: 1, background: T.line }} />
+                  </div>
+                  {list.slice(0, cap).map((r, i) => {
+                    const o = byId.get(r.other);
+                    return (
+                      <div key={i} onClick={() => onJump(r.other)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", cursor: "pointer", borderRadius: 6 }} onMouseEnter={(e) => (e.currentTarget.style.background = "#12161f")} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                        <span title={r.dir === "out" ? "outgoing" : "incoming"} style={{ color: T.faint, flex: "0 0 auto", fontFamily: T.mono, fontSize: 12 }}>{r.dir === "out" ? "→" : "←"}</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: T.text }}>{o?.icon ? o.icon + " " : ""}{o?.label ?? r.other}</span>
+                      </div>
+                    );
+                  })}
+                  {list.length > 10 && (
+                    <button onClick={() => setExpanded((x) => ({ ...x, [verb]: !x[verb] }))} style={{ ...btn(), marginTop: 3, fontSize: 9.5 }}>
+                      {expanded[verb] ? "show fewer" : `+${list.length - 10} more`}
+                    </button>
+                  )}
                 </div>
               );
             })}

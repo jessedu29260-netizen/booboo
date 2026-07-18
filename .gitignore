@@ -17,3 +17,6 @@ coverage/
 *.png
 verify_*.py
 shot_*.py
+
+# built public site (assembled by scripts/build-web.mjs)
+web/dist/

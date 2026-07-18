@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Booboo — see your whole AI system</title>
+<meta name="description" content="Booboo fuses your agents, crons, memory and docs into one rooted graph. Queryable over MCP and REST, rendered in 3D at a million nodes. Open source, MIT." />
+
+<meta property="og:title" content="Booboo — see your whole AI system" />
+<meta property="og:description" content="One rooted graph for your agents, crons, memory and docs. Queryable over MCP. Rendered in 3D at a million nodes. MIT." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+<!-- film grain, sits above everything, ignores pointers -->
+<svg class="grain" aria-hidden="true">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="3" stitchTiles="stitch" /></filter>
+  <rect width="100%" height="100%" filter="url(#g)" />
+</svg>
+
+<!-- ─────────────────────────  HERO  ───────────────────────── -->
+<header class="hero">
+  <div class="stage" id="stage" aria-hidden="true">
+    <!-- the real engine, running. src is set by main.js at a node count this device can hold -->
+    <iframe id="brain" title="" tabindex="-1" scrolling="no" loading="eager"></iframe>
+    <noscript><div class="stage-fallback"></div></noscript>
+  </div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <nav class="topbar">
+    <span class="wordmark">Booboo</span>
+    <div class="topbar-links">
+      <a href="https://github.com/jessedu29260-netizen/booboo">GitHub</a>
+      <a href="https://www.npmjs.com/package/create-booboo">npm</a>
+    </div>
+  </nav>
+
+  <div class="hero-copy">
+    <p class="eyebrow r" style="--d:0ms">Open source · MIT · MCP-native</p>
+    <h1>
+      <span class="line r" style="--d:90ms">You built the system.</span>
+      <span class="line r em" style="--d:210ms">Now you can see it.</span>
+    </h1>
+    <p class="lede r" style="--d:340ms">
+      Your agents, crons, memory and docs are scattered across tables, repos and cron files.
+      Booboo pulls them into one rooted graph you can query over MCP — and renders it in 3D,
+      up to a million nodes, in a browser tab.
+    </p>
+    <div class="cta r" style="--d:450ms">
+      <a class="btn-primary" href="./viewer/?n=1000000" id="openFull">
+        Open the million-node brain
+        <span class="arr" aria-hidden="true">→</span>
+      </a>
+      <a class="btn-ghost" href="#start">Run it on your stack</a>
+    </div>
+  </div>
+
+  <!-- observatory readout -->
+  <dl class="readout r" style="--d:600ms">
+    <div><dt>Nodes</dt><dd id="rNodes">—</dd></div>
+    <div><dt>Layers</dt><dd>4</dd></div>
+    <div><dt>Render</dt><dd id="rRender">GPU</dd></div>
+    <div><dt>Licence</dt><dd>MIT</dd></div>
+  </dl>
+</header>
+
+<main>
+
+<!-- ─────────────────────  THE ONE IDEA  ───────────────────── -->
+<section class="idea" id="idea">
+  <p class="tag">01 — The one idea</p>
+  <h2>A small JSON file at the centre of everything.</h2>
+  <p class="body wide">
+    Adapters read whatever you already run and emit one snapshot. Everything downstream
+    consumes that same file. Write the JSON once and the viewer, the API, the MCP server
+    and the markdown vault all come free.
+  </p>
+
+  <div class="flow">
+    <ul class="flow-col" aria-label="Inputs">
+      <li>Postgres</li><li>Supabase</li><li>JSON</li><li>Your adapter</li>
+    </ul>
+    <div class="flow-rule" aria-hidden="true"></div>
+    <div class="flow-core">
+      <span class="core-file">booboo.json</span>
+      <span class="core-sub">one rooted graph</span>
+    </div>
+    <div class="flow-rule" aria-hidden="true"></div>
+    <ul class="flow-col right" aria-label="Outputs">
+      <li>3D viewer</li><li>REST API</li><li>MCP server</li><li>Markdown vault</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ───────────────────────  QUICKSTART  ───────────────────── -->
+<section class="start" id="start">
+  <p class="tag">02 — Start here</p>
+  <h2>One command. No database, no config, no signup.</h2>
+  <p class="body">See a synthetic brain running on your own machine before you point it at anything real.</p>
+
+  <div class="cmd">
+    <code id="cmd1">npx @booboo-brain/cli view --demo --nodes 1000000</code>
+    <button class="copy" data-copy="#cmd1" aria-label="Copy command">Copy</button>
+  </div>
+
+  <p class="body muted">When you want it reading your own stack:</p>
+  <div class="cmd secondary">
+    <code id="cmd2">npx create-booboo my-brain</code>
+    <button class="copy" data-copy="#cmd2" aria-label="Copy command">Copy</button>
+  </div>
+</section>
+
+<!-- ──────────────────────  WHAT YOU GET  ──────────────────── -->
+<section class="gets">
+  <p class="tag">03 — What ships</p>
+  <ol class="get-list">
+    <li>
+      <span class="n">01</span>
+      <div>
+        <h3>A graph your agent can actually query</h3>
+        <p>Point Claude, Cursor or Claude Code at the MCP server. Stats, search, node dossiers, neighbours, pathfinding — your agent stops guessing at how your own system is wired.</p>
+      </div>
+    </li>
+    <li>
+      <span class="n">02</span>
+      <div>
+        <h3>A million nodes at 60fps</h3>
+        <p>One draw call. A single point cloud with a custom shader, laid out deterministically in a single O(n) pass. No force simulation, no waiting, no fan noise.</p>
+      </div>
+    </li>
+    <li>
+      <span class="n">03</span>
+      <div>
+        <h3>Privacy walls before anything is written</h3>
+        <p>Sealed namespaces never reach the snapshot. What you don't emit cannot leak into a viewer, an API response or a vault file.</p>
+      </div>
+    </li>
+    <li>
+      <span class="n">04</span>
+      <div>
+        <h3>Your brain as plain markdown</h3>
+        <p>The same snapshot renders to a wiki-linked vault. Open it in Obsidian, grep it, commit it. No lock-in, because the format is a file you own.</p>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<!-- ─────────────────────────  CLOSE  ──────────────────────── -->
+<section class="close">
+  <h2 class="close-h">Nothing to sign up for.<br /><em>It's a file and a renderer.</em></h2>
+  <div class="cta">
+    <a class="btn-primary" href="./viewer/?n=1000000">Open the million-node brain <span class="arr" aria-hidden="true">→</span></a>
+    <a class="btn-ghost" href="https://github.com/jessedu29260-netizen/booboo">Read the source</a>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <span>Booboo — MIT</span>
+  <span class="dot" aria-hidden="true">·</span>
+  <a href="https://github.com/jessedu29260-netizen/booboo">GitHub</a>
+  <span class="dot" aria-hidden="true">·</span>
+  <a href="https://www.npmjs.com/org/booboo-brain">npm</a>
+  <span class="dot" aria-hidden="true">·</span>
+  <a href="https://fractionalhq.uk">Fractional HQ</a>
+</footer>
+
+<script src="./main.js"></script>
+</body>
+</html>

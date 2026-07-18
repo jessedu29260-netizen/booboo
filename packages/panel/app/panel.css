@@ -3,19 +3,22 @@
    that lift and settle, numbers that count up. Dark by default. */
 
 :root {
-  --bg: #0b0c10;
-  --bg-1: #10131a;
-  --bg-2: #171b24;
-  --line: #242a36;
-  --ink: #e9edf3;
-  --ink-2: #9aa7b6;
-  --ink-3: #5d6776;
-  --accent: #4fb8a0;
-  --accent-2: #7fd4c0;
-  --accent-dim: rgba(79, 184, 160, 0.13);
-  --warn: #e0b45f;
-  --font: -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  /* The house tokens (design/tokens.json) — the panel is the same object as
+     the cosmos and the site: midnight glass, parchment ink, brass accents. */
+  --bg: #06080e;
+  --bg-1: #0b0e15;
+  --bg-2: #0f131c;
+  --line: #1c2130;
+  --ink: #e8dcc4;
+  --ink-2: #8a8268;
+  --ink-3: #585240;
+  --accent: #c9a04a;
+  --accent-2: #e8c877;
+  --accent-dim: rgba(201, 160, 74, 0.13);
+  --warn: #d6a23e;
+  --font: "DM Sans", -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --display: "Fraunces", ui-serif, Georgia, serif;
 }
 
 /* LIGHT theme — same verdigris accent, swapped surfaces. Toggle in the top bar. */
@@ -85,8 +88,8 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
   background: rgba(16, 19, 26, 0.82); backdrop-filter: blur(10px);
   flex-wrap: wrap;
 }
-.bar-brand { font-size: 15px; }
-.bar-brand b { font-weight: 650; }
+.bar-brand { font-size: 17px; font-family: var(--display); letter-spacing: 0.01em; }
+.bar-brand b { font-weight: 600; color: var(--accent-2); }
 .bar-stats { display: flex; gap: 18px; color: var(--ink-2); font-size: 12.5px; }
 .bar-stats b { color: var(--ink); font-variant-numeric: tabular-nums; font-size: 14px; }
 .bar-stats .tap { cursor: pointer; transition: color 0.15s; }

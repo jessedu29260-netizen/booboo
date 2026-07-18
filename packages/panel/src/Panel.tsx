@@ -286,7 +286,11 @@ function ChartNode({
   // Automations are machines this node OPERATES, not org units — they render
   // as a compact TRAY of chips under the owner's card (with health lights),
   // never as full org cards.
-  const kids = org.agents.filter((c) => c.parent === a.id && c.kind !== "automation");
+  // Root's children are the departments: sorted by id so the board's column
+  // order matches the cosmos viewer's sector enumeration (the one-ordering law
+  // in design/CRAFT.md — sectors in SEE, columns in GOVERN, always identical).
+  const kidsRaw = org.agents.filter((c) => c.parent === a.id && c.kind !== "automation");
+  const kids = depth === 0 ? [...kidsRaw].sort((x, y) => x.id.localeCompare(y.id)) : kidsRaw;
   const machines = (() => {
     const out: BOrgAgent[] = [];
     const walk = (pid: string) => {
@@ -354,9 +358,11 @@ function ChartNode({
       {kids.length > 0 && (
         <>
           <div className="oc-down" />
-          {/* ≤4 children: the classic fan with connector bars. More: a compact
-              grid block that grows DOWN instead of spreading the page sideways. */}
-          <div className={`oc-row${kids.length > 3 ? " wrap" : ""}`}>
+          {/* The staff-board law: the ROOT rank always fans horizontally — its
+              children are the departments and they must read as columns, one
+              per sector, however many there are. Deeper generations keep the
+              old rule (≤4 fan, more → a compact grid that grows down). */}
+          <div className={`oc-row${depth > 0 && kids.length > 3 ? " wrap" : ""}${depth === 0 ? " rank" : ""}`}>
             {kids.map((k, i) => (
               <div className="oc-child" key={k.id} style={{ ["--h" as string]: bucketHue(k.id) }}>
                 <ChartNode org={org} a={k} depth={depth + 1} order={i} {...cardProps} />

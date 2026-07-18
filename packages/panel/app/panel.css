@@ -340,6 +340,9 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
   width: 5px; height: 5px; transform: translateX(-50%); border-radius: 50%;
   background: var(--accent); box-shadow: 0 0 8px rgba(79, 184, 160, 0.5); }
 .oc-row { display: flex; align-items: flex-start; }
+/* the root rank: departments as columns on one rail, never wrapped */
+.oc-row.rank { flex-wrap: nowrap; gap: 18px; padding-top: 10px; }
+.oc-row.rank > .oc-child { flex: 0 0 auto; }
 .oc-child { position: relative; padding: 18px 5px 0; display: flex; flex-direction: column; align-items: center; }
 .oc-child::before { content: ""; position: absolute; top: 0; left: 50%; width: 1.5px; height: 18px;
   background: linear-gradient(180deg, var(--line), hsl(var(--h, 165) 32% 34%)); }

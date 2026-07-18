@@ -33,19 +33,33 @@ export function defaultCfg(data: BoobooGraph): BoobooCfg {
     layers[l.name] = true;
     sizes[l.name] = 1;
   });
-  return { orbit: 1, drift: 1, lines: 0.15, flow: 1, nodeScale: 1, sizes, layers, platforms: true, rings: true, labels: true, bloom: 0.45, cinematic: 1, fog: 0, peel: 1.2 };
+  // bloom 0 is the signed-off default (the Atlas lesson: glow merges a dense field into
+  // blobs). The sprite shader carries its own soft glow; bloom is an opt-in accent.
+  return { orbit: 1, drift: 1, lines: 0.15, flow: 1, nodeScale: 1, sizes, layers, platforms: true, rings: true, labels: true, bloom: 0, cinematic: 1, fog: 0, peel: 1.2 };
 }
 
 // ── node cloud: one draw call, per-point size + color from typed-array attributes ──
+// Sprite design (CRAFT luminance law): a soft luminous core, a thin rim ring that only
+// appears on large (landmark-scale) sprites, and a depth fade so the far field recedes.
+// The sprite carries its own glow — the de-bloomed default look needs no postprocessing.
 const VERT = /* glsl */ `
   attribute float size; attribute vec3 color; varying vec3 vColor;
+  varying float vFade; varying float vPx;
   void main() { vColor = color; vec4 mv = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = size * (320.0 / -mv.z); gl_Position = projectionMatrix * mv; }`;
+    float px = size * (340.0 / -mv.z);
+    gl_PointSize = px; vPx = px;
+    vFade = clamp(1.45 + mv.z / 9000.0, 0.3, 1.0); // mv.z is negative: far → smaller
+    gl_Position = projectionMatrix * mv; }`;
 const FRAG = /* glsl */ `
-  precision mediump float; varying vec3 vColor;
-  void main() { vec2 d = gl_PointCoord - vec2(0.5); float r2 = dot(d, d);
-    if (r2 > 0.25) discard; float a = smoothstep(0.25, 0.02, r2);
-    gl_FragColor = vec4(vColor * 1.45, a); }`;  // *1.45 so bright nodes catch the bloom
+  precision mediump float; varying vec3 vColor; varying float vFade; varying float vPx;
+  void main() {
+    vec2 d = gl_PointCoord - vec2(0.5); float r = length(d) * 2.0;
+    if (r > 1.0) discard;
+    float core = exp(-r * r * 5.0);
+    float rim = smoothstep(0.55, 0.72, r) * (1.0 - smoothstep(0.78, 1.0, r));
+    rim *= smoothstep(7.0, 15.0, vPx);            // rings only on landmark-scale sprites
+    float a = (core * 0.9 + rim * 0.24) * vFade;
+    gl_FragColor = vec4(vColor * (0.85 + core * 0.55), a); }`;
 
 // ── pulse-river edges: a light travels source→target along each (static) link ──
 const PULSE_VERT = /* glsl */ `
@@ -258,7 +272,9 @@ export function Booboo({ data, cfg, onSelect }: { data: BoobooGraph; cfg?: Boobo
       </Spin>
       <OrbitControls autoRotate={false} enableRotate enableZoom enablePan screenSpacePanning enableDamping dampingFactor={0.08} target={[0, 0, 0]} minPolarAngle={0} maxPolarAngle={Math.PI} makeDefault />
       <EffectComposer>
-        <Bloom mipmapBlur intensity={c.bloom} luminanceThreshold={0.4} luminanceSmoothing={0.3} radius={0.7} />
+        {/* selective bloom: threshold 0.62 (the Atlas value) so only assigned emissives
+            — flags, pulses, the root — catch it when bloom is enabled at all */}
+        <Bloom mipmapBlur intensity={c.bloom} luminanceThreshold={0.62} luminanceSmoothing={0.3} radius={0.7} />
         <HueSaturation saturation={0.12 * c.cinematic} />
         <BrightnessContrast brightness={0} contrast={0.08 * c.cinematic} />
         <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />

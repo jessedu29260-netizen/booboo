@@ -8,9 +8,6 @@
 
   var stage  = document.getElementById("stage");
   var frame  = document.getElementById("brain");
-  var rNodes = document.getElementById("rNodes");
-  var rRender= document.getElementById("rRender");
-  var openFull = document.getElementById("openFull");
 
   var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -46,36 +43,30 @@
   var t = tier();
   var gl = hasWebGL();
 
-  // Reduced motion: the scene auto-orbits and drifts and does not respect the
-  // preference internally, so we serve the static starfield instead.
+  // Reduced motion: the scene auto-drifts and does not respect the preference
+  // internally, so we serve the static starfield instead.
   if (!gl || reduced) {
     stage.classList.add("nogl");
     if (frame) frame.remove();
-    rNodes.textContent = "—";
-    rRender.textContent = gl ? "Static" : "No WebGL";
   } else {
     // The hero is the Pemberton Grand — 2,414 nodes, readable on any GPU tier.
-    // Scale proves itself behind the CTA; comprehension is the front door.
-    rNodes.textContent = fmt(2414);
-    rRender.textContent = "WebGL";
+    // Scale proves itself behind the proof link; comprehension is the front door.
     frame.addEventListener("load", function () { frame.classList.add("ready"); });
     frame.src = "./viewer/?file=/pemberton.booboo.json&chrome=0";
   }
 
-  // Retarget every full-brain link to something this device survives.
+  // Retarget the scale-proof link to something this device survives.
   var full = FULL[t];
   Array.prototype.forEach.call(
     document.querySelectorAll('a[href="./viewer/?n=1000000"]'),
     function (a) {
       a.setAttribute("href", "./viewer/?n=" + full);
       if (full !== 1000000) {
-        a.childNodes[0].nodeValue = "Open the " + fmt(full) + "-node brain ";
+        a.textContent = "see it hold at " + fmt(full) + " →";
+        a.title = "Scaled to this device. Open on a desktop for the full million.";
       }
     }
   );
-  if (openFull && full !== 1000000) {
-    openFull.title = "Scaled to this device. Open on a desktop for the full million.";
-  }
 
   // Copy buttons
   Array.prototype.forEach.call(document.querySelectorAll(".copy"), function (btn) {

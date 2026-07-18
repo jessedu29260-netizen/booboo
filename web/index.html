@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Booboo — see your whole AI system</title>
-<meta name="description" content="Booboo fuses your agents, crons, memory and docs into one rooted graph. Queryable over MCP and REST, rendered in 3D at a million nodes. Open source, MIT." />
+<title>Booboo — the brain that runs the house</title>
+<meta name="description" content="The Pemberton Grand is a hotel run by AI agents — every role boots from one graph: the structure, the memory, and the law. Booboo is that brain. Ask it anything over MCP. Open source, MIT." />
 
-<meta property="og:title" content="Booboo — see your whole AI system" />
-<meta property="og:description" content="One rooted graph for your agents, crons, memory and docs. Queryable over MCP. Rendered in 3D at a million nodes. MIT." />
+<meta property="og:title" content="Booboo — the brain that runs the house" />
+<meta property="og:description" content="A grand hotel run by AI agents, all booting from one graph. Explore it in 3D, ask it questions over MCP. Open source, MIT." />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
 
@@ -44,28 +44,28 @@
   <div class="hero-copy">
     <p class="eyebrow r" style="--d:0ms">Open source · MIT · MCP-native</p>
     <h1>
-      <span class="line r" style="--d:90ms">You built the system.</span>
-      <span class="line r em" style="--d:210ms">Now you can see it.</span>
+      <span class="line r" style="--d:90ms">A grand hotel, run&nbsp;by&nbsp;AI.</span>
+      <span class="line r em" style="--d:210ms">This is its brain.</span>
     </h1>
     <p class="lede r" style="--d:340ms">
-      Your agents, crons, memory and docs are scattered across tables, repos and cron files.
-      Booboo pulls them into one rooted graph you can query over MCP — and renders it in 3D,
-      up to a million nodes, in a browser tab.
+      The Pemberton Grand is a fictional five-star house where every role — the GM down to
+      the night porter — has its own agent. They all boot from one graph: the structure,
+      the memory, and the law of the house. It's floating behind these words, live.
     </p>
     <div class="cta r" style="--d:450ms">
-      <a class="btn-primary" href="./viewer/?n=1000000" id="openFull">
-        Open the million-node brain
+      <a class="btn-primary" href="./viewer/?file=/pemberton.booboo.json">
+        Walk into the Pemberton
         <span class="arr" aria-hidden="true">→</span>
       </a>
-      <a class="btn-ghost" href="#start">Run it on your stack</a>
+      <a class="btn-ghost" href="#start">Run it on your company</a>
     </div>
   </div>
 
   <!-- observatory readout -->
   <dl class="readout r" style="--d:600ms">
-    <div><dt>Nodes</dt><dd id="rNodes">—</dd></div>
-    <div><dt>Layers</dt><dd>4</dd></div>
-    <div><dt>Render</dt><dd id="rRender">GPU</dd></div>
+    <div><dt>Nodes</dt><dd id="rNodes">2,414</dd></div>
+    <div><dt>Departments</dt><dd>9</dd></div>
+    <div><dt>Agent roles</dt><dd>62</dd></div>
     <div><dt>Licence</dt><dd>MIT</dd></div>
   </dl>
 </header>
@@ -75,11 +75,12 @@
 <!-- ─────────────────────  THE ONE IDEA  ───────────────────── -->
 <section class="idea" id="idea">
   <p class="tag">01 — The one idea</p>
-  <h2>A small JSON file at the centre of everything.</h2>
+  <h2>One brain: the structure, the memory, and the law.</h2>
   <p class="body wide">
-    Adapters read whatever you already run and emit one snapshot. Everything downstream
-    consumes that same file. Write the JSON once and the viewer, the API, the MCP server
-    and the markdown vault all come free.
+    Every agent at the Pemberton boots from the same graph — who it reports to, which
+    rules bind it, which memories it may reach. Declare a rule once at the top and every
+    role beneath inherits it. It's all one small JSON file: emit it, and the 3D view,
+    the API, the MCP server and the markdown vault come free.
   </p>
 
   <div class="flow">
@@ -98,9 +99,40 @@
   </div>
 </section>
 
+<!-- ─────────────────────  ASK THE HOUSE  ──────────────────── -->
+<section class="ask" id="ask">
+  <p class="tag">02 — Ask the house</p>
+  <h2>It answers questions. Real ones.</h2>
+  <p class="body wide">
+    The brain behind this page is a live MCP endpoint. Point Claude at it and ask —
+    these are genuine answers from the Pemberton's ledger:
+  </p>
+
+  <div class="ask-grid">
+    <div class="qa">
+      <p class="q"><span aria-hidden="true">▸</span> What are the major failures this week?</p>
+      <p class="a">Three: the <strong>Room 407 water leak</strong>, the <strong>Lift E2 entrapment</strong>,
+      and the <strong>gala power failure</strong>. Engineering is running amber.</p>
+      <p class="via">answered from the ledger · booboo_search over /mcp</p>
+    </div>
+    <div class="qa">
+      <p class="q"><span aria-hidden="true">▸</span> Who's been off sick most in five years?</p>
+      <p class="a"><strong>Room Attendant 07</strong>, Housekeeping — <strong>98 absences</strong>,
+      seven times the next highest. The house knows.</p>
+      <p class="via">answered from the ledger · booboo_search over /mcp</p>
+    </div>
+  </div>
+
+  <p class="body muted">Add it to claude.ai as a custom connector — this endpoint is live on this very site:</p>
+  <div class="cmd secondary">
+    <code id="cmd3">https://booboo-black.vercel.app/mcp</code>
+    <button class="copy" data-copy="#cmd3" aria-label="Copy connector URL">Copy</button>
+  </div>
+</section>
+
 <!-- ───────────────────────  QUICKSTART  ───────────────────── -->
 <section class="start" id="start">
-  <p class="tag">02 — Start here</p>
+  <p class="tag">03 — Run it on yours</p>
   <h2>One command. No database, no config, no signup.</h2>
   <p class="body">See a synthetic brain running on your own machine before you point it at anything real.</p>
 
@@ -118,7 +150,7 @@
 
 <!-- ──────────────────────  WHAT YOU GET  ──────────────────── -->
 <section class="gets">
-  <p class="tag">03 — What ships</p>
+  <p class="tag">04 — What ships</p>
   <ol class="get-list">
     <li>
       <span class="n">01</span>
@@ -130,8 +162,8 @@
     <li>
       <span class="n">02</span>
       <div>
-        <h3>A million nodes at 60fps</h3>
-        <p>One draw call. A single point cloud with a custom shader, laid out deterministically in a single O(n) pass. No force simulation, no waiting, no fan noise.</p>
+        <h3>Readable at any scale</h3>
+        <p>One draw call, deterministic layout, no force simulation. The structure you see at 2,400 nodes survives at a million — <a class="proof" href="./viewer/?n=1000000">see it hold at a million →</a></p>
       </div>
     </li>
     <li>
@@ -153,9 +185,9 @@
 
 <!-- ─────────────────────────  CLOSE  ──────────────────────── -->
 <section class="close">
-  <h2 class="close-h">Nothing to sign up for.<br /><em>It's a file and a renderer.</em></h2>
+  <h2 class="close-h">Nothing to sign up for.<br /><em>It's a file, a renderer — and it answers.</em></h2>
   <div class="cta">
-    <a class="btn-primary" href="./viewer/?n=1000000">Open the million-node brain <span class="arr" aria-hidden="true">→</span></a>
+    <a class="btn-primary" href="./viewer/?file=/pemberton.booboo.json">Walk into the Pemberton <span class="arr" aria-hidden="true">→</span></a>
     <a class="btn-ghost" href="https://github.com/jessedu29260-netizen/booboo">Read the source</a>
   </div>
 </section>

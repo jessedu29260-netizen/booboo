@@ -164,7 +164,8 @@ const REDUCED = typeof window !== "undefined" && window.matchMedia?.("(prefers-r
 
 // Light / dark — dark by default, persisted, applied to <html data-theme> so the CSS vars swap.
 function readTheme(): "dark" | "light" {
-  try { return localStorage.getItem("booboo-theme") === "light" ? "light" : "dark"; } catch { return "dark"; }
+  // light is the default a stranger lands on; dark is the opt-in.
+  try { return localStorage.getItem("booboo-theme") === "dark" ? "dark" : "light"; } catch { return "light"; }
 }
 function useTheme(): ["dark" | "light", () => void] {
   const [theme, setTheme] = useState<"dark" | "light">(readTheme);
@@ -467,7 +468,16 @@ function AgentCard({
       data-id={a.id}
       data-parent={a.parent ?? ""}
     >
-      {light !== "none" && <i className={`ag-light ${light}`} title={`fleet health: ${light}`} />}
+      {/* the lamp's breath is offset per bubble so the board never blinks in
+          unison — a synchronised pulse reads as a screensaver, a staggered one
+          reads as a building with people in it. Deterministic off the id. */}
+      {light !== "none" && (
+        <i
+          className={`ag-light ${light}`}
+          style={{ ["--lamp-delay" as string]: `${(bucketHue(a.id) % 26) / 10}s` }}
+          title={`health: ${light === "ok" ? "healthy" : light === "warn" ? "needs a look" : "failing"}`}
+        />
+      )}
       <div className="ag-head">
         {/* the mark is earned by rank. Staff plates carry none — 51 identical
             🤖 avatars were the cheapest visual token on the board, and a
@@ -1117,7 +1127,7 @@ function OrgScreen({
             never make the reader infer it from indentation. */}
         <div className="ranks">
           <div className="rank"><b>I</b>The standard</div>
-          <div className="rank"><b>II</b>General</div>
+          <div className="rank"><b>II</b>The executive</div>
           <div className="rank"><b>III</b>Departments</div>
           <div className="rank"><b>IV</b>Staff &amp; machines</div>
         </div>

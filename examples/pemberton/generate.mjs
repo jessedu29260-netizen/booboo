@@ -166,8 +166,18 @@ const INTEGRATIONS = [
     duty: "A room double-booked is a red flag; refuse the write and escalate." },
 ];
 
+// The executive committee — rank II is a table of seats, not one office. These
+// are ROLES (the doctrine holds: roles are durable, agents are disposable); the
+// humans filling them are the principals, never nodes.
+const EXEC_SEATS = [
+  { key: "general-manager", name: "General Manager", duty: "chairs the table; the only amending hand on the House Standard" },
+  { key: "deputy-gm", name: "Deputy General Manager", duty: "runs the house day to day; deputises on every decision" },
+  { key: "director-finance", name: "Director of Finance", duty: "owns the ledger, the budget and the monthly close" },
+  { key: "director-people", name: "Director of People & Culture", duty: "owns the roster, training and everyone on it" },
+];
+
 const PERSONAS = {
-  gm: "Even-keeled; walks the floors at 07:00; signs every amendment in ink.",
+  executive: "Meets at 09:00 daily; decides in the room, signs every amendment in ink.",
   "front-office": "First voice a guest hears; never lets a request die in a handover.",
   "f-and-b": "Runs service like a brigade; tastes everything twice.",
   housekeeping: "Precise, spares no linen, escalates before apologising.",
@@ -251,19 +261,24 @@ N({
       "§ 14 — Water-damage response",
       "§ 21 — The guest registry is sealed to all agents",
     ],
-    amended: [{ section: "§ 14 — Water-damage response", at: iso(0.9 * DAY), by: "agent:gm" }],
+    amended: [{ section: "§ 14 — Water-damage response", at: iso(0.9 * DAY), by: "agent:executive" }],
   },
 });
 
 // gold band: the GM's agent
 N({
-  id: "agent:gm", type: "agent", layer: "gm", label: "GM",
+  id: "agent:executive", type: "agent", layer: "gm", label: "THE EXECUTIVE",
   weight: 0.95, tier: 0, parent: "standard", cluster: null, icon: "🎩",
-  data: { desc: PERSONAS.gm, health: "green", lastBoot: iso(0.2 * DAY) },
+  // Rank II is a BODY, not a person (Jesse, 2026-07-19). A general manager is
+  // one seat at a table; the thing that actually holds the House Standard and
+  // that nine departments report into is the executive committee. Modelling it
+  // as a single human was also why its dossier read "0 memories, 0 reports" —
+  // one node was carrying what a committee does.
+  data: { desc: PERSONAS.executive, health: "green", lastBoot: iso(0.2 * DAY), seats: EXEC_SEATS.map((s) => s.name) },
 });
-L("agent:gm", "standard", "declares", 0.9);
-L("agent:gm", "standard", "amends", 1.0); // the unique modify-down authority (the trace, beat 4)
-L("agent:gm", "standard", "inherits", 0.4);
+L("agent:executive", "standard", "declares", 0.9);
+L("agent:executive", "standard", "amends", 1.0); // the unique modify-down authority (the trace, beat 4)
+L("agent:executive", "standard", "inherits", 0.4);
 
 // silver band: 9 department heads + their SOP contracts orbiting beside them
 for (const d of DEPTS) {
@@ -271,7 +286,7 @@ for (const d of DEPTS) {
   const sop = `contract:sop-${d.key}`;
   N({
     id: head, type: "agent", layer: "executive", label: d.name.toUpperCase(),
-    weight: 0.8, tier: 1, parent: "agent:gm", cluster: d.key, icon: d.emoji,
+    weight: 0.8, tier: 1, parent: "agent:executive", cluster: d.key, icon: d.emoji,
     data: {
       desc: PERSONAS[d.key],
       health: d.key === "engineering" ? "amber" : "green",
@@ -284,8 +299,8 @@ for (const d of DEPTS) {
     weight: 0.55, tier: 1, parent: head, cluster: d.key, icon: "📜",
     data: { desc: `Standing operating procedure for ${d.name} — declared by its head, inherited by every ${d.name} agent.` },
   });
-  L(head, "agent:gm", "reports_to", 0.8);
-  L(head, "agent:gm", "escalates_to", 0.6);
+  L(head, "agent:executive", "reports_to", 0.8);
+  L(head, "agent:executive", "escalates_to", 0.6);
   L(head, sop, "declares", 0.9);
   L(head, "standard", "inherits", 0.4);
 }
@@ -348,15 +363,15 @@ for (const r of ROSTERS) {
 
 // ── THE LEDGER: 12 buckets ───────────────────────────────────────────────────
 const BUCKETS = [
-  { id: "bucket:house", label: "ledger:house", parent: "agent:gm", cluster: null,
+  { id: "bucket:house", label: "ledger:house", parent: "agent:executive", cluster: null,
     reach: "all agents read", icon: "🗄️" },
   ...DEPTS.map((d) => ({
     id: `bucket:${d.key}`, label: `ledger:${d.key}`, parent: `agent:${d.key}`, cluster: d.key,
     reach: "department reads/writes; head owns", icon: "🗄️",
   })),
-  { id: "bucket:executive", label: "ledger:executive", parent: "agent:gm", cluster: null,
+  { id: "bucket:executive", label: "ledger:executive", parent: "agent:executive", cluster: null,
     reach: "GM + heads", icon: "🗄️" },
-  { id: "bucket:guest-registry", label: "ledger:guest-registry", parent: "agent:gm", cluster: null,
+  { id: "bucket:guest-registry", label: "ledger:guest-registry", parent: "agent:executive", cluster: null,
     reach: "SEALED — node visible, contents never emitted", icon: "🔒", sealed: true },
 ];
 for (const b of BUCKETS) {
@@ -372,7 +387,7 @@ for (const d of DEPTS) {
   L(`agent:${d.key}`, "bucket:executive", "reads", 0.35);
 }
 for (const b of ["bucket:house", "bucket:executive", "bucket:guest-registry"])
-  L("agent:gm", b, "owns", 0.7);
+  L("agent:executive", b, "owns", 0.7);
 for (const d of DEPTS)
   for (const [slug] of STAFF[d.key]) L(`agent:${d.key}-${slug}`, `bucket:${d.key}`, "reads", 0.35);
 // the Night Audit walks the money ledgers at 03:00
@@ -457,7 +472,7 @@ for (const [bk, count] of Object.entries(ROUTINE)) {
   const dept = DEPTS.find((d) => d.key === bk);
   const cluster = dept ? dept.key : null;
   const bucket = `bucket:${bk}`;
-  const deptStaff = dept ? STAFF[dept.key].map(([slug]) => `agent:${dept.key}-${slug}`) : ["agent:gm"];
+  const deptStaff = dept ? STAFF[dept.key].map(([slug]) => `agent:${dept.key}-${slug}`) : ["agent:executive"];
   for (let i = 0; i < count; i++) {
     const id = `obs:${bk}-${String(i).padStart(4, "0")}`;
     const kind = pick(id + ":k", ROUTINE_KINDS);
@@ -615,7 +630,7 @@ for (const d of DEPTS) {
     // Caught on the live render, twice — dates are a chain, not a decoration.
     const ageDays = recentEng && m === 1 ? 0.4 : (m - 1) * 30.4 + 2 + h(id + ":j") * 5;
     rep(
-      id, `agent:${d.key}`, "agent:gm", ageDays * DAY,
+      id, `agent:${d.key}`, "agent:executive", ageDays * DAY,
       recentEng
         ? "Lift E2 remains out of service — LOLER re-inspection overdue; riser isolated on floor 4 after the Room 407 leak, 405/409 held OOS."
         : tpl.replace("{n}", String(n)),
@@ -633,7 +648,7 @@ for (let m = 1; m <= MONTHS_BACK; m++) {
   // Engineering's close 0.4d → the GM amends the Standard 0.25d. The assertion
   // below enforces it; this ordering is the 30-second trace told in filed work.
   const ageDays = m === 1 ? 0.25 : (m - 1) * 30.4 + 1 + h(id + ":j") * 4;
-  rep(id, "agent:gm", "standard", ageDays * DAY,
+  rep(id, "agent:executive", "standard", ageDays * DAY,
     m === 1
       ? "Amended the House Standard § 14 (water-damage response) after the Room 407 leak; every department re-booted against the new clause."
       : `House review closed: ${n} standing items carried, all nine departments reporting; no clause amendments this month.`,
@@ -667,7 +682,7 @@ const graph = {
     root: "standard",
     title: "The Pemberton Grand",
     layers: [
-      { name: "gm", color: "#c9a04a", label: "GOLD · GENERAL MANAGER" },
+      { name: "gm", color: "#c9a04a", label: "GOLD · THE EXECUTIVE" },
       { name: "executive", color: "#b9c2d0", label: "SILVER · DEPARTMENT HEADS" },
       { name: "staff", color: "#b0793f", label: "BRONZE · STAFF AGENTS" },
       { name: "ledger", color: "#a78bd0", label: "THE LEDGER · MEMORY" },
@@ -684,22 +699,23 @@ const graph = {
 const org = {
   booboo_org: "1.0",
   title: "The Pemberton Grand",
-  root: "gm",
+  root: "executive",
   updated: new Date(NOW).toISOString(),
   agents: [
     {
-      id: "gm", name: "General Manager", emoji: "🎩",
-      role: "holds the House Standard; the only amending hand",
+      id: "executive", name: "The Executive", emoji: "🎩",
+      role: EXEC_SEATS.map((s) => s.name).join(" · "),
       rules: ["rules/HOUSE_STANDARD.md"],
       buckets: ["house", "executive"],
-      boot: "You are the Pemberton Grand's GM agent. Boot with booboo_boot('gm'). You hold the House Standard; you alone amend it, always in writing. Route work to your nine heads; never do a department's job yourself.",
+      boot: "You are the Pemberton Grand's executive committee agent. Boot with booboo_boot('executive'). The table holds the House Standard; it alone amends it, always in writing. Route work to the nine heads; never do a department's job yourselves.",
+      data: { seats: EXEC_SEATS },
     },
     ...DEPTS.map((d) => ({
-      id: d.key, name: d.name, emoji: d.emoji, parent: "gm",
+      id: d.key, name: d.name, emoji: d.emoji, parent: "executive",
       role: PERSONAS[d.key],
       rules: [`rules/sop/${d.key.toUpperCase().replace(/-/g, "_")}.md`],
       buckets: [d.key],
-      boot: `You are the ${d.name} head agent of the Pemberton Grand. Boot with booboo_boot('${d.key}'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the GM in writing.`,
+      boot: `You are the ${d.name} head agent of the Pemberton Grand. Boot with booboo_boot('${d.key}'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the Executive in writing.`,
     })),
     ...DEPTS.flatMap((d) =>
       STAFF[d.key].map(([slug, label]) => ({
@@ -761,7 +777,7 @@ const journal = [
   jEntry("report", "engineering", 1.0 * DAY,
     "Isolated the 4th-floor riser; dehumidifiers running in 407, rooms 405/409 out of service as a precaution. Lift E2 remains OOS pending the overdue LOLER re-inspection.",
     { status: "warn" }),
-  jEntry("memory", "gm", 0.9 * DAY,
+  jEntry("memory", "executive", 0.9 * DAY,
     "Amended the House Standard § 14 — water-damage response: any standing-water report now triggers riser isolation and adjacent-room checks within 15 minutes, no sign-off required. [[standard]]",
     { kind: "decision", bucket: "executive", title: "House Standard § 14 amended" }),
   jEntry("memory", "engineering", 0.6 * DAY,

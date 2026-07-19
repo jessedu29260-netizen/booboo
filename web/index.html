@@ -7,37 +7,34 @@
 <meta name="description" content="The Pemberton Grand is a hotel run by AI agents — every role boots from one graph: the structure, the memory, and the law. Booboo is that brain. Ask it anything over MCP. Open source, MIT." />
 
 <meta property="og:title" content="Booboo — the brain that runs the house" />
-<meta property="og:description" content="A grand hotel run by AI agents, all booting from one graph. Explore it in 3D, ask it questions over MCP. Open source, MIT." />
+<meta property="og:description" content="A grand hotel run by AI agents, all booting from one graph. Explore it in 3D, govern it from a staff board, ask it anything over MCP. Open source, MIT." />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./tokens.css" />
 <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
 
-<!-- film grain, sits above everything, ignores pointers -->
-<svg class="grain" aria-hidden="true">
-  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="3" stitchTiles="stitch" /></filter>
-  <rect width="100%" height="100%" filter="url(#g)" />
-</svg>
-
-<!-- ─────────────────────────  HERO  ───────────────────────── -->
+<!-- ═══════════════════════  ACT I — THE HOOK  ═══════════════════════
+     Dark, cinematic, full viewport. Its only job is to stop the scroll.
+     Legibility is NOT its job — the board below does that. Ruled with
+     Jesse 2026-07-19: the cosmos is the hook, not a tool. -->
 <header class="hero">
   <div class="stage" id="stage" aria-hidden="true">
-    <!-- the real engine, running. src is set by main.js at a node count this device can hold -->
     <iframe id="brain" title="" tabindex="-1" scrolling="no" loading="eager"></iframe>
     <noscript><div class="stage-fallback"></div></noscript>
   </div>
   <div class="vignette" aria-hidden="true"></div>
 
   <nav class="topbar">
-    <span class="wordmark">Booboo</span>
+    <a class="wordmark" href="#board">Booboo</a>
     <div class="topbar-links">
-      <a href="./chart/">Staff board</a>
+      <a href="#board">The board</a>
+      <a href="#ask">Ask it</a>
       <a href="https://github.com/jessedu29260-netizen/booboo">GitHub</a>
       <a href="https://www.npmjs.com/package/create-booboo">npm</a>
     </div>
@@ -50,180 +47,98 @@
       <span class="line r em" style="--d:210ms">This is its brain.</span>
     </h1>
     <p class="lede r" style="--d:340ms">
-      The Pemberton Grand is a fictional five-star house where every role — the GM down to
-      the night porter — has its own agent. They all boot from one graph: the structure,
-      the memory, and the law of the house. It's floating behind these words, live.
+      Every role at the Pemberton Grand — the executive down to the night porter — has its
+      own agent. They all boot from one graph: the structure, the memory, and the law of
+      the house. It's turning behind these words, live.
     </p>
     <div class="cta r" style="--d:450ms">
-      <a class="btn-primary" href="./viewer/?file=/pemberton.booboo.json">
-        Walk into the Pemberton
-        <span class="arr" aria-hidden="true">→</span>
-      </a>
-      <a class="btn-ghost" href="#start">Run it on your company</a>
+      <a class="btn-primary" href="#board">See what runs it <span class="arr" aria-hidden="true">↓</span></a>
+      <a class="btn-ghost" href="./viewer/?file=/pemberton.booboo.json">Walk into the graph</a>
     </div>
   </div>
 
-  <!-- observatory readout -->
-  <dl class="readout r" style="--d:600ms">
-    <div><dt>Nodes</dt><dd id="rNodes">2,414</dd></div>
-    <div><dt>Departments</dt><dd>9</dd></div>
-    <div><dt>Agent roles</dt><dd>62</dd></div>
-    <div><dt>Licence</dt><dd>MIT</dd></div>
-  </dl>
+  <div class="scroll-cue r" style="--d:900ms" aria-hidden="true"><span>the house</span><i></i></div>
 </header>
 
 <main>
 
-<!-- ─────────────────────  THE ONE IDEA  ───────────────────── -->
-<section class="idea" id="idea">
+<!-- ═══════════════════════  THE ONE IDEA  ═══════════════════════ -->
+<section class="idea reveal">
   <p class="tag">01 — The one idea</p>
-  <h2>One brain: the structure, the memory, and the law.</h2>
-  <p class="body wide">
-    Every agent at the Pemberton boots from the same graph — who it reports to, which
-    rules bind it, which memories it may reach. Declare a rule once at the top and every
-    role beneath inherits it. It's all one small JSON file: emit it, and the 3D view,
-    the API, the MCP server and the markdown vault come free.
-  </p>
-
-  <div class="flow">
-    <ul class="flow-col" aria-label="Inputs">
-      <li>Postgres</li><li>Supabase</li><li>JSON</li><li>Your adapter</li>
-    </ul>
-    <div class="flow-rule" aria-hidden="true"></div>
-    <div class="flow-core">
-      <span class="core-file">booboo.json</span>
-      <span class="core-sub">one rooted graph</span>
+  <h2 class="display">One brain: the structure, the&nbsp;memory, and the&nbsp;law.</h2>
+  <div class="triad">
+    <div class="tri">
+      <span class="tri-n">Structure</span>
+      <p>Who exists, and who answers to whom. Not a diagram — the file every agent boots from.</p>
     </div>
-    <div class="flow-rule" aria-hidden="true"></div>
-    <ul class="flow-col right" aria-label="Outputs">
-      <li>3D viewer</li><li>REST API</li><li>MCP server</li><li>Markdown vault</li>
-    </ul>
+    <div class="tri">
+      <span class="tri-n">Memory</span>
+      <p>Everything the house has learned, bucketed and walled. Housekeeping cannot read Finance.</p>
+    </div>
+    <div class="tri">
+      <span class="tri-n">Law</span>
+      <p>Rules declared once, inherited downward in boot order. Change the file, change the house.</p>
+    </div>
   </div>
 </section>
 
-<!-- ─────────────────────  THE LIVE HOUSE  ─────────────────── -->
-<section class="live" id="live">
-  <p class="tag">02 — The house, live</p>
-  <h2>Five alarms are burning. Go and click one.</h2>
-  <p class="body wide">
-    This is the running brain, not a picture of one. Drag to turn the house, click any
-    node for its dossier, press <kbd>/</kbd> to search 2,414 of them. The ringed beacons
-    are the flags — the red one is the Room 407 water leak.
-  </p>
-
-  <div class="live-frame">
-    <iframe
-      id="liveGraph"
-      title="The Pemberton Grand — live, interactive"
-      src="./viewer/?file=/pemberton.booboo.json&chrome=lite"
-      loading="lazy"
-    ></iframe>
+<!-- ═══════════════════  ACT II — THE CONVINCE  ═══════════════════
+     The hook got them here; THIS is the thing they would actually use.
+     A real, working, readable control surface — not a picture of one. -->
+<section class="board" id="board">
+  <div class="board-head reveal">
+    <p class="tag">02 — What you actually run</p>
+    <h2 class="display">The staff board.<br /><em>Move a role — the law follows it.</em></h2>
+    <p class="body wide">
+      This is not a chart of the org, it <strong>is</strong> the org. What you see below is the
+      file <code>booboo_boot</code> reads: move a card to a new parent and you have changed
+      which rules that agent obeys, which memory it can reach, and what it wakes up with
+      tomorrow morning. Every card states what flows out of it.
+    </p>
   </div>
-  <p class="live-foot">
-    <span>Same engine as the full viewer — nothing is faked.</span>
-    <a href="./viewer/?file=/pemberton.booboo.json">Open it full-screen <span aria-hidden="true">→</span></a>
-  </p>
-</section>
 
-<!-- ────────────────────  THE THREE FACES  ─────────────────── -->
-<section class="faces" id="faces">
-  <p class="tag">03 — Three faces, one brain</p>
-  <h2>Look at it, govern it, or just ask it.</h2>
-  <p class="body wide">
-    Same graph underneath. Which face you use depends on the question you're holding.
-  </p>
+  <figure class="board-frame reveal">
+    <div class="board-chrome" aria-hidden="true">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="board-title">org.pemberton.booboo.json — live</span>
+    </div>
+    <iframe id="boardFrame" title="The Pemberton Grand staff board — live and interactive" src="./chart/?embed=1" loading="lazy"></iframe>
+  </figure>
+  <!-- a <figcaption> is only valid INSIDE its <figure>; this sits outside on
+       purpose so the frame keeps its own rounded clip, so it is a div. -->
+  <div class="board-cap reveal">
+    <span>The real panel against the real org file — drag a card, open a dossier, toggle the law.</span>
+    <a href="./chart/">Open it full-screen <span aria-hidden="true">→</span></a>
+  </div>
 
-  <div class="face-grid">
-    <a class="face" href="./viewer/?file=/pemberton.booboo.json">
-      <span class="face-n">SEE</span>
-      <h3>The cosmos</h3>
-      <p>Where's the problem, what's flowing, how does the house hang together. Four bands, nine departments, alarms you can spot from across the room.</p>
-      <span class="face-go">Walk in <span aria-hidden="true">→</span></span>
-    </a>
-    <a class="face" href="./chart/">
-      <span class="face-n">GOVERN</span>
-      <h3>The staff board</h3>
-      <p>Who reports to whom, which rules bind whom, who can reach which memories. Drag a role to a new head and every future boot obeys.</p>
-      <span class="face-go">Open the board <span aria-hidden="true">→</span></span>
-    </a>
-    <a class="face" href="#ask">
-      <span class="face-n">ASK</span>
-      <h3>The concierge</h3>
-      <p>Point Claude at the house over MCP and ask anything. It counts, traces and answers from the ledger — no dashboard to learn.</p>
-      <span class="face-go">Ask it something <span aria-hidden="true">→</span></span>
-    </a>
+  <div class="board-notes reveal">
+    <div class="note">
+      <span class="note-n">Rank is named</span>
+      <p>The Standard → The Executive → Departments → Staff. Nobody infers depth from indentation.</p>
+    </div>
+    <div class="note">
+      <span class="note-n">Health is the edge</span>
+      <p>Scanning nine departments, the amber one finds you — before you read a single word.</p>
+    </div>
+    <div class="note">
+      <span class="note-n">Show the law</span>
+      <p>One toggle traces inheritance from the House Standard through every SOP to every role.</p>
+    </div>
   </div>
 </section>
 
-<!-- ─────────────────────  THE MODEL  ──────────────────────── -->
-<section class="model" id="model">
-  <p class="tag">04 — The model</p>
-  <h2>Five ideas. That's the whole contract.</h2>
-  <p class="body wide">
-    Booboo isn't a schema you learn, it's five nouns. Everything on this page —
-    the 3D view, the staff board, the answers — is those five, rendered.
-  </p>
-
-  <dl class="model-list">
-    <div>
-      <dt><span class="mk">Layer</span> a band of the house</dt>
-      <dd>A horizontal stratum: the GM, the department heads, the staff, the ledger. Layers stack, and a department reads as one vertical column through all of them.</dd>
-    </div>
-    <div>
-      <dt><span class="mk">Agent</span> a role, not a person</dt>
-      <dd>Roles are durable; the model behind them is disposable. Whatever boots into "Housekeeping" <em>becomes</em> Housekeeping — with its persona, its reach, its rules.</dd>
-    </div>
-    <div>
-      <dt><span class="mk">Bucket</span> a walled memory</dt>
-      <dd>Where an agent may read and write. Housekeeping sees Housekeeping's ledger. The guest registry is sealed — visible as a wall, never as contents.</dd>
-    </div>
-    <div>
-      <dt><span class="mk">Rule</span> law that flows down</dt>
-      <dd>Declared once, inherited by everyone beneath. The GM amends the House Standard; every department is bound by the next morning.</dd>
-    </div>
-    <div>
-      <dt><span class="mk">Boot</span> what an agent loads first</dt>
-      <dd>One call returns identity, chain of command, rules <em>in order</em>, and bucket reach. That slice is the whole point: the agent knows its place before it does anything.</dd>
-    </div>
-  </dl>
-
-  <p class="body muted">This is a real boot slice from the house, unedited:</p>
-  <pre class="boot"><code><span class="c">// booboo_boot("housekeeping")</span>
-{
-  <span class="k">"agent"</span>: { <span class="k">"id"</span>: <span class="s">"housekeeping"</span>, <span class="k">"role"</span>: <span class="s">"Precise, spares no linen, escalates before apologising."</span> },
-  <span class="k">"chain"</span>:   [ <span class="s">"gm"</span>, <span class="s">"housekeeping"</span> ],
-  <span class="k">"rules"</span>:   [ <span class="s">"rules/HOUSE_STANDARD.md"</span>, <span class="s">"rules/sop/HOUSEKEEPING.md"</span> ],  <span class="c">// ancestors first</span>
-  <span class="k">"buckets"</span>: [ <span class="s">"house"</span>, <span class="s">"executive"</span>, <span class="s">"housekeeping"</span> ],
-  <span class="k">"children"</span>: <span class="c">6 roles</span>
-}</code></pre>
-</section>
-
-<!-- ─────────────────────  ASK THE HOUSE  ──────────────────── -->
+<!-- ═══════════════════  ACT III — THE PROOF  ═══════════════════ -->
 <section class="ask" id="ask">
-  <p class="tag">05 — Ask the house</p>
-  <h2>It answers questions. Real ones.</h2>
-  <p class="body wide">
-    The brain behind this page is a live MCP endpoint. Point Claude at it and ask —
-    these are genuine answers from the Pemberton's ledger:
-  </p>
-
-  <div class="ask-grid">
-    <div class="qa">
-      <p class="q"><span aria-hidden="true">▸</span> What are the major failures this week?</p>
-      <p class="a">Three: the <strong>Room 407 water leak</strong>, the <strong>Lift E2 entrapment</strong>,
-      and the <strong>gala power failure</strong>. Engineering is running amber.</p>
-      <p class="via">answered from the ledger · booboo_search over /mcp</p>
-    </div>
-    <div class="qa">
-      <p class="q"><span aria-hidden="true">▸</span> Who's been off sick most in five years?</p>
-      <p class="a"><strong>Room Attendant 07</strong>, Housekeeping — <strong>98 absences</strong>,
-      seven times the next highest. The house knows.</p>
-      <p class="via">answered from the ledger · booboo_search over /mcp</p>
-    </div>
+  <div class="reveal">
+    <p class="tag">03 — Proof</p>
+    <h2 class="display">Don't take the picture's word for it.<br /><em>Ask the house.</em></h2>
+    <p class="body wide">
+      The brain behind this page is a live MCP endpoint. These fire real JSON-RPC at
+      <code>/mcp</code> and print what comes back — none of it is baked into this page.
+    </p>
   </div>
 
-  <div class="asker">
-    <p class="asker-lead">Try it yourself — these run against the live house, right now:</p>
+  <div class="asker reveal">
     <div class="chips" id="chips">
       <button data-q="failures">Major failures this week</button>
       <button data-q="absence">Worst absence record, 5 years</button>
@@ -233,87 +148,47 @@
     <pre class="answer" id="answer" aria-live="polite"><code>Pick a question — the answer comes back from /mcp, not from this page.</code></pre>
   </div>
 
-  <p class="body muted">Or add the house to claude.ai as a custom connector and ask it anything:</p>
-  <div class="cmd secondary">
-    <code id="cmd3">https://booboo.fractionalhq.uk/mcp</code>
-    <button class="copy" data-copy="#cmd3" aria-label="Copy connector URL">Copy</button>
+  <div class="connect reveal">
+    <p class="body muted">Or point your own Claude at it and ask it anything:</p>
+    <div class="cmd secondary">
+      <code id="cmd3">https://booboo.fractionalhq.uk/mcp</code>
+      <button class="copy" data-copy="#cmd3" aria-label="Copy connector URL">Copy</button>
+    </div>
   </div>
 </section>
 
-<!-- ───────────────────────  QUICKSTART  ───────────────────── -->
+<!-- ═══════════════════════  RUN IT  ═══════════════════════ -->
 <section class="start" id="start">
-  <p class="tag">06 — Run it on yours</p>
-  <h2>One command. No database, no config, no signup.</h2>
-  <p class="body">See a synthetic brain running on your own machine before you point it at anything real.</p>
-
-  <div class="cmd">
-    <code id="cmd1">npx @booboo-brain/cli view --demo --nodes 1000000</code>
-    <button class="copy" data-copy="#cmd1" aria-label="Copy command">Copy</button>
+  <div class="reveal">
+    <p class="tag">04 — Run it on yours</p>
+    <h2 class="display">One command. No database, no config, no&nbsp;signup.</h2>
+    <p class="body wide">
+      Scaffolds a runnable brain — the org file, a starter graph, the panel, the MCP server
+      and a markdown vault. Point it at your own structure and the same faces come up.
+    </p>
   </div>
-
-  <p class="body muted">When you want it reading your own stack:</p>
-  <div class="cmd secondary">
-    <code id="cmd2">npx create-booboo my-brain</code>
-    <button class="copy" data-copy="#cmd2" aria-label="Copy command">Copy</button>
+  <div class="cmd big reveal">
+    <code id="cmd1">npx create-booboo my-brain</code>
+    <button class="copy" data-copy="#cmd1" aria-label="Copy install command">Copy</button>
+  </div>
+  <p class="body muted reveal">Or watch it hold at scale — a million nodes, same structure, in your browser:</p>
+  <div class="cmd secondary reveal">
+    <code id="cmd2">npx @booboo-brain/cli view --demo --nodes 1000000</code>
+    <button class="copy" data-copy="#cmd2" aria-label="Copy scale demo command">Copy</button>
   </div>
 </section>
 
-<!-- ──────────────────────  WHAT YOU GET  ──────────────────── -->
-<section class="gets">
-  <p class="tag">07 — What ships</p>
-  <ol class="get-list">
-    <li>
-      <span class="n">01</span>
-      <div>
-        <h3>A graph your agent can actually query</h3>
-        <p>Point Claude, Cursor or Claude Code at the MCP server. Stats, search, node dossiers, neighbours, pathfinding — your agent stops guessing at how your own system is wired.</p>
-      </div>
-    </li>
-    <li>
-      <span class="n">02</span>
-      <div>
-        <h3>Readable at any scale</h3>
-        <p>One draw call, deterministic layout, no force simulation. The structure you see at 2,400 nodes survives at a million — <a class="proof" href="./viewer/?n=1000000">see it hold at a million →</a></p>
-      </div>
-    </li>
-    <li>
-      <span class="n">03</span>
-      <div>
-        <h3>Privacy walls before anything is written</h3>
-        <p>Sealed namespaces never reach the snapshot. What you don't emit cannot leak into a viewer, an API response or a vault file.</p>
-      </div>
-    </li>
-    <li>
-      <span class="n">04</span>
-      <div>
-        <h3>Your brain as plain markdown</h3>
-        <p>The same snapshot renders to a wiki-linked vault. Open it in Obsidian, grep it, commit it. No lock-in, because the format is a file you own.</p>
-      </div>
-    </li>
-  </ol>
-</section>
-
-<!-- ─────────────────────────  CLOSE  ──────────────────────── -->
-<section class="close">
-  <h2 class="close-h">Nothing to sign up for.<br /><em>It's a file, a renderer — and it answers.</em></h2>
-  <div class="cta">
-    <a class="btn-primary" href="./viewer/?file=/pemberton.booboo.json">Walk into the Pemberton <span class="arr" aria-hidden="true">→</span></a>
-    <a class="btn-ghost" href="https://github.com/jessedu29260-netizen/booboo">Read the source</a>
+<!-- ═══════════════════════  CLOSE  ═══════════════════════ -->
+<section class="close reveal">
+  <h2 class="close-h display">Nothing to sign up for.<br /><em>It's a file, a renderer — and it answers.</em></h2>
+  <div class="close-cta">
+    <a class="btn-primary" href="https://github.com/jessedu29260-netizen/booboo">Read the source <span class="arr" aria-hidden="true">→</span></a>
+    <a class="btn-ghost" href="./chart/">Open the board</a>
   </div>
+  <p class="foot">Booboo — the unified operational brain · MIT · built by <a href="https://fractionalhq.uk">Fractional HQ</a></p>
 </section>
 
 </main>
-
-<footer>
-  <span>Booboo — MIT</span>
-  <span class="dot" aria-hidden="true">·</span>
-  <a href="https://github.com/jessedu29260-netizen/booboo">GitHub</a>
-  <span class="dot" aria-hidden="true">·</span>
-  <a href="https://www.npmjs.com/org/booboo-brain">npm</a>
-  <span class="dot" aria-hidden="true">·</span>
-  <a href="https://fractionalhq.uk">Fractional HQ</a>
-</footer>
-
-<script src="./main.js"></script>
+<script src="./main.js" defer></script>
 </body>
 </html>

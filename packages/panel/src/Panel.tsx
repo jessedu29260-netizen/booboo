@@ -1548,7 +1548,15 @@ function App() {
 
   useEffect(() => {
     api("/org")
-      .then((o: BOrg) => { setSaved(o); setDraft(o); setSelected(o.root); })
+      .then((o: BOrg) => {
+        setSaved(o); setDraft(o);
+        // ?embed=1 opens with NOTHING selected. Auto-selecting the root is right
+        // for the full-screen tool (you land on something), but inside the
+        // landing page it costs a quarter of the frame to a dossier nobody
+        // asked for, hiding the cascade that is the reason it is embedded.
+        const embed = new URLSearchParams(window.location.search).get("embed");
+        if (!embed) setSelected(o.root);
+      })
       .catch(() => setErr("Can't load the organigram — is `booboo panel --org` running?"));
     api("/stats").then(setStats).catch(() => setStats(null));
     Promise.all([

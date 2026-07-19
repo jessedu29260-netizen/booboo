@@ -161,4 +161,23 @@
       });
     });
   });
+
+  // Scroll reveal. Progressive enhancement in both directions: without
+  // IntersectionObserver, or under prefers-reduced-motion, everything is shown
+  // immediately rather than left invisible — a reveal that never fires is a
+  // blank page, which is a worse failure than no animation at all.
+  var revealables = document.querySelectorAll(".reveal");
+  var noMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!("IntersectionObserver" in window) || noMotion) {
+    Array.prototype.forEach.call(revealables, function (el) { el.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add("in");
+        io.unobserve(e.target); // reveal once; re-animating on scroll-back is noise
+      });
+    }, { rootMargin: "0px 0px -12% 0px", threshold: 0.08 });
+    Array.prototype.forEach.call(revealables, function (el) { io.observe(el); });
+  }
 })();

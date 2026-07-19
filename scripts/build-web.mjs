@@ -15,6 +15,10 @@ const out = path.join(root, "web", "dist");
 const viewerApp = path.join(root, "packages", "viewer", "dist-app");
 const panelApp = path.join(root, "packages", "panel", "dist-app");
 
+// tokens first: the site's CSS vars and the viewer's constants are generated,
+// so a stale build can never ship a hand-drifted palette.
+await import("./gen-tokens.mjs");
+
 if (!existsSync(viewerApp)) {
   console.error(`✗ ${viewerApp} missing — run: pnpm -F @booboo-brain/viewer build`);
   process.exit(1);
@@ -23,7 +27,7 @@ if (!existsSync(viewerApp)) {
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
 
-for (const f of ["index.html", "styles.css", "main.js"]) {
+for (const f of ["index.html", "styles.css", "main.js", "tokens.css"]) {
   await cp(path.join(root, "web", f), path.join(out, f));
 }
 await cp(viewerApp, path.join(out, "viewer"), { recursive: true });

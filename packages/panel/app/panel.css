@@ -3,8 +3,10 @@
    that lift and settle, numbers that count up. Dark by default. */
 
 :root {
-  /* The house tokens (design/tokens.json) — the panel is the same object as
-     the cosmos and the site: midnight glass, parchment ink, brass accents. */
+  /* The house tokens. Raw values are generated into app/tokens.css from
+     design/tokens.json (scripts/gen-tokens.mjs); these are the panel's own
+     semantic aliases over them, so the staff board, the cosmos and the site
+     stay literally the same object. */
   --bg: #06080e;
   --bg-1: #0b0e15;
   --bg-2: #0f131c;

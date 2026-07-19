@@ -3,36 +3,13 @@ import type { BoobooGraph } from "@booboo-brain/spec";
 // O(n) deterministic layout → flat typed arrays. Scale-first: no per-node objects, no force sim.
 // Position = f(layer-plane, cluster-sector, tier-radius, hash(id)). Same input → same output.
 
-/** Ranked alarm states (CRAFT luminance rank 1 — the brightest thing on screen).
- *  Read from `node.data.flag`; `node.data.health: amber|red` also raises one. */
-export const FLAG_ORDER = ["critical", "overdue", "stale", "orphan"] as const;
-export type FlagKind = (typeof FLAG_ORDER)[number];
-export const FLAG_COLOR: Record<FlagKind, string> = {
-  critical: "#d05a5a",
-  overdue: "#d6a23e",
-  stale: "#c9a04a",
-  orphan: "#8a8268",
-};
+// Alarm + verb palettes come from the generated token module — the single
+// source (design/tokens.json). They were hand-mirrored here for one commit,
+// which is exactly the drift rule zero exists to prevent.
+export { FLAG_ORDER, FLAG_COLOR, VERB_COLOR, type FlagKind } from "./tokens";
+import { FLAG_ORDER, type FlagKind, VERB_COLOR } from "./tokens";
 
 export type Flagged = { id: string; index: number; kind: FlagKind; label: string; pos: [number, number, number] };
-
-/** Verb → colour (design/tokens.json § verb). One relation, one hue, everywhere.
- *  A snapshot may still override per-link with `link.color`; this is the default
- *  so a graph that only declares link *types* still reads as distinct relations. */
-export const VERB_COLOR: Record<string, string> = {
-  reports_to: "#c9a04a",
-  declares: "#E8C877",
-  amends: "#E8C877",
-  inherits: "#8a8268",
-  owns: "#4ECDC4",
-  reads: "#3a7a74",
-  escalates_to: "#d05a5a",
-  covers: "#5fae7e",
-  supplies: "#a8815a",
-  audits: "#a78bd0",
-  spine: "#29242f",
-  tether: "#29242f",
-};
 
 export type Laid = {
   ids: string[];

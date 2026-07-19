@@ -2,24 +2,11 @@
    Palette lifted from packages/viewer/src/BoobooView.tsx so the page and the
    product are the same object. Deep blue-black, warm parchment, antique gold. */
 
+/* Palette, type and easing come from tokens.css (generated from
+   design/tokens.json — load order matters, it is linked first). Only
+   layout-scale values that are this page's own concern live here. */
 :root {
-  --bg:      #06080e;
-  --bg-lift: #0a0d15;
-  --card:    #0f131c;
-  --line:    #1c2130;
-  --line-hi: #2b3243;
-  --text:    #E8DCC4;
-  --dim:     #8a8268;
-  --faint:   #585240;
-  --gold:    #c9a04a;
-  --gold-hi: #E8C877;
-  --teal:    #4ECDC4;
-  --violet:  #a78bd0;
-
-  --display: "Fraunces", ui-serif, Georgia, serif;
-  --sans:    "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-
+  --sans: var(--ui);
   --pad: clamp(1.25rem, 5vw, 5.5rem);
   --gutter: min(1200px, 100% - var(--pad) * 2);
 }

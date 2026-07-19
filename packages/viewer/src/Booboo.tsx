@@ -36,7 +36,12 @@ export function defaultCfg(data: BoobooGraph): BoobooCfg {
   });
   // bloom 0 is the signed-off default (the Atlas lesson: glow merges a dense field into
   // blobs). The sprite shader carries its own soft glow; bloom is an opt-in accent.
-  return { orbit: 1, drift: 1, lines: 0.15, flow: 1, nodeScale: 1, sizes, layers, platforms: true, rings: true, labels: true, bloom: 0, cinematic: 1, fog: 0, peel: 1.2, spines: 1 };
+  // rings default OFF (2026-07-19, Jesse: "take out those big rings, not needed
+  // here"). The disc rim-torus drew a hard bright ellipse around every band —
+  // the brightest thing in frame after the flags, which inverts the luminance
+  // ladder (CRAFT §1) for pure decoration. The engraved floor already says
+  // where the band is. Kept as a flag, not removed: BoobooCfg is published API.
+  return { orbit: 1, drift: 1, lines: 0.15, flow: 1, nodeScale: 1, sizes, layers, platforms: true, rings: false, labels: true, bloom: 0, cinematic: 1, fog: 0, peel: 1.2, spines: 1 };
 }
 
 // ── node cloud: one draw call, per-point size + color from typed-array attributes ──
@@ -588,10 +593,14 @@ function Spin({ orbit, drift, peel, children }: { orbit: number; drift: number; 
   const grp = useRef<THREE.Group>(null);
   useFrame(({ clock }, dt) => {
     const g = grp.current; if (!g) return;
-    g.rotation.z += dt * 0.006 * drift;
+    // Halved 2026-07-19 (Jesse: "spinning slightly too fast"). Applied to the
+    // base rates rather than the cfg defaults on purpose — a saved cfg or a
+    // preset that sets orbit:1 must also get the calmer speed, and a grand
+    // house should turn like a slow orrery, not a screensaver.
+    g.rotation.z += dt * 0.003 * drift;
     if (orbit <= 0) return;
     const t = clock.getElapsedTime();
-    const wy = 0.13 + 0.17 * Math.sin(t * 0.047) + 0.1 * Math.sin(t * 0.019 + 1.3) + 0.05 * Math.sin(t * 0.101 + 2.1);
+    const wy = 0.065 + 0.085 * Math.sin(t * 0.047) + 0.05 * Math.sin(t * 0.019 + 1.3) + 0.025 * Math.sin(t * 0.101 + 2.1);
     g.rotation.y += dt * orbit * wy;
   });
   return <group ref={grp} scale={[1, 1, Math.max(0.05, peel)]}>{children}</group>;

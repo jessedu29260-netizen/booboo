@@ -18,6 +18,7 @@ const T = {
   green: "#5fae7e",
   amber: "#d6a23e",
   red: "#d05a5a",
+  teal: "#4ECDC4",
   sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif",
   mono: "ui-monospace, SFMono-Regular, 'JetBrains Mono', monospace",
 };
@@ -140,7 +141,10 @@ class RenderBoundary extends Component<{ children: ReactNode }, { msg: string | 
  *  Controls live on the LEFT, the node menu on the RIGHT — they never overlap. */
 export function BoobooView({
   data,
-  persistKey = "booboo-cfg-v3",
+  // v4: rings default off + spines added + spin halved. A stale v3 in
+  // localStorage would keep serving the old look to anyone who has visited
+  // before — which is exactly who is coming back to re-judge it.
+  persistKey = "booboo-cfg-v4",
   persist = true,
   initialSel = null,
   initialCfg,
@@ -214,6 +218,21 @@ export function BoobooView({
     data.meta.layers.forEach((l) => (m[l.name] = l.color ?? "#9aa"));
     return m;
   }, [data]);
+  // reports indexed by the agent that filed them, newest first — one pass over
+  // the graph, not a scan per selection.
+  const reportsByAgent = useMemo(() => {
+    const m = new Map<string, BNode[]>();
+    for (const n of data.nodes) {
+      if (n.type !== "report" || !n.parent) continue;
+      const a = m.get(n.parent);
+      if (a) a.push(n);
+      else m.set(n.parent, [n]);
+    }
+    const at = (x: BNode) => Date.parse(String((x.data as Record<string, unknown> | undefined)?.at ?? "")) || 0;
+    for (const list of m.values()) list.sort((x, y) => at(y) - at(x));
+    return m;
+  }, [data]);
+
   const node = sel ? byId.get(sel) ?? null : null;
   // the alarms, worst first — the orientation card leads with the real problem
   const flags = useMemo(
@@ -272,7 +291,7 @@ export function BoobooView({
         />
       )}
 
-      {node && <Dossier key={node.id} n={node} byId={byId} rels={adj.get(node.id) ?? []} accent={layerColor[node.layer] ?? T.gold} onClose={() => setSel(null)} onJump={setSel} />}
+      {node && <Dossier key={node.id} n={node} byId={byId} rels={adj.get(node.id) ?? []} reports={reportsByAgent.get(node.id) ?? []} accent={layerColor[node.layer] ?? T.gold} onClose={() => setSel(null)} onJump={setSel} />}
 
       {palette && <Palette data={data} layerColor={layerColor} onJump={(id) => { setSel(id); setPalette(false); }} onClose={() => setPalette(false)} />}
 
@@ -478,7 +497,12 @@ function Controls({
   );
 }
 
-/* ── health blend (status_pill + p0) ── */
+/* ── health blend ──
+   Reads `data.health` (green|amber|red — the convention a Booboo dataset
+   emits) and falls back to `status_pill` for graphs built by the older
+   Dionisos adapter. Reading ONLY the legacy key is the bug this replaced:
+   the Pemberton carries `health` on every agent and the dossier showed
+   nothing but weight/tier/cluster/parent. */
 function healthOf(status: string | null, p0: number | null): { score: number; color: string; label: string } {
   let score = status === "green" ? 1 : status === "amber" ? 0.6 : status === "red" ? 0.25 : 0.5;
   if (p0 != null && p0 > 0) score = Math.min(score, 0.28);
@@ -488,11 +512,27 @@ function healthOf(status: string | null, p0: number | null): { score: number; co
   return { score, color, label };
 }
 
+/** "3h ago" / "2 days ago" / "14 months ago" — undated returns "". */
+function relTime(iso?: unknown): string {
+  if (typeof iso !== "string" || !iso) return "";
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "";
+  const s = (Date.now() - t) / 1000;
+  if (s < 90) return "just now";
+  if (s < 5400) return `${Math.round(s / 60)}m ago`;
+  if (s < 172800) return `${Math.round(s / 3600)}h ago`;
+  const days = Math.round(s / 86400);
+  if (days < 60) return `${days}d ago`;
+  const months = Math.round(days / 30.4);
+  return months < 24 ? `${months}mo ago` : `${(months / 12).toFixed(1)}y ago`;
+}
+
 /* ── Dossier: the node menu — health-first, tabbed ── */
 function Dossier({
   n,
   byId,
   rels,
+  reports,
   accent,
   onClose,
   onJump,
@@ -500,6 +540,8 @@ function Dossier({
   n: BNode;
   byId: Map<string, BNode>;
   rels: Rel[];
+  /** this agent's own filed reports, newest first */
+  reports: BNode[];
   accent: string;
   onClose: () => void;
   onJump: (id: string) => void;
@@ -516,15 +558,51 @@ function Dossier({
   }, [rels]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const d = (n.data ?? {}) as Record<string, unknown>;
-  const status = typeof d.status_pill === "string" ? d.status_pill : null;
+  const str = (k: string): string | null => (typeof d[k] === "string" && (d[k] as string).trim() ? (d[k] as string) : null);
+  // `health` is the Booboo convention; `status_pill` is the legacy Dionisos key.
+  const status = str("health") ?? str("status_pill");
   const p0raw = d.p0_count;
   const p0 = p0raw == null || p0raw === "" ? null : Number(p0raw);
+  const persona = str("desc");
+  const note = str("note");
+  const lastBoot = str("lastBoot");
+  const roleLine = str("role");
   const phase = d.phase != null ? String(d.phase) : null;
   const lastMove = d.last_move != null && String(d.last_move).trim() ? String(d.last_move) : null;
   const nextPlan = d.next_plan != null && String(d.next_plan).trim() ? String(d.next_plan) : null;
   const hasHealth = status != null || (p0 != null && !Number.isNaN(p0));
 
-  const RESERVED = new Set(["status_pill", "p0_count", "phase", "last_move", "next_plan"]);
+  // the authority path: root → … → this node, walked up `parent`
+  const chain = useMemo(() => {
+    const out: BNode[] = [];
+    const guard = new Set<string>();
+    let cur: BNode | undefined = n;
+    while (cur && !guard.has(cur.id)) {
+      guard.add(cur.id);
+      out.unshift(cur);
+      cur = cur.parent ? byId.get(cur.parent) : undefined;
+    }
+    return out;
+  }, [n, byId]);
+
+  // reach, derived from the graph's own verbs — no second access mechanism
+  const reach = useMemo(() => {
+    const buckets: string[] = [], rules: string[] = [];
+    for (const r of rels) {
+      if (r.dir !== "out") continue;
+      if (r.rel === "owns" || r.rel === "reads") buckets.push(r.other);
+      else if (r.rel === "inherits") rules.push(r.other);
+    }
+    return { buckets, rules };
+  }, [rels]);
+
+  // this node IS a report: show who filed it and who received it
+  const repTo = str("to");
+  const repFrom = str("agent");
+  const repStatus = str("status");
+  const repSummary = str("summary");
+
+  const RESERVED = new Set(["status_pill", "p0_count", "phase", "last_move", "next_plan", "desc", "note", "lastBoot", "role", "health", "to", "agent", "status", "summary", "at", "bucket"]);
   const promptEntries = Object.entries(d).filter(
     ([k, v]) => !RESERVED.has(k) && typeof v === "string" && (k.toLowerCase().includes("prompt") || ["system", "instructions"].includes(k.toLowerCase()) || (v as string).length > 120),
   ) as [string, string][];
@@ -567,18 +645,111 @@ function Dossier({
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px 28px", fontSize: 12 }}>
         {tab === "overview" && (
           <>
+            {/* character before metrics — a dossier should read like a person's file */}
+            {persona && (
+              <div style={{ color: T.text, fontSize: 13.5, lineHeight: 1.55, fontStyle: "italic", marginBottom: 14, paddingLeft: 11, borderLeft: `2px solid ${accent}` }}>
+                {persona}
+              </div>
+            )}
+            {!persona && roleLine && <div style={{ color: T.dim, fontSize: 12.5, marginBottom: 14 }}>{roleLine}</div>}
+
             {hasHealth && <HealthBar status={status} p0={p0} />}
+            {/* the REASON, not just the colour — an amber with no cause teaches nothing */}
+            {note && (
+              <div style={{ marginTop: 9, background: "rgba(214,162,62,.07)", border: `1px solid ${T.line}`, borderLeft: `2px solid ${T.amber}`, borderRadius: 6, padding: "9px 11px", color: T.text, fontSize: 12, lineHeight: 1.5 }}>
+                {note}
+              </div>
+            )}
+
+            {/* THIS node is a report — say plainly who filed it and who got it */}
+            {n.type === "report" && (
+              <div style={{ marginTop: 12, background: T.card, border: `1px solid ${T.line}`, borderRadius: 8, padding: "11px 12px" }}>
+                {repSummary && <div style={{ color: T.text, fontSize: 12.5, lineHeight: 1.55, marginBottom: 10 }}>{repSummary}</div>}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 11, fontFamily: T.mono }}>
+                  {repFrom && <JumpChip label={`from ${byId.get("agent:" + repFrom)?.label ?? repFrom}`} onClick={() => onJump("agent:" + repFrom)} accent={T.dim} />}
+                  <span style={{ color: T.faint }}>→</span>
+                  {repTo && <JumpChip label={`to ${byId.get(repTo)?.label ?? repTo}`} onClick={() => onJump(repTo)} accent={accent} />}
+                  {repStatus && <span style={{ marginLeft: "auto", color: repStatus === "ok" ? T.green : repStatus === "warn" ? T.amber : T.red }}>{repStatus}</span>}
+                </div>
+              </div>
+            )}
+
             {phase && <Card label="current phase" value={phase} accent={accent} mono />}
             {lastMove && <Card label="last move" value={lastMove} accent={accent} scroll />}
             {nextPlan && <Card label="next plan" value={nextPlan} accent={accent} scroll />}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-              {([["weight", n.weight != null ? n.weight.toFixed(2) : "—"], ["tier", n.tier != null ? String(n.tier) : "—"], ["cluster", n.cluster ?? "—"], ["parent", n.parent ?? "—"]] as [string, string][]).map(([k, v]) => (
-                <div key={k} style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: 7, padding: "8px 10px" }}>
-                  <div style={{ color: T.faint, fontSize: 9.5, letterSpacing: 1, textTransform: "uppercase" }}>{k}</div>
-                  <div style={{ color: T.text, fontSize: 13, marginTop: 3, fontFamily: T.mono, wordBreak: "break-word" }}>{v}</div>
+
+            {/* chain of command — who this answers to, all the way up */}
+            {chain.length > 1 && (
+              <Block label="chain of command" accent={accent}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 6px", fontSize: 11.5 }}>
+                  {chain.map((c, i) => (
+                    <span key={c.id} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      {i > 0 && <span style={{ color: T.faint, fontFamily: T.mono }}>›</span>}
+                      {c.id === n.id ? (
+                        <b style={{ color: accent, fontWeight: 600 }}>{c.label}</b>
+                      ) : (
+                        <button onClick={() => onJump(c.id)} style={{ background: "none", border: "none", padding: 0, color: T.dim, cursor: "pointer", fontSize: 11.5, fontFamily: T.sans, textDecoration: "underline dotted" }}>{c.label}</button>
+                      )}
+                    </span>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </Block>
+            )}
+
+            {/* what it has actually closed, and where each one went */}
+            {reports.length > 0 && (
+              <Block label={`reports filed · ${reports.length}`} accent={accent}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                  {reports.slice(0, expanded.reports ? 25 : 4).map((r) => {
+                    const rd = (r.data ?? {}) as Record<string, unknown>;
+                    const st = typeof rd.status === "string" ? rd.status : null;
+                    const to = typeof rd.to === "string" ? rd.to : null;
+                    return (
+                      <div key={r.id} onClick={() => onJump(r.id)} style={{ background: T.card, border: `1px solid ${T.line}`, borderLeft: `2px solid ${st === "warn" ? T.amber : st === "fail" ? T.red : T.green}`, borderRadius: 6, padding: "8px 10px", cursor: "pointer" }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+                          <span style={{ color: T.goldHi, fontSize: 9.5, fontFamily: T.mono }}>{relTime(rd.at)}</span>
+                          {to && <span style={{ marginLeft: "auto", color: T.faint, fontSize: 9.5, fontFamily: T.mono, whiteSpace: "nowrap" }}>→ {byId.get(to)?.label ?? to}</span>}
+                        </div>
+                        <div style={{ color: T.text, fontSize: 11.5, lineHeight: 1.45 }}>{typeof rd.summary === "string" ? rd.summary : r.label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {reports.length > 4 && (
+                  <button onClick={() => setExpanded((x) => ({ ...x, reports: !x.reports }))} style={{ ...btn(), marginTop: 7, fontSize: 9.5 }}>
+                    {expanded.reports ? "show fewer" : `+${reports.length - 4} more, back to ${relTime((reports[reports.length - 1].data as Record<string, unknown>)?.at)}`}
+                  </button>
+                )}
+              </Block>
+            )}
+
+            {/* reach: the memory it can read, and the law it is bound by */}
+            {(reach.buckets.length > 0 || reach.rules.length > 0) && (
+              <Block label="reach" accent={accent}>
+                {reach.buckets.length > 0 && (
+                  <>
+                    <div style={{ color: T.faint, fontSize: 9.5, letterSpacing: 1, textTransform: "uppercase", marginBottom: 5 }}>memory it can read</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: reach.rules.length ? 11 : 0 }}>
+                      {reach.buckets.map((b) => <JumpChip key={b} label={byId.get(b)?.label ?? b} onClick={() => onJump(b)} accent={T.teal} />)}
+                    </div>
+                  </>
+                )}
+                {reach.rules.length > 0 && (
+                  <>
+                    <div style={{ color: T.faint, fontSize: 9.5, letterSpacing: 1, textTransform: "uppercase", marginBottom: 5 }}>law it is bound by</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                      {reach.rules.map((r) => <JumpChip key={r} label={byId.get(r)?.label ?? r} onClick={() => onJump(r)} accent={T.gold} />)}
+                    </div>
+                  </>
+                )}
+              </Block>
+            )}
+
+            {lastBoot && (
+              <div style={{ marginTop: 14, color: T.faint, fontSize: 10.5, fontFamily: T.mono }}>
+                last booted {relTime(lastBoot)}
+              </div>
+            )}
           </>
         )}
 
@@ -636,6 +807,33 @@ function HealthBar({ status, p0 }: { status: string | null; p0: number | null })
         <div style={{ height: "100%", width: `${Math.round(h.score * 100)}%`, background: h.color, borderRadius: 6, transition: "width .3s ease" }} />
       </div>
     </div>
+  );
+}
+
+/* a titled section of the dossier — one rule, one label, then content */
+function Block({ label, accent, children }: { label: string; accent: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 7 }}>
+        <span style={{ color: accent, fontSize: 9.5, letterSpacing: 1.4, textTransform: "uppercase", fontWeight: 600, fontFamily: T.mono }}>{label}</span>
+        <span style={{ flex: 1, height: 1, background: T.line }} />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/* a chip that jumps the selection to another node */
+function JumpChip({ label, onClick, accent }: { label: string; onClick: () => void; accent: string }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ background: "transparent", border: `1px solid ${T.line}`, color: accent, borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: T.mono, fontSize: 10, letterSpacing: 0.2, whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = accent)}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = T.line)}
+    >
+      {label}
+    </button>
   );
 }
 

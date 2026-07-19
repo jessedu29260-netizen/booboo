@@ -562,6 +562,104 @@ for (const [subject, count] of ABSENTEES) {
   }
 }
 
+// ── reports (~430): what the house has CLOSED, across three years ────────────
+// A house running for years must SHOW years. Observations alone are a stream of
+// raw noticing; a report is an agent closing something and handing it upward.
+// Every report therefore carries `to` — its recipient — because "who does this
+// go to?" is the question the graph must answer on its face, not by inference:
+//   staff  → their department head
+//   head   → the GM        (and lands in ledger:executive, which the GM reads)
+//   GM     → the House Standard itself (the only thing above it)
+// Bucket = where it lands; `to` = who receives it. Both are rendered.
+let repCount = 0;
+const rep = (id, agentId, toId, atMsAgo, summary, status, bucket, cluster) => {
+  repCount++;
+  N({
+    id, type: "report", layer: "ledger",
+    label: summary.length > 74 ? summary.slice(0, 71) + "…" : summary,
+    weight: 0.2, tier: 3, parent: agentId, cluster,
+    data: { agent: agentId.replace("agent:", ""), to: toId, at: iso(atMsAgo), summary, status, bucket },
+  });
+};
+
+// what each department closes, month after month — plausible, never lorem
+const MONTHLY = {
+  "front-office": ["Arrivals ran clean; {n} late check-outs absorbed without a complaint.", "Handover log complete every night; {n} guest requests carried across shifts, none dropped.", "OTA rates reconciled; {n} overbooking risks caught before arrival."],
+  "f-and-b": ["Covers up on the month; {n} supplier substitutions handled without a menu change.", "Allergen matrix re-verified across every station; {n} corrections filed.", "Cellar stocktake closed; {n} lines re-ordered, no 86s on service."],
+  housekeeping: ["Turndown standard held; {n} deep-cleans completed to schedule.", "Linen contract audited; {n} items written off, replacement order raised.", "{n} rooms returned to service after maintenance; all inspected twice."],
+  engineering: ["Planned maintenance closed; {n} reactive jobs raised and cleared.", "Plant readings within tolerance; {n} valves exercised on the quarterly round.", "{n} lift call-outs logged; service contract response times met."],
+  "spa-leisure": ["Pool chemistry within limits all month; {n} manual corrections logged.", "Therapist rota covered; {n} shift swaps absorbed without cancelling a booking.", "{n} treatments delivered; equipment service due dates all current."],
+  "events-banqueting": ["{n} functions delivered; setup and teardown to plan on every one.", "AV inventory reconciled; {n} items sent for repair, all returned.", "Function diary clean; {n} provisional holds converted or released on time."],
+  security: ["{n} incidents logged; all closed within the standard's window.", "Key custody audit complete; {n} discrepancies found and resolved same day.", "Camera coverage verified; {n} door controllers firmware-patched."],
+  "finance-procurement": ["Month-end closed on time; {n} invoices matched, none aged past terms.", "{n} supplier contracts reviewed; two re-tendered at better rates.", "Capex tracking current; {n} purchase orders raised against approved budget."],
+  "people-culture": ["Rota published ahead of every week; {n} clashes resolved before publication.", "{n} training modules completed across the house.", "Absence tracked and followed up; {n} return-to-work conversations held."],
+};
+const MONTHS_BACK = 36; // three years of closes — the "years old company" evidence
+for (const d of DEPTS) {
+  for (let m = 1; m <= MONTHS_BACK; m++) {
+    const id = `rep:${d.key}-m${String(m).padStart(2, "0")}`;
+    const tpl = pick(id, MONTHLY[d.key]);
+    const n = 3 + hi(id + ":n", 40);
+    // Engineering's most recent closes carry the amber it is actually running
+    // ONLY m=1 carries the live-incident text. m=2 originally described the
+    // riser-valve replacement too — a repair the journal dates to AFTER the
+    // leak, narrated in a close from 35 days before it. Same class of error as
+    // the two below, caught by widening the causality assertion.
+    const recentEng = d.key === "engineering" && m === 1;
+    // m=1 is THIS month's close, filed days ago — not a month ago. The first
+    // offset was m*30.4, which dated the most recent close 32 days back while
+    // its text cites the Room 407 leak from ~1 day ago: a report quoting an
+    // incident that had not happened yet. Engineering's m=1 is pinned tighter
+    // still (0.4d) because it reports ON that leak, so it must land AFTER both
+    // the incident (1.1d) and the staff reports that escalated it (0.55–1.05d).
+    // Caught on the live render, twice — dates are a chain, not a decoration.
+    const ageDays = recentEng && m === 1 ? 0.4 : (m - 1) * 30.4 + 2 + h(id + ":j") * 5;
+    rep(
+      id, `agent:${d.key}`, "agent:gm", ageDays * DAY,
+      recentEng
+        ? "Lift E2 remains out of service — LOLER re-inspection overdue; riser isolated on floor 4 after the Room 407 leak, 405/409 held OOS."
+        : tpl.replace("{n}", String(n)),
+      recentEng || (d.key === "engineering" && m === 2) ? "warn" : (h(id + ":s") > 0.94 ? "warn" : "ok"),
+      "bucket:executive", d.key,
+    );
+  }
+}
+// the GM closes to the House Standard — the only authority above it
+for (let m = 1; m <= MONTHS_BACK; m++) {
+  const id = `rep:gm-m${String(m).padStart(2, "0")}`;
+  const n = 2 + hi(id + ":n", 8);
+  // m=1 is the GM's amendment RESPONDING to the leak, so it must land last in
+  // the causal chain: leak 1.2d → attendant 1.05d → night engineer 0.55d →
+  // Engineering's close 0.4d → the GM amends the Standard 0.25d. The assertion
+  // below enforces it; this ordering is the 30-second trace told in filed work.
+  const ageDays = m === 1 ? 0.25 : (m - 1) * 30.4 + 1 + h(id + ":j") * 4;
+  rep(id, "agent:gm", "standard", ageDays * DAY,
+    m === 1
+      ? "Amended the House Standard § 14 (water-damage response) after the Room 407 leak; every department re-booted against the new clause."
+      : `House review closed: ${n} standing items carried, all nine departments reporting; no clause amendments this month.`,
+    "ok", "bucket:executive", null);
+}
+// the Night Audit's 03:00 run — the crons-in-the-graph story, nightly for 60 days
+for (let i = 1; i <= 60; i++) {
+  const id = `rep:night-audit-${String(i).padStart(3, "0")}`;
+  rep(id, "agent:finance-procurement-night-audit", "agent:finance-procurement",
+    NOW - (NIGHT_AUDIT_RUN - (i - 1) * DAY),
+    i === 1
+      ? "03:00 run: ledgers reconciled across 12 buckets. Flagged: Lift E2 LOLER certificate 23 days overdue; three major incidents filed to the executive ledger this week."
+      : `03:00 run: ledgers reconciled across 12 buckets; ${hi(id + ":f", 4)} exceptions raised, all routed to their department.`,
+    "ok", "bucket:finance-procurement", "finance-procurement");
+}
+// a handful of staff-level closes on the live incident — staff report to their head
+[
+  ["housekeeping-room-attendant-07", "housekeeping", 1.05, "Logged standing water in Room 407 at turndown and escalated to Engineering within nine minutes; floor sealed pending isolation.", "warn"],
+  ["engineering-lift-engineer", "engineering", 0.95, "Attended lift E2; entrapment cleared, car parked and locked off. Will not return to service until the LOLER re-inspection is signed.", "warn"],
+  ["engineering-night-engineer", "engineering", 0.55, "Riser isolation valve on floor 4 replaced; dehumidifiers running in 407, readings falling. Rooms 405/409 stay OOS overnight.", "ok"],
+  ["security-night-watch", "security", 0.8, "Escorted the contractor to floor 4 out of hours; access logged, keys returned and reconciled at shift end.", "ok"],
+  ["front-office-night-porter", "front-office", 0.7, "Moved the 407 guest to 512 with an apology and a bottle; no complaint raised, note left on the profile.", "ok"],
+].forEach(([who, dept, days, summary, status]) => {
+  rep(`rep:${who}-live`, `agent:${who}`, `agent:${dept}`, days * DAY, summary, status, `bucket:${dept}`, dept);
+});
+
 // ── the graph ────────────────────────────────────────────────────────────────
 const graph = {
   booboo: "1.0",
@@ -687,7 +785,30 @@ for (const l of links) byVerb[l.type] = (byVerb[l.type] ?? 0) + 1;
 
 if (obsCount !== 2100) fail(`observation count ${obsCount} ≠ 2100`);
 if (docCount !== 180) fail(`document count ${docCount} ≠ 180`);
-if (nodes.length !== 2414) fail(`node count ${nodes.length} ≠ 2414`);
+if (repCount !== 425) fail(`report count ${repCount} ≠ 425`);
+if (nodes.length !== 2839) fail(`node count ${nodes.length} ≠ 2839`);
+
+// Every report must name a recipient that EXISTS. "Who does this go to?" is the
+// question the dossier answers on its face — a dangling `to` would render a
+// recipient the graph cannot show, which is worse than showing none.
+const ids = new Set(nodes.map((n) => n.id));
+const reports = nodes.filter((n) => n.type === "report");
+const noTo = reports.filter((r) => !r.data?.to);
+const badTo = reports.filter((r) => r.data?.to && !ids.has(r.data.to));
+if (noTo.length) fail(`${noTo.length} reports carry no recipient (data.to)`);
+if (badTo.length) fail(`${badTo.length} reports name a recipient that is not a node: ${badTo.slice(0, 3).map((r) => r.data.to).join(", ")}`);
+// three years of history, not a week of it
+const spanDays = (NOW - Math.min(...reports.map((r) => Date.parse(r.data.at)))) / DAY;
+if (spanDays < 1000) fail(`report history spans only ${Math.round(spanDays)} days — a years-old house must show years`);
+// CAUSALITY: a report may not cite an incident that had not happened yet. This
+// shipped wrong twice (a monthly close dated 32d, then 3.2d, describing a leak
+// from 1.1d ago) because dates were tuned by eye instead of asserted.
+const leakAt = Date.parse(nodes.find((n) => n.id === "obs:incident-room-407-leak").data.date);
+for (const r of reports.filter((x) => /Room 407|riser|405\/409/i.test(x.data.summary))) {
+  if (Date.parse(r.data.at) < leakAt) {
+    fail(`report ${r.id} cites the Room 407 leak but is dated BEFORE it (${r.data.at} < ${new Date(leakAt).toISOString()})`);
+  }
+}
 
 const clusters = new Set(nodes.map((n) => n.cluster).filter((c) => c != null));
 if (clusters.size !== 9) fail(`distinct clusters ${clusters.size} ≠ 9 (even-ring branch needs exactly 9)`);

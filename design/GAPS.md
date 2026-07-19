@@ -209,6 +209,7 @@ of the wound is depth of play, not comprehension.
 | D1 | No done-vs-intended map | ✅ fixed | This file. |
 | D2 | Follow-ups scattered | 🟡 | Consolidated here; commit messages must now reference a row. |
 | D3 | Stale secrets doc outranked canonical | 🔴 | `.secrets/porkbun_credentials.md` still says the key was "LOST AT CREATION". It wasn't — `.env.master` has both. A stale doc cost a wrong "blocked" call. Correct the doc; canonical is `.env.master`. |
+| D5 | **Headless-with-a-fresh-profile is not the user's browser** | ✅ rule | Every verification this project has done ran in headless Chrome with a clean `--user-data-dir`. That proves the BUILD works; it cannot prove the PRODUCT works, because a fresh profile has no localStorage, no cache and no session. The whole stale-theme defect (C24) lived in exactly that blind spot, and Jesse had to find it twice while every screenshot I sent looked correct. **Rule: anything touching persisted state, sessions, caches or "why does mine look different" gets checked in the real browser via `claude-in-chrome` BEFORE asking the user to look.** Confirmed the fix that way: his profile still holds the legacy `booboo-theme: "dark"`, `booboo-theme-v2` is null (he never chose it), and the embedded board reports `data-theme: light` regardless. |
 | D4 | "Verified" used loosely | 🟡 | Rule: "verified" means an artefact was observed (screenshot, curl, live query) — not that code was written and built. |
 
 ---

@@ -14,6 +14,12 @@
 > **Standing verdict (Jesse, 2026-07-19):** readable now, but it "doesn't get
 > out of the mould" — competent dark-SaaS-with-brass, not a category of one.
 > The open work is a craft pass with a real point of view, not more features.
+>
+> **Craft pass shipped, same day.** The hospitality-materiality direction
+> (HANDOFF.md) is built and live on both faces — a brass staff board with a
+> traceable rule of law, and a cosmos where authority literally falls as
+> light. This is a claim to be re-judged, not a close: the next open of
+> booboo.fractionalhq.uk is the test, not this file.
 
 ## Legend
 
@@ -61,7 +67,7 @@ in the data and looks identical to every other department on screen.
 | Landmarks as brass objects + contact shadows | ✅ |
 | Observatory floors: glass, etched rules, engraved names | ✅ |
 | Sprite field: soft core, rim, depth fade | ✅ |
-| **Light-shaft spines** (cone beams, *authority as light falling*) | 🔴 **the signature element, never built** |
+| **Light-shaft spines** (cone beams, *authority as light falling*) | ✅ **shipped 2026-07-19** — one merged baked mesh (matches the Field/PulseLinks single-draw-call pattern), a spotlight-cone frustum per structural parent→child pair (tier≤2 only — GM→heads→SOPs→named staff, the same edge-culling scope used everywhere else), narrow at the source and widening as it falls, fresnel-lit silhouette, gradient alpha, animated downward-drifting grain, top-down entrance ignition sharing the same clock as the rest of the intro sequence. De-bloomed by default (NormalBlending when `cfg.bloom` is 0, matching Field/PulseLinks — the one place I first got this wrong, see the landmine below). Verified live on `/viewer/` and embedded on `/` behind the hero headline: `viewer-fixed2.png`, `preset-departments.png`, `landing-check.png` (headless GPU screenshots, real render). |
 | Edges: fat ribbons, source→target gradient, directional dashes | 🔴 thin GL lines |
 | **Verb → token colour on edges** | ✅ VERB_COLOR default when a link has no explicit colour, + a source→target brightness gradient so direction reads in a still frame. Verified live: reports_to gold, owns teal, escalates_to red, audits violet all distinct. |
 | Atmosphere: height fog, nebula IBL | 🟡 starfield only |
@@ -84,7 +90,7 @@ in the data and looks identical to every other department on screen.
 | Dossier: verb-grouped relations | ✅ |
 | Concierge palette — find mode | ✅ |
 | Palette — **ask mode** (routes to `/mcp`) | 🔴 |
-| **Four view presets** instead of fourteen sliders | 🔴 still fourteen sliders |
+| **Four view presets** instead of fourteen sliders | ✅ **shipped 2026-07-19** — OVERVIEW · DEPARTMENTS · LEDGER · TRACE as a top-center button bar, each a real `Partial<BoobooCfg>` (layer isolation + orbit/spines/fog/peel tuned per intent, not just cosmetic). The fourteen-slider drawer still exists — relabelled "pro controls", collapsed by default — for anyone who wants it, but it is no longer the front door. Verified live: `preset-departments.png` (ledger dimmed, spines lit), `preset-ledger.png` (structure dimmed, field forward), `preset-trace.png` (everything on, orbit/drift frozen for reading). |
 | Dossier as **one shared component** (viewer + panel + site) | 🔴 two separate implementations |
 | Loading / error / empty states | 🔴 |
 
@@ -149,7 +155,7 @@ of the wound is depth of play, not comprehension.
 | Surface | State | Evidence / what's missing |
 |---|---|---|
 | Landing `/` | ✅ | Six sections: idea · three faces · the model (five nouns + a real boot slice) · live ask · run-it · what-ships. Missing only OG image and scrollytelling. |
-| Viewer `/viewer/` | 🟡 | Layout, floors, landmarks, torch, entrance, dossier-by-verb, palette, flags, verb colours, orientation card all ✅ verified. Missing: view presets, focus-camera dolly, d-pad walk, breadcrumb, weak-GPU guard. |
+| Viewer `/viewer/` | 🟡 | Layout, floors, landmarks, torch, entrance, dossier-by-verb, palette, flags, verb colours, orientation card, **light-shaft spines**, **four view presets** all ✅ verified 2026-07-19. Missing: focus-camera dolly, d-pad walk, breadcrumb, weak-GPU guard. |
 | Staff board `/chart/` | ✅ | Lanes stack downward, scrolls correctly, 15 real vendor marks, 3D hover, personas + rule counts + boot-order rules + contracts, read-only apply ✅. The CRAFT §5 craft pass shipped 2026-07-19 — see A5: brass rails + elbows, card faces (health/reach/rules/last-report, redundant role line gone), show-the-law overlay, ledger shelf, semantic zoom. All five verified live (screenshots below). Still open: golden-frame CI (A7), mobile pass (C9). |
 | ASK `/mcp` | ✅ | Authless Streamable-HTTP, 8 tools incl. `booboo_count`, verified live from a real claude.ai connector: 3 majors this week, 98-vs-14 absences, boot slice correct. |
 | Brand domain | ✅ | `booboo.fractionalhq.uk` — A record via Porkbun API, propagated, cert valid, all routes 200. |
@@ -210,16 +216,25 @@ the row it closes.
 
 **Tier 2 is closed.** The label is written.
 
-**Tier 3 — the craft pass (THE OPEN WORK) and proof**
+**Tier 3 — the craft pass — CLOSED 2026-07-19**
 
 8. **The craft pass** — the one that decides whether this is a category of
    one. See `design/HANDOFF.md`.
-   - GOVERN (A5) — **shipped + verified live 2026-07-19**: staff-card faces,
-     engraved brass rails + elbows, show-the-law overlay, ledger shelf,
-     semantic zoom. All five confirmed against the live site (three via a
+   - GOVERN (A5) — **shipped + verified live**: staff-card faces, engraved
+     brass rails + elbows, show-the-law overlay, ledger shelf, semantic
+     zoom. All five confirmed against the live site (three via a
      CDP-driven click/hover + screenshot, not just a static render).
-   - SEE — still open: light-shaft spines (A2, the unbuilt signature); view
-     presets over fourteen sliders (A4).
+   - SEE (A2, A4) — **shipped + verified live**: light-shaft spines (the
+     signature element, specified since 2026-07-18, built and shipped
+     2026-07-19) and four view presets replacing the slider drawer as the
+     front door. A real rendering bug was found and fixed in the same slice
+     — see the landmine in HANDOFF.md.
+
+   Both faces now carry hospitality materiality that answers Jesse's
+   verdict directly: the org chart is a brass staff board with a rule of
+   law you can trace card-by-card; the cosmos has authority literally
+   falling as light. Remaining Tier-3 proof items (below) are polish and
+   CI, not the category-of-one question.
 9. OG image (C8) · 10. mobile pass (C9) · 11. the 30-second trace (A3) ·
 12. weak-GPU guard (C7) · 13. golden CI (C10) · 14. million-node proof (C11).
 

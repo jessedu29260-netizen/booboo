@@ -55,6 +55,68 @@ function urlCfg(): Partial<BoobooCfg> | null {
   return null;
 }
 
+/* ── view presets (CRAFT §4): four buttons, not fourteen sliders. A converting
+   surface shows OVERVIEW · DEPARTMENTS · LEDGER · TRACE; the slider drawer
+   below is the "pro controls" — still there, no longer the front door. */
+function layerSet(data: BoobooGraph, visible: boolean): Record<string, boolean> {
+  const o: Record<string, boolean> = {};
+  data.meta.layers.forEach((l) => (o[l.name] = visible));
+  return o;
+}
+function layersOnly(data: BoobooGraph, names: string[]): Record<string, boolean> {
+  const o = layerSet(data, false);
+  for (const n of names) o[n] = true;
+  return o;
+}
+function layersExcept(data: BoobooGraph, names: string[]): Record<string, boolean> {
+  const o = layerSet(data, true);
+  for (const n of names) o[n] = false;
+  return o;
+}
+type ViewPreset = { id: string; label: string; hint: string; apply: (data: BoobooGraph) => Partial<BoobooCfg> };
+const VIEW_PRESETS: ViewPreset[] = [
+  {
+    id: "overview", label: "Overview", hint: "the whole house, every band lit — the front-door frame",
+    apply: (data) => ({ layers: layerSet(data, true), orbit: 1, drift: 1, spines: 1, bloom: 0, fog: 0, cinematic: 1, peel: 1.2, lines: 0.15, flow: 1 }),
+  },
+  {
+    id: "departments", label: "Departments", hint: "the chain of command — ledger dimmed, the spines lit",
+    apply: (data) => ({ layers: layersExcept(data, ["ledger"]), orbit: 0.4, drift: 0.3, spines: 1.6, bloom: 0, fog: 0, cinematic: 1, peel: 1.6, lines: 0.1, flow: 0.6 }),
+  },
+  {
+    id: "ledger", label: "Ledger", hint: "the memory — structure dimmed, the field brought forward",
+    apply: (data) => ({ layers: layersOnly(data, ["ledger"]), orbit: 0.5, drift: 0.4, spines: 0, bloom: 0, fog: 0.6, cinematic: 1, peel: 1.0, lines: 0.25, flow: 1.4 }),
+  },
+  {
+    id: "trace", label: "Trace", hint: "hold still and read the alarm — nothing spinning, nothing hidden",
+    apply: (data) => ({ layers: layerSet(data, true), orbit: 0, drift: 0, spines: 1.2, bloom: 0, fog: 0, cinematic: 0.6, peel: 1.2, lines: 0.15, flow: 1 }),
+  },
+];
+
+function PresetBar({ data, active, onPick }: { data: BoobooGraph; active: string | null; onPick: (p: ViewPreset) => void }) {
+  return (
+    <div style={{ position: "absolute", top: 18, left: "50%", transform: "translateX(-50%)", zIndex: 10, display: "flex", gap: 6, background: T.panel, border: `1px solid ${T.line}`, borderRadius: 10, padding: 5, backdropFilter: "blur(10px)", boxShadow: "0 12px 36px rgba(0,0,0,0.4)" }}>
+      {VIEW_PRESETS.map((p) => {
+        const on = active === p.id;
+        return (
+          <button
+            key={p.id}
+            title={p.hint}
+            onClick={() => onPick(p)}
+            style={{
+              background: on ? "#221c10" : "transparent", border: `1px solid ${on ? T.gold : "transparent"}`,
+              color: on ? T.goldHi : T.dim, borderRadius: 7, padding: "7px 14px", cursor: "pointer",
+              fontFamily: T.sans, fontSize: 11.5, letterSpacing: 0.3, fontWeight: on ? 650 : 500,
+            }}
+          >
+            {p.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ── error boundary: a render throw shows a fallback, not a blank white canvas ── */
 class RenderBoundary extends Component<{ children: ReactNode }, { msg: string | null }> {
   state = { msg: null as string | null };
@@ -99,6 +161,10 @@ export function BoobooView({
   const [cfg, setCfg, resetCfg] = usePersisted<BoobooCfg>(persistKey, initial, persist, mergeCfg, urlCfg());
   const [sel, setSel] = useState<string | null>(initialSel);
   const [palette, setPalette] = useState(false);
+  // view presets (CRAFT §4) — which one is active, purely a UI highlight; the
+  // pro drawer below can always override it, and that's fine (a preset is a
+  // starting frame, not a lock).
+  const [activePreset, setActivePreset] = useState<string | null>("overview");
 
   const byId = useMemo(() => new Map(data.nodes.map((n) => [n.id, n])), [data]);
 
@@ -189,7 +255,22 @@ export function BoobooView({
         </div>
       </div>
 
-      {controls && <Controls data={data} cfg={cfg} setCfg={setCfg} resetCfg={resetCfg} />}
+      {controls && (
+        <PresetBar
+          data={data}
+          active={activePreset}
+          onPick={(p) => { setCfg(p.apply(data)); setActivePreset(p.id); }}
+        />
+      )}
+
+      {controls && (
+        <Controls
+          data={data}
+          cfg={cfg}
+          setCfg={(patch) => { setActivePreset(null); setCfg(patch); }}
+          resetCfg={() => { setActivePreset("overview"); resetCfg(); }}
+        />
+      )}
 
       {node && <Dossier key={node.id} n={node} byId={byId} rels={adj.get(node.id) ?? []} accent={layerColor[node.layer] ?? T.gold} onClose={() => setSel(null)} onJump={setSel} />}
 
@@ -329,7 +410,9 @@ function Controls({
   setCfg: (patch: Partial<BoobooCfg> | ((p: BoobooCfg) => BoobooCfg)) => void;
   resetCfg: () => void;
 }) {
-  const [open, setOpen] = useState(true);
+  // CRAFT §4: a converting surface shows four buttons (the PresetBar above),
+  // not fourteen sliders — this drawer is the "pro controls", closed by default.
+  const [open, setOpen] = useState(false);
   const layerVisible = (name: string) => cfg.layers[name] !== false;
   const toggleLayer = (name: string) => setCfg((p) => ({ ...p, layers: { ...p.layers, [name]: !layerVisible(name) } }));
   const setSize = (name: string, v: number) => setCfg((p) => ({ ...p, sizes: { ...p.sizes, [name]: v } }));
@@ -337,15 +420,15 @@ function Controls({
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} title="display controls" style={{ position: "absolute", bottom: 22, left: 20, background: T.panel, border: `1px solid ${T.line}`, color: T.dim, borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontFamily: T.sans, fontSize: 11, letterSpacing: 0.5, backdropFilter: "blur(8px)", display: "flex", alignItems: "center", gap: 7 }}>
-        <span style={{ fontSize: 13 }}>⚙</span> Controls
+      <button onClick={() => setOpen(true)} title="pro controls — fourteen sliders behind the four presets above" style={{ position: "absolute", bottom: 22, left: 20, background: T.panel, border: `1px solid ${T.line}`, color: T.dim, borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontFamily: T.sans, fontSize: 11, letterSpacing: 0.5, backdropFilter: "blur(8px)", display: "flex", alignItems: "center", gap: 7 }}>
+        <span style={{ fontSize: 13 }}>⚙</span> pro controls
       </button>
     );
   }
   return (
     <div style={{ position: "absolute", bottom: 22, left: 20, width: 236, maxHeight: "calc(100vh - 44px)", overflowY: "auto", zIndex: 10, background: T.panel, border: `1px solid ${T.line}`, borderRadius: 10, padding: 14, display: "flex", flexDirection: "column", gap: 10, fontSize: 11, color: T.dim, backdropFilter: "blur(10px)", boxShadow: "0 12px 40px rgba(0,0,0,0.45)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ color: T.text, letterSpacing: 1, fontSize: 11, fontWeight: 600 }}>Controls</span>
+        <span style={{ color: T.text, letterSpacing: 1, fontSize: 11, fontWeight: 600 }}>pro controls</span>
         <div style={{ display: "flex", gap: 6 }}>
           <button onClick={() => setCfg({ orbit: 0, drift: 0 })} title="pause spin + drift" style={btn()}>❄ still</button>
           <button onClick={resetCfg} style={btn()}>reset</button>
@@ -367,6 +450,7 @@ function Controls({
           <Toggle on={cfg.rings} onClick={() => setCfg({ rings: !cfg.rings })} label="rings" tone="green" />
         </div>
         <Slider label="glow" v={cfg.bloom} min={0} max={3} step={0.05} on={(v) => setCfg({ bloom: v })} />
+        <Slider label="⟱ spines" v={cfg.spines} min={0} max={2} step={0.05} on={(v) => setCfg({ spines: v })} />
         <Slider label="lines" v={cfg.lines} min={0} max={2} step={0.02} on={(v) => setCfg({ lines: v })} />
         <Slider label="≈ pulse" v={cfg.flow} min={0} max={3} step={0.1} on={(v) => setCfg({ flow: v })} />
         <Slider label="size" v={cfg.nodeScale} min={0.3} max={2.5} step={0.05} on={(v) => setCfg({ nodeScale: v })} />

@@ -83,6 +83,26 @@ current design's failure is that it has none.
 - **Two WebGL contexts** now live on the landing page (hero + embedded
   viewer). It choked the in-app browser pane. Unmeasured on real hardware —
   worth profiling before adding a third.
+- **GLSL `normalize()` on a near-zero vector is `0/0` = NaN — and one NaN
+  fragment can wash the ENTIRE frame white.** Building the light-shaft
+  spines, `AdditiveBlending` on new emissive geometry was the first
+  suspect (and a real mistake — de-bloomed default is a law, not a
+  per-element choice, see CRAFT §1), but fixing that alone didn't clear it.
+  The actual cause: `normalize(normalMatrix * aNormal)` in the vertex
+  shader, fed a near-zero normal from a handful of geometry seams. Unlike
+  three.js's JS-side `Vector3.normalize()` (which guards zero-length and
+  returns zero), raw GLSL `normalize()` has no such guard — it's undefined
+  behaviour, and on this hardware it produced NaN that Bloom's mipmap blur
+  then spread across nearly the whole canvas, even with `bloom` intensity
+  at 0 (the blur pyramid still runs; only the final composite weight was
+  zero). Diagnosed by swapping the fragment output for a solid low-alpha
+  colour (confirmed the geometry/positions were fine), then for a NaN-flag
+  shader (`x != x`) that lit up the exact bad fragments as magenta specks.
+  Fixed with a `safeNormalize()` helper in every custom shader that calls
+  `normalize()` on a runtime-derived vector, plus a JS-side guard skipping
+  any geometry segment where the basis vectors degenerate. **Any new
+  emissive/shader geometry in this scene needs both**: de-bloomed blending
+  by default, and zero-guarded normalize in GLSL.
 
 ## Build, verify, ship
 

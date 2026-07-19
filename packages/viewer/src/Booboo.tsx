@@ -24,6 +24,7 @@ export type BoobooCfg = {
   cinematic: number; // film grade (tone/contrast/vignette)
   fog: number; // frontier nebula
   peel: number; // tier spacing (z-scale)
+  spines: number; // light-shaft intensity (CRAFT §2's signature element); 0 = off
 };
 
 export function defaultCfg(data: BoobooGraph): BoobooCfg {
@@ -35,7 +36,7 @@ export function defaultCfg(data: BoobooGraph): BoobooCfg {
   });
   // bloom 0 is the signed-off default (the Atlas lesson: glow merges a dense field into
   // blobs). The sprite shader carries its own soft glow; bloom is an opt-in accent.
-  return { orbit: 1, drift: 1, lines: 0.15, flow: 1, nodeScale: 1, sizes, layers, platforms: true, rings: true, labels: true, bloom: 0, cinematic: 1, fog: 0, peel: 1.2 };
+  return { orbit: 1, drift: 1, lines: 0.15, flow: 1, nodeScale: 1, sizes, layers, platforms: true, rings: true, labels: true, bloom: 0, cinematic: 1, fog: 0, peel: 1.2, spines: 1 };
 }
 
 // ── node cloud: one draw call, per-point size + color from typed-array attributes ──
@@ -197,6 +198,160 @@ function Flags({ flags, onSelect, introBox, reduced }: { flags: Flagged[]; onSel
         );
       })}
     </group>
+  );
+}
+
+// ── light-shaft spines (CRAFT §2, the signature element — specified, protected
+// in writing, never built until now). Authority = light falling: a spotlight
+// cone from each structural parent down onto its child, narrow at the source,
+// widening as it falls. One merged, baked BufferGeometry (matches the Field /
+// PulseLinks pattern — one draw call, no per-instance shader complexity for a
+// count this small). Scope: tier<=2 nodes only (the org's authority chain —
+// GM → heads → SOPs → named staff), never the dense tier-3 field beneath it,
+// mirroring the edge-culling law used everywhere else in this scene.
+const SPINE_VERT = /* glsl */ `
+  attribute float aT; attribute vec3 aNormal; attribute vec3 aColor;
+  uniform float uT; uniform float uZTop; uniform float uZSpan;
+  varying float vT; varying vec3 vColor; varying vec3 vNormal; varying vec3 vViewDir; varying float vIntro;
+  // GLSL normalize() on a near-zero vector is 0/0 = NaN (unlike three.js's
+  // JS-side Vector3.normalize, which guards it) — one NaN fragment here fed
+  // Bloom's mip blur and washed the entire frame white. Never trust normalize()
+  // on a runtime-derived vector again without this guard.
+  vec3 safeNormalize(vec3 v) { float l = length(v); return l > 0.0001 ? v / l : vec3(0.0, 1.0, 0.0); }
+  void main() {
+    vT = aT; vColor = aColor; vNormal = safeNormalize(normalMatrix * aNormal);
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vViewDir = safeNormalize(-mv.xyz);
+    // ignite top-down, source-first (CRAFT §3: "1.2s spines ignite top-down —
+    // the law flows down"). uZTop/uZSpan are shared with the other entrance
+    // waves so every element reads off the same clock.
+    vIntro = clamp((uT - 1.0 - ((uZTop - position.z) / uZSpan) * 1.2) / 0.6, 0.0, 1.0);
+    gl_Position = projectionMatrix * mv;
+  }`;
+const SPINE_FRAG = /* glsl */ `
+  precision mediump float;
+  uniform float uTime; uniform float uDrift; uniform float uIntensity;
+  varying float vT; varying vec3 vColor; varying vec3 vNormal; varying vec3 vViewDir; varying float vIntro;
+  void main() {
+    // fresnel: the beam's silhouette catches light, its face stays a whisper —
+    // a cone reads as a shaft of light, not a solid pipe. vNormal/vViewDir are
+    // already safely normalized (or interpolated between safe unit vectors),
+    // so a plain dot product is enough here.
+    float fresnel = pow(1.0 - clamp(dot(vNormal, vViewDir), 0.0, 1.0), 2.2);
+    // gradient alpha: dense at the source (parent, t=0), diffusing as it falls.
+    float grad = pow(1.0 - clamp(vT, 0.0, 1.0), 1.6);
+    // animated grain drifting downward — dust in a light shaft, not a texture.
+    float grain = 0.55 + 0.45 * sin((vT * 26.0 - uTime * uDrift) * 6.2831853);
+    float a = (0.10 + grad * 0.34) * (0.4 + fresnel * 0.9) * (0.6 + grain * 0.4) * uIntensity * vIntro;
+    gl_FragColor = vec4(vColor * (1.15 + fresnel * 0.6), a);
+  }`;
+
+type SpinePair = { ax: number; ay: number; az: number; bx: number; by: number; bz: number; cr: number; cg: number; cb: number };
+
+function buildSpinePairs(data: BoobooGraph, laid: Laid): SpinePair[] {
+  const out: SpinePair[] = [];
+  for (const n of data.nodes) {
+    if ((n.tier ?? 2) > 2 || !n.parent) continue;
+    const pi = laid.index.get(n.parent);
+    const ci = laid.index.get(n.id);
+    if (pi == null || ci == null || pi === ci) continue;
+    out.push({
+      ax: laid.positions[pi * 3], ay: laid.positions[pi * 3 + 1], az: laid.positions[pi * 3 + 2],
+      bx: laid.positions[ci * 3], by: laid.positions[ci * 3 + 1], bz: laid.positions[ci * 3 + 2],
+      cr: laid.colors[pi * 3], cg: laid.colors[pi * 3 + 1], cb: laid.colors[pi * 3 + 2],
+    });
+  }
+  return out;
+}
+
+// A spotlight-cone frustum per pair, baked directly into world-space vertex
+// positions (no instancing): narrow at the parent (the source), wide at the
+// child (the light landing) — RADIUS_TOP < RADIUS_BOTTOM, the inverse of a
+// pointed cone.
+const RADIUS_TOP = 2.2;
+const RADIUS_BOTTOM = 11;
+const RIM_SEG = 7;
+function buildSpineGeometry(pairs: SpinePair[]): THREE.BufferGeometry {
+  const verts = pairs.length * RIM_SEG * 6; // 2 triangles per segment quad
+  const position = new Float32Array(verts * 3);
+  const normal = new Float32Array(verts * 3);
+  const color = new Float32Array(verts * 3);
+  const aT = new Float32Array(verts);
+  let w = 0;
+  const up = new THREE.Vector3(0, 1, 0);
+  const axisTmp = new THREE.Vector3();
+  const u = new THREE.Vector3();
+  const v = new THREE.Vector3();
+  for (const p of pairs) {
+    axisTmp.set(p.bx - p.ax, p.by - p.ay, p.bz - p.az);
+    const len = axisTmp.length();
+    if (len < 1e-4) continue;
+    axisTmp.normalize();
+    // any vector not parallel to axis, projected off it, gives a stable basis
+    u.copy(Math.abs(axisTmp.y) > 0.98 ? new THREE.Vector3(1, 0, 0) : up).cross(axisTmp).normalize();
+    v.crossVectors(axisTmp, u).normalize();
+    // belt + braces: a degenerate cross (u or v collapsed to zero) must never
+    // reach the GPU as a zero-length normal — see safeNormalize's comment.
+    if (u.lengthSq() < 1e-8 || v.lengthSq() < 1e-8) continue;
+    for (let s = 0; s < RIM_SEG; s++) {
+      const a0 = (s / RIM_SEG) * Math.PI * 2, a1 = ((s + 1) / RIM_SEG) * Math.PI * 2;
+      const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+      // four corners of this quad: top-a, top-b, bottom-a, bottom-b
+      const corners = [
+        { r: RADIUS_TOP, c: c0, s: s0, t: 0, base: p }, { r: RADIUS_TOP, c: c1, s: s1, t: 0, base: p },
+        { r: RADIUS_BOTTOM, c: c0, s: s0, t: 1, base: p }, { r: RADIUS_BOTTOM, c: c1, s: s1, t: 1, base: p },
+      ];
+      const pts = corners.map((cc) => {
+        const along = cc.t * len;
+        const rx = u.x * cc.c * cc.r + v.x * cc.s * cc.r;
+        const ry = u.y * cc.c * cc.r + v.y * cc.s * cc.r;
+        const rz = u.z * cc.c * cc.r + v.z * cc.s * cc.r;
+        return {
+          x: cc.base.ax + axisTmp.x * along + rx, y: cc.base.ay + axisTmp.y * along + ry, z: cc.base.az + axisTmp.z * along + rz,
+          nx: rx, ny: ry, nz: rz, t: cc.t,
+        };
+      });
+      // two triangles: top0-top1-bot0, top1-bot1-bot0
+      const tri = [pts[0], pts[1], pts[2], pts[1], pts[3], pts[2]];
+      for (const pt of tri) {
+        position[w * 3] = pt.x; position[w * 3 + 1] = pt.y; position[w * 3 + 2] = pt.z;
+        const nl = Math.hypot(pt.nx, pt.ny, pt.nz) || 1;
+        normal[w * 3] = pt.nx / nl; normal[w * 3 + 1] = pt.ny / nl; normal[w * 3 + 2] = pt.nz / nl;
+        color[w * 3] = p.cr; color[w * 3 + 1] = p.cg; color[w * 3 + 2] = p.cb;
+        aT[w] = pt.t;
+        w++;
+      }
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(position.subarray(0, w * 3), 3));
+  g.setAttribute("aNormal", new THREE.BufferAttribute(normal.subarray(0, w * 3), 3));
+  g.setAttribute("aColor", new THREE.BufferAttribute(color.subarray(0, w * 3), 3));
+  g.setAttribute("aT", new THREE.BufferAttribute(aT.subarray(0, w), 1));
+  return g;
+}
+
+function Spines({ data, laid, intensity, bloom, introUni }: { data: BoobooGraph; laid: Laid; intensity: number; bloom: boolean; introUni: IntroUni }) {
+  const pairs = useMemo(() => buildSpinePairs(data, laid), [data, laid]);
+  const geo = useMemo(() => buildSpineGeometry(pairs), [pairs]);
+  useEffect(() => () => geo.dispose(), [geo]);
+  const uni = useMemo(() => ({ uTime: { value: 0 }, uDrift: { value: 0.06 }, uIntensity: { value: intensity }, uT: introUni.uT, uZTop: introUni.uZTop, uZSpan: introUni.uZSpan }), [introUni]);
+  const matRef = useRef<THREE.ShaderMaterial>(null);
+  useFrame(({ clock }) => {
+    const u2 = matRef.current?.uniforms; if (!u2) return;
+    u2.uTime.value = clock.getElapsedTime();
+    u2.uIntensity.value = intensity;
+  });
+  if (intensity <= 0 || pairs.length === 0) return null;
+  // De-bloomed default (the cosmos lesson, same rule Field/PulseLinks follow):
+  // dozens of these beams overlap near every department head, and unconditional
+  // AdditiveBlending summed them past white across most of the frame — the
+  // luminance ladder is a law, not a per-element choice. FrontSide halves the
+  // overdraw a hollow double-sided tube would otherwise cost.
+  return (
+    <mesh geometry={geo} frustumCulled={false} raycast={() => null}>
+      <shaderMaterial ref={matRef} uniforms={uni} vertexShader={SPINE_VERT} fragmentShader={SPINE_FRAG} transparent depthWrite={false} side={THREE.FrontSide} blending={bloom ? THREE.AdditiveBlending : THREE.NormalBlending} />
+    </mesh>
   );
 }
 
@@ -545,6 +700,7 @@ export function Booboo({ data, cfg, onSelect, sel, intro = true }: { data: Boobo
         {data.meta.layers.map((l, i) => (
           (c.layers[l.name] !== false) && <Platform key={l.name} z={planeZ(i, nL)} color={l.color || "#7a8aa0"} label={l.label || l.name} radius={platR} planes={c.platforms} rings={c.rings} labels={c.labels} introBox={introBox} introDelay={(nL - 1 - i) * 0.18} />
         ))}
+        <Spines data={data} laid={laid} intensity={c.spines} bloom={c.bloom > 0} introUni={introUni} />
         <PulseLinks laid={laid} cfg={c} focus={focus.link} introUni={introUni} />
         <Field laid={laid} cfg={c} onPick={(i) => onSelect?.(laid.ids[i])} focus={focus.node} introUni={introUni} />
         <Landmarks data={data} laid={laid} cfg={c} focus={focus.node} sel={sel} onSelect={onSelect} introBox={introBox} />

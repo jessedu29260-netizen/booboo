@@ -9,7 +9,11 @@
 > Update this file in the same commit as the work. A gap discovered and not
 > written here is a gap that will be rediscovered later at higher cost.
 >
-> Live: https://booboo.fractionalhq.uk · Audited 2026-07-18.
+> Live: https://booboo.fractionalhq.uk · Audited 2026-07-18 · updated 2026-07-19.
+>
+> **Standing verdict (Jesse, 2026-07-19):** readable now, but it "doesn't get
+> out of the mould" — competent dark-SaaS-with-brass, not a category of one.
+> The open work is a craft pass with a real point of view, not more features.
 
 ## Legend
 
@@ -146,7 +150,7 @@ of the wound is depth of play, not comprehension.
 |---|---|---|
 | Landing `/` | ✅ | Six sections: idea · three faces · the model (five nouns + a real boot slice) · live ask · run-it · what-ships. Missing only OG image and scrollytelling. |
 | Viewer `/viewer/` | 🟡 | Layout, floors, landmarks, torch, entrance, dossier-by-verb, palette, flags, verb colours, orientation card all ✅ verified. Missing: view presets, focus-camera dolly, d-pad walk, breadcrumb, weak-GPU guard. |
-| Staff board `/chart/` | 🟡 | Live, branded, ranked columns, dossier with personas + boot-order rules + contracts, read-only apply ✅. Missing: CRAFT §5 craft pass (engraved cards, rails, show-the-law overlay, ledger shelf, semantic zoom). |
+| Staff board `/chart/` | 🟡 | Lanes stack downward, scrolls correctly, 15 real vendor marks, 3D hover, personas + rule counts + boot-order rules + contracts, read-only apply ✅. Missing: the CRAFT §5 craft pass — engraved cards on brass rails, show-the-law overlay, ledger shelf, semantic zoom. Staff cards still repeat the role line and carry no health/bucket/last-report on the face. |
 | ASK `/mcp` | ✅ | Authless Streamable-HTTP, 8 tools incl. `booboo_count`, verified live from a real claude.ai connector: 3 majors this week, 98-vs-14 absences, boot slice correct. |
 | Brand domain | ✅ | `booboo.fractionalhq.uk` — A record via Porkbun API, propagated, cert valid, all routes 200. |
 | README | 🟡 | Leads with the zero-config command; badges; demo link. Not yet updated for `booboo_count` or the brand URL. |
@@ -206,12 +210,15 @@ the row it closes.
 
 **Tier 2 is closed.** The label is written.
 
-**Tier 3 — proof and polish**
+**Tier 3 — the craft pass (THE OPEN WORK) and proof**
 
-8. OG image (C8) · 9. mobile pass (C9) · 10. the 30-second trace (A3) ·
-11. light-shaft spines (A2, signature) · 12. view presets (A4) ·
-13. staff-board craft pass (A5) · 14. weak-GPU guard (C7) ·
-15. golden CI (C10) · 16. million-node proof (C11).
+8. **The craft pass** — the one that decides whether this is a category of
+   one. See `design/HANDOFF.md`. Staff-card faces, engraved brass rails,
+   show-the-law overlay, ledger shelf, semantic zoom (A5); light-shaft
+   spines (A2, the unbuilt signature); view presets over fourteen sliders
+   (A4).
+9. OG image (C8) · 10. mobile pass (C9) · 11. the 30-second trace (A3) ·
+12. weak-GPU guard (C7) · 13. golden CI (C10) · 14. million-node proof (C11).
 
 Tier 1 is why this file exists: three items that were specified, assumed
 done, and never built. Tier 2 is the same insight as before — **we built the

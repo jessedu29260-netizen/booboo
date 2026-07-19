@@ -168,4 +168,61 @@ export class BoobooIndex {
     }
     return null;
   }
+
+  /** Aggregate over the graph: filter, then group and count.
+   *
+   *  The read tools answer "which node" well and "how many, by what" not at
+   *  all — so "who logged the most absences in five years" was only ever
+   *  answerable by paging. This closes that: one pass, filters on the node's
+   *  own fields or anything under `data`, grouped by any of the same, counted
+   *  and ranked. `field`/`groupBy` accept dotted paths (`data.kind`).
+   */
+  count(o: CountOpts = {}): { total: number; groups: { key: string; count: number }[]; groupBy: string | null } {
+    const get = (n: BNode, path: string): unknown => {
+      if (!path.startsWith("data.")) return (n as unknown as Record<string, unknown>)[path];
+      return (n.data ?? {})[path.slice(5)];
+    };
+    const inRange = (v: unknown) => {
+      if (!o.since && !o.until) return true;
+      const t = Date.parse(String(v ?? ""));
+      if (Number.isNaN(t)) return false;
+      if (o.since && t < Date.parse(o.since)) return false;
+      if (o.until && t > Date.parse(o.until)) return false;
+      return true;
+    };
+    const hit = (n: BNode) =>
+      (!o.layer || n.layer === o.layer) &&
+      (!o.type || n.type === o.type) &&
+      (!o.cluster || n.cluster === o.cluster) &&
+      (!o.where || Object.entries(o.where).every(([k, v]) => String(get(n, k) ?? "") === String(v))) &&
+      (!(o.since || o.until) || inRange(get(n, o.dateField ?? "data.date")));
+
+    const rows = this.graph.nodes.filter(hit);
+    if (!o.groupBy) return { total: rows.length, groups: [], groupBy: null };
+    const tally = new Map<string, number>();
+    for (const n of rows) {
+      const k = String(get(n, o.groupBy) ?? "—");
+      tally.set(k, (tally.get(k) ?? 0) + 1);
+    }
+    const groups = [...tally.entries()]
+      .map(([key, count]) => ({ key, count }))
+      .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key))
+      .slice(0, Math.min(200, Math.max(1, o.limit ?? 20)));
+    return { total: rows.length, groups, groupBy: o.groupBy };
+  }
 }
+
+export type CountOpts = {
+  layer?: string;
+  type?: string;
+  cluster?: string;
+  /** exact-match filters on node fields or `data.*` paths */
+  where?: Record<string, string>;
+  /** ISO bounds applied to `dateField` (default `data.date`) */
+  since?: string;
+  until?: string;
+  dateField?: string;
+  /** field or `data.*` path to group by; omit for a plain total */
+  groupBy?: string;
+  limit?: number;
+};

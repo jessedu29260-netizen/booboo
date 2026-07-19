@@ -34,6 +34,23 @@ export function registerTools(server, ix, org) {
   server.tool("booboo_node", "Fetch a single node (all fields + data) by its exact id.", { id: z.string() }, async ({ id }) => j(ix.node(id)));
 
   server.tool(
+    "booboo_count",
+    "Aggregate: filter the graph, then group and count. Use for 'how many', 'top N', 'most/least' and any date-window question — search ranks, this counts. e.g. major incidents in a date window: {type:'observation', where:{'data.kind':'incident','data.severity':'major'}, since:'2026-07-12'}; the biggest absence offender: {where:{'data.kind':'absence'}, groupBy:'data.subject'}.",
+    {
+      layer: z.string().optional(),
+      type: z.string().optional(),
+      cluster: z.string().optional(),
+      where: z.record(z.string()).optional().describe("exact-match filters; node fields or dotted data paths like data.kind"),
+      since: z.string().optional().describe("ISO date lower bound, inclusive"),
+      until: z.string().optional().describe("ISO date upper bound, inclusive"),
+      dateField: z.string().optional().describe("which field the window applies to (default data.date)"),
+      groupBy: z.string().optional().describe("field or data.* path to group by; omit for a plain total"),
+      limit: z.number().optional().describe("max groups returned, ranked by count (default 20)"),
+    },
+    async (a) => j(ix.count(a)),
+  );
+
+  server.tool(
     "booboo_neighbors",
     "The neighbourhood around a node: connected nodes + links out to `depth` hops.",
     { id: z.string(), depth: z.number().optional(), limit: z.number().optional() },

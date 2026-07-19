@@ -54,6 +54,38 @@ export class BoobooIndex {
 
   meta() { return { ...this.graph.meta, counts: this.counts() }; }
 
+  /** Aggregate: filter, then group and count. Vendored from packages/serve/src/graph.ts. */
+  count(o = {}) {
+    const get = (n, path) => (path.startsWith("data.") ? (n.data ?? {})[path.slice(5)] : n[path]);
+    const inRange = (v) => {
+      if (!o.since && !o.until) return true;
+      const t = Date.parse(String(v ?? ""));
+      if (Number.isNaN(t)) return false;
+      if (o.since && t < Date.parse(o.since)) return false;
+      if (o.until && t > Date.parse(o.until)) return false;
+      return true;
+    };
+    const hit = (n) =>
+      (!o.layer || n.layer === o.layer) &&
+      (!o.type || n.type === o.type) &&
+      (!o.cluster || n.cluster === o.cluster) &&
+      (!o.where || Object.entries(o.where).every(([k, v]) => String(get(n, k) ?? "") === String(v))) &&
+      (!(o.since || o.until) || inRange(get(n, o.dateField ?? "data.date")));
+
+    const rows = this.graph.nodes.filter(hit);
+    if (!o.groupBy) return { total: rows.length, groups: [], groupBy: null };
+    const tally = new Map();
+    for (const n of rows) {
+      const k = String(get(n, o.groupBy) ?? "—");
+      tally.set(k, (tally.get(k) ?? 0) + 1);
+    }
+    const groups = [...tally.entries()]
+      .map(([key, count]) => ({ key, count }))
+      .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key))
+      .slice(0, Math.min(200, Math.max(1, o.limit ?? 20)));
+    return { total: rows.length, groups, groupBy: o.groupBy };
+  }
+
   clusters(type) {
     const out = {};
     for (const n of this.graph.nodes) {

@@ -83,7 +83,8 @@ semantic zoom, live vendor marks.
 
 ## G3 · Install it, and an orchestrator builds YOUR structure
 
-> **The product. Roughly 15% built.**
+> **The product. Roughly 40% built** — the intake mechanism exists and is
+> verified by running it; it has not yet been run by anyone who isn't me.
 
 **What it means.** Anyone — a person, Claude, any agent — installs Booboo. An
 orchestrator is created immediately, interviews or infers the shape of their
@@ -96,14 +97,29 @@ then flows down to every agent, which boots from it.
   inherited rules in boot order, bucket reach and children. Roles are durable,
   agents disposable. The org file is a validated, diffable source.
 - `create-booboo` scaffolds a runnable brain and **names** an orchestrator.
+- **The intake exists** (2026-07-19). The scaffold now ships `ONBOARDING.md` — a
+  six-step ritual the user's own agent runs once: read the repo, ask only what
+  the repo can't tell you (max 4 questions), propose the tree for correction,
+  write `org.booboo.json` + config + rule files, verify against `npm run build`
+  and the panel, then close. `org.booboo.json` carries `"seed": true` and
+  `AGENTS.md § 0` gates every session on it, so the ritual cannot be silently
+  skipped and no work gets built on the placeholder shape.
+  **The key architectural call:** the intake is a *document the agent executes*,
+  not a CLI wizard. A wizard has to ask everything because it can read nothing;
+  the agent already in your folder can read the repo and only ask the rest. It
+  also means zero new dependencies and no LLM calls from the CLI.
+  *Verified:* scaffold → `npm install` → `npm run build` clean (7 nodes, 0
+  orphans, 0 dumps); org validates with the extra field; and the ritual was
+  **run against a repo it had never seen** (booboo's own) to check it produces
+  something genuinely tailored rather than renamed writer/researcher. It does —
+  and running it exposed a flaw now fixed: folders give you a *flat list*, the
+  grouping lives in the prose, so a ritual that stopped at directory names would
+  emit a root with fifteen children and call it an organigram.
 
-**What is missing — and it is most of it.**
-- The scaffold is a **fixed template**. Every user gets `core` → `writer`,
-  `researcher`, whatever they actually do. Nothing is asked; nothing is inferred.
-- **No intake.** No interview, no import, no read of an existing repo/Slack/org
-  to propose a structure.
-- **No generation.** Nothing turns "we're a 12-person agency doing X" into
-  departments, roles, duty lines, rules and report cadences.
+**What is missing.**
+- **No generation of depth.** Nothing turns "we're a 12-person agency doing X"
+  into duty lines and report cadences — the ritual gets you the *structure*, not
+  the populated ledger.
 - **No report scaffolding.** The Pemberton's 425 reports were authored by a
   bespoke generator. A new user gets an empty ledger and no cadence.
 - **The orchestrator does not orchestrate.** It is a node with a boot string,

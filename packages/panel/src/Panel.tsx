@@ -74,7 +74,8 @@ function timeMs(at: string): number {
 function buildHealthMap(nodes: BNode[]): HealthMap {
   const m: HealthMap = new Map();
   for (const r of nodes) {
-    if (!r.cluster) continue;
+    const who = reportAgentId(r);
+    if (!who) continue;
     const d = (r.data ?? {}) as Record<string, unknown>;
     // Only rows with an explicit status are heartbeats. Close-notes/decisions
     // carry none — defaulting them to ok let one overwrite a run's verdict.
@@ -82,13 +83,13 @@ function buildHealthMap(nodes: BNode[]): HealthMap {
     const status = d.status;
     const at = nodeAt(r);
     const atMs = timeMs(at);
-    const cur = m.get(r.cluster) ?? { lastAt: "", lastMs: -Infinity, lastStatus: "", n: 0, fails: 0 };
+    const cur = m.get(who) ?? { lastAt: "", lastMs: -Infinity, lastStatus: "", n: 0, fails: 0 };
     cur.n++;
     if (status === "fail") cur.fails++;
     // Only a dated, newer row becomes the "latest": undated rows count but never
     // overwrite a real verdict, and the comparison is on parsed time not string order.
     if (Number.isFinite(atMs) && atMs >= cur.lastMs) { cur.lastMs = atMs; cur.lastAt = at; cur.lastStatus = status; }
-    m.set(r.cluster, cur);
+    m.set(who, cur);
   }
   return m;
 }
@@ -130,6 +131,17 @@ function nodeSummary(n: BNode): string {
     if (typeof v === "string" && v && v !== n.label) return v;
   }
   return "";
+}
+
+/** Which agent filed this report.
+ *  `cluster` is the usual carrier, but house-level agents (the Executive) file
+ *  with cluster null — those reports rendered as "unknown" in the timeline and
+ *  vanished from the filer's own dossier, which is how the most important entry
+ *  in the house ("Amended the House Standard § 14") ended up unattributed.
+ *  Every report also carries `data.agent`; prefer cluster, fall back to it. */
+function reportAgentId(n: BNode): string {
+  const d = (n.data ?? {}) as Record<string, unknown>;
+  return n.cluster || (typeof d.agent === "string" ? d.agent : "") || "";
 }
 
 // "What the agent closed" lives as type `report` — or `decision` in systems
@@ -738,10 +750,18 @@ function Dossier({
         api(`/nodes?type=memory&cluster=${encodeURIComponent(b)}&limit=1`).then((j) => j.total as number).catch(() => 0),
       ),
     ).then((counts) => setMemCount(counts.reduce((s, n) => s + n, 0)));
+    // Fetch by cluster first (cheap, server-side). House-level filers like the
+    // Executive carry cluster null, so that query returns nothing and the
+    // dossier claimed "0 reports filed" while holding three years of them —
+    // fall back to a full pull matched on the report's own `data.agent`.
     fetchReports(api, id, 100).then(({ total, nodes }) => {
-      setRepCount(total);
-      setReports(nodes.slice(0, 4));
-    });
+      if (total > 0) { setRepCount(total); setReports(nodes.slice(0, 4)); return; }
+      return fetchReports(api, null, 2000).then(({ nodes: all }) => {
+        const mine = all.filter((n) => reportAgentId(n) === id);
+        setRepCount(mine.length);
+        setReports(mine.slice(0, 4));
+      });
+    }).catch(() => { setRepCount(0); setReports([]); });
   }, [id, hasSnapshot, slice, api]);
 
   const mem = useCountUp(memCount ?? 0);
@@ -1348,8 +1368,8 @@ function ReportsScreen({ org, hasSnapshot }: { org: BOrg; hasSnapshot: boolean }
       .catch(() => setRows([]));
   }, [hasSnapshot, api]);
 
-  const agents = useMemo(() => [...new Set((rows ?? []).map((r) => r.cluster ?? ""))].filter(Boolean), [rows]);
-  const shown = (rows ?? []).filter((r) => !who || r.cluster === who);
+  const agents = useMemo(() => [...new Set((rows ?? []).map(reportAgentId))].filter(Boolean), [rows]);
+  const shown = (rows ?? []).filter((r) => !who || reportAgentId(r) === who);
   const total = useCountUp(shown.length);
 
   if (!hasSnapshot)
@@ -1376,16 +1396,17 @@ function ReportsScreen({ org, hasSnapshot }: { org: BOrg; hasSnapshot: boolean }
       ) : (
         <div className="timeline">
           {shown.slice(0, 100).map((r) => {
-            const a = r.cluster ? nameOf.get(r.cluster) : undefined;
+            const filer = reportAgentId(r);
+            const a = filer ? nameOf.get(filer) : undefined;
             const when = relTime(nodeAt(r));
             const sum = nodeSummary(r);
             return (
-              <div className="tl-row" key={r.id} style={{ ["--h" as string]: bucketHue(r.cluster ?? "x") }}>
+              <div className="tl-row" key={r.id} style={{ ["--h" as string]: bucketHue(filer || "x") }}>
                 <div className="tl-dot" />
                 <div className="tl-body">
                   <div className="tl-top">
                     <span className="tl-ava">{a?.emoji ?? "🤖"}</span>
-                    <span className="tl-agent">{a?.name ?? r.cluster ?? "unknown"}</span>
+                    <span className="tl-agent">{a?.name ?? filer ?? "unknown"}</span>
                     {when && <span className="tl-when">{when}</span>}
                   </div>
                   <p className="tl-sum">{sum || r.label}</p>

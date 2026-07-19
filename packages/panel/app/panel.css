@@ -29,6 +29,9 @@
   --line: #e9e5df;
   --line-soft: #f0ece6;
   --line-2: #d9d3c9;
+  --surface-tray: rgba(255, 255, 255, .5);
+  --surface-lift: linear-gradient(180deg, #fffdf8, #ffffff);
+  --surface-lift-edge: #e8d9bd;
   --ink: #1b1815;
   --ink-2: #6b6459;
   --ink-3: #9a9287;
@@ -63,6 +66,9 @@
   --line: rgba(244, 238, 226, 0.13);
   --line-soft: rgba(244, 238, 226, 0.08);
   --line-2: rgba(244, 238, 226, 0.22);
+  --surface-tray: rgba(11, 5, 9, .4);
+  --surface-lift: linear-gradient(168deg, #3a2a16, #1d1410);
+  --surface-lift-edge: rgba(239, 195, 137, .4);
   --ink: var(--cream);
   --ink-2: var(--cream-dim);
   --ink-3: var(--cream-faint);
@@ -80,11 +86,10 @@
   --sh-3: 0 4px 8px rgba(0, 0, 0, .5), 0 22px 48px -18px rgba(0, 0, 0, .9);
 }
 [data-theme="dark"] body { background: var(--wine); }
-[data-theme="dark"] .bub { background: linear-gradient(168deg, var(--plate-lift), #180e16); }
+[data-theme="dark"] .ag { background: linear-gradient(168deg, var(--plate-lift), #180e16); }
 [data-theme="dark"] .bar, [data-theme="dark"] .tabs { background: rgba(11, 5, 9, 0.72); }
 [data-theme="dark"] .rack .wt { background: #fff; border-color: transparent; }
 [data-theme="dark"] .pnl-stars { opacity: .45; }
-[data-theme="dark"] .lane-tray { background: rgba(11, 5, 9, 0.4); }
 
 * { box-sizing: border-box; }
 body { font-family: var(--font); color: var(--ink); background: var(--bg); overflow-x: hidden; }
@@ -535,7 +540,7 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
   position: relative;
   border: 1px solid var(--line);
   border-radius: 18px;
-  background: rgba(255, 255, 255, .5);
+  background: var(--surface-tray);
   padding: 16px 18px 18px;
   transition: border-color .25s ease, box-shadow .35s var(--ease);
 }
@@ -734,8 +739,8 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 
 /* rank I·II — the GM. Polished brass: the only plate that is lit rather than lit-upon. */
 .ag.root { cursor: default; width: 268px; padding: 15px 17px;
-  background: linear-gradient(180deg, #fffdf8, var(--bg-1));
-  border-color: #e8d9bd; box-shadow: var(--sh-3); }
+  background: var(--surface-lift);
+  border-color: var(--surface-lift-edge); box-shadow: var(--sh-3); }
 .ag.root .ag-name { font-size: 14.5px; }
 
 /* plate header: the mark sits BESIDE the name, not above it — a name plate,

@@ -33,6 +33,10 @@ const copy = (text: string) => {
 };
 
 type Rel = { dir: "out" | "in"; rel: string; other: string };
+type Flag = { id: string; label: string; kind: string };
+const FLAG_RANK = ["critical", "overdue", "stale", "orphan"];
+const FLAG_HUE: Record<string, string> = { critical: "#d05a5a", overdue: "#d6a23e", stale: "#c9a04a", orphan: "#8a8268" };
+const ORIENT_KEY = "booboo-oriented-v1";
 
 const mergeCfg = (initial: BoobooCfg, s: Partial<BoobooCfg>): BoobooCfg => ({
   ...initial,
@@ -141,6 +145,22 @@ export function BoobooView({
     return m;
   }, [data]);
   const node = sel ? byId.get(sel) ?? null : null;
+  // the alarms, worst first — the orientation card leads with the real problem
+  const flags = useMemo(
+    () =>
+      data.nodes
+        .filter((n) => {
+          const d = (n.data ?? {}) as Record<string, unknown>;
+          return typeof d.flag === "string" || d.health === "amber" || d.health === "red";
+        })
+        .map((n) => {
+          const d = (n.data ?? {}) as Record<string, unknown>;
+          const kind = (typeof d.flag === "string" ? d.flag : d.health === "red" ? "critical" : "overdue") as string;
+          return { id: n.id, label: n.label, kind };
+        })
+        .sort((a, b) => FLAG_RANK.indexOf(a.kind) - FLAG_RANK.indexOf(b.kind)),
+    [data],
+  );
 
   return (
     <div style={{ position: "absolute", inset: 0, background: T.bg, fontFamily: T.sans }}>
@@ -171,8 +191,68 @@ export function BoobooView({
 
       {palette && <Palette data={data} layerColor={layerColor} onJump={(id) => { setSel(id); setPalette(false); }} onClose={() => setPalette(false)} />}
 
+      {!sel && <Orient data={data} flags={flags} onJump={setSel} onAsk={() => setPalette(true)} />}
+
       <div style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", fontSize: 10, color: T.faint, pointerEvents: "none", letterSpacing: 0.4 }}>
         drag to rotate · scroll to zoom · click a node · <span style={{ color: T.dim }}>press / to find</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── orientation: what am I looking at, and where's the problem? ──
+   A stranger used to land in a 3D scene with a fourteen-slider drawer and no
+   legend. This names the bands top-to-bottom, then hands them the actual
+   alarm to click. Dismissed state is remembered; "what am I looking at?"
+   in the corner brings it back. */
+function Orient({ data, flags, onJump, onAsk }: { data: BoobooGraph; flags: Flag[]; onJump: (id: string) => void; onAsk: () => void }) {
+  const [open, setOpen] = useState(() => {
+    try { return localStorage.getItem(ORIENT_KEY) !== "1"; } catch { return true; }
+  });
+  const dismiss = () => {
+    setOpen(false);
+    try { localStorage.setItem(ORIENT_KEY, "1"); } catch { /* private mode */ }
+  };
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} style={{ position: "absolute", top: 18, right: 20, zIndex: 10, ...btn(), padding: "6px 11px", fontSize: 10.5, background: T.panel, backdropFilter: "blur(8px)" }}>
+        what am I looking at?
+      </button>
+    );
+  }
+  const worst = flags[0];
+  return (
+    <div style={{ position: "absolute", top: 18, right: 20, width: 310, maxWidth: "calc(100% - 40px)", zIndex: 10, background: T.panel, border: `1px solid ${T.line}`, borderTop: `2px solid ${T.gold}`, borderRadius: 8, padding: "15px 16px 14px", backdropFilter: "blur(10px)", boxShadow: "0 14px 44px rgba(0,0,0,.5)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 9 }}>
+        <span style={{ fontFamily: T.mono, fontSize: 9.5, letterSpacing: 2, textTransform: "uppercase", color: T.gold }}>You're looking at</span>
+        <button onClick={dismiss} title="dismiss" style={{ background: "none", border: "none", color: T.faint, cursor: "pointer", fontSize: 15, lineHeight: 1 }}>×</button>
+      </div>
+      <div style={{ color: T.text, fontSize: 13.5, lineHeight: 1.5, marginBottom: 12 }}>
+        {data.meta.title ?? "a Booboo brain"} — every role its own agent, stacked in bands.
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 13 }}>
+        {data.meta.layers.map((l, i) => (
+          <div key={l.name} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+            <span style={{ width: 7, height: 7, borderRadius: 7, background: l.color ?? T.dim, flex: "0 0 auto" }} />
+            <span style={{ color: T.text }}>{(l.label ?? l.name).split("·").pop()?.trim()}</span>
+            <span style={{ color: T.faint, fontSize: 10 }}>{i === 0 ? "top band" : i === data.meta.layers.length - 1 ? "the floor" : ""}</span>
+          </div>
+        ))}
+      </div>
+      {worst && (
+        <button
+          onClick={() => { onJump(worst.id); dismiss(); }}
+          style={{ width: "100%", textAlign: "left", background: "rgba(208,90,90,.09)", border: `1px solid ${FLAG_HUE[worst.kind] ?? T.line}`, borderRadius: 6, padding: "9px 11px", cursor: "pointer", marginBottom: 8 }}
+        >
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 1.6, textTransform: "uppercase", color: FLAG_HUE[worst.kind] ?? T.dim, marginBottom: 3 }}>
+            Start here · {flags.length} flag{flags.length > 1 ? "s" : ""}
+          </div>
+          <div style={{ color: T.text, fontSize: 12, lineHeight: 1.4 }}>{worst.label}</div>
+        </button>
+      )}
+      <div style={{ display: "flex", gap: 12, fontSize: 10, color: T.faint, fontFamily: T.mono }}>
+        <span>click any node</span>
+        <button onClick={onAsk} style={{ background: "none", border: "none", padding: 0, color: T.dim, cursor: "pointer", fontFamily: T.mono, fontSize: 10, textDecoration: "underline dotted" }}>press / to find</button>
       </div>
     </div>
   );

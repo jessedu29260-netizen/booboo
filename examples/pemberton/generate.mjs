@@ -605,8 +605,12 @@ const org = {
     })),
     ...DEPTS.flatMap((d) =>
       STAFF[d.key].map(([slug, label]) => ({
+        // No `role` here on purpose: the department is already the lane the
+        // card sits in, so "Lift Engineer — Engineering" said nothing a
+        // second time that the lane hadn't already said once. The card face
+        // shows facts instead (health · bucket reach · rule count · last
+        // report) — see Panel.tsx AgentCard.
         id: `${d.key}-${slug}`, name: label, parent: d.key,
-        role: `${label} — ${d.name}`,
         ...(d.key === "finance-procurement" && slug === "night-audit"
           ? {
               kind: "automation", cadence: 24, emoji: "🌙",

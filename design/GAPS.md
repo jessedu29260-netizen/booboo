@@ -88,17 +88,17 @@ in the data and looks identical to every other department on screen.
 | Dossier as **one shared component** (viewer + panel + site) | 🔴 two separate implementations |
 | Loading / error / empty states | 🔴 |
 
-### A5 · Organigram (CRAFT §5)
+### A5 · Organigram (CRAFT §5) — the craft pass, shipped 2026-07-19
 
-| Commitment | State |
-|---|---|
-| House tokens applied | ✅ |
-| Department columns in cosmos sector order | ✅ |
-| Engraved cards on brass rails, orthogonal elbows | 🔴 |
-| Card content: persona · health chip · bucket chips · rule count · last report | 🟡 partial in dossier, not on cards |
-| **"Show the law" inheritance overlay** | 🔴 |
-| Ledger shelf (hover a role → its reach lights) | 🔴 |
-| Semantic zoom (house → department → role) | 🔴 |
+| Commitment | State | Reality |
+|---|---|---|
+| House tokens applied | ✅ | |
+| Department columns in cosmos sector order | ✅ | |
+| Engraved cards on brass rails, orthogonal elbows | ✅ | Every `.oc-down` connector (root→lanes, and the department→staff rail inside each lane) now renders as a real brass rail (`--brass-line` gradient, glow on hover) instead of the plain grey/teal tree line; the lane rail is an explicit CSS-grid column (`grid-template-areas: "head rail staff"`) with a vertical spine + one orthogonal branch into the staff block — the elbow HANDOFF.md flagged as hidden inside lanes. Card names carry an engraved inset text-shadow matching the cosmos floor's engraving technique. Verified live: `chart-1.png` (headless GPU, 1600×1000, `/chart/`) shows the gold rail with rivet/fold glyph between each department head and its staff. |
+| Card content: persona · health chip · bucket chips · rule count · last report | ✅ | `AgentFacts` (Panel.tsx) reads the SAME `orgBootSlice`/`pulseFor`/`lightFor` the dossier already used, so the card and its dossier can never disagree. Staff cards no longer print "Lift Engineer — Engineering" under "Lift Engineer" (`generate.mjs` staff no longer sets a duplicate `role`); every card face now shows a health dot, bucket-reach count, rule count, and last-report relative time. Verified live in `chart-1.png`: staff cards read "● quiet ▤3 §2 —"; department heads keep their persona line (unchanged, not duplicated) plus the same fact row. |
+| **"Show the law" inheritance overlay** | ✅ | A top-bar toggle (`⚖ show the law`) adds `.law-on`: every rail in the tree (root→lane and the in-lane department→staff rail) switches from a static gradient to an animated gold dashed flow (`repeating-linear-gradient` + `background-position` keyframes, direction-correct on both the vertical and the horizontal branch), and every visible card grows a `.ag-law` line printing its actual boot-order chain (`slice.chain`, e.g. "General Manager ↓ Engineering ↓ Lift Engineer"). This is the real inheritance data, not decoration. Verified live via a CDP-driven click + screenshot (`law-on.png`): rails render as gold dashes, cards show the chain text, the hint line changes to explain what's on screen. `prefers-reduced-motion` freezes the flow animation. |
+| Ledger shelf (hover a role → its reach lights) | ✅ | A persistent shelf docked under the chart lists every bucket the org declares (11, name-sorted) plus a permanently-locked `guest-registry` entry (the real sealed bucket id from `generate.mjs`/DESIGN.md — never fabricated). Hovering any card (`onMouseEnter`/`onMouseLeave` → `hoverId` → `orgBootSlice(...).buckets`) lights the matching shelf slots gold; the sealed slot is hard-coded to never light. Verified live via CDP hover + screenshot (`ledger-hover.png`): hovering Engineering's head card lit exactly `engineering`, `executive`, `house` — its real inherited reach. |
+| Semantic zoom (house → department → role) | ✅ | Lightweight but real: each department's rail is itself the fold control (click or Enter/Space) — folded state replaces the staff row with a "N staff · folded to department level" summary and the department head stays visible (department rung); a house-level toggle in the zoom control (`⌂ house` / `▾ roles`) folds or unfolds every department at once. Not full LOD (no re-render of node detail at distance) but a genuine three-rung drill: house (GM only) → department (heads, folded) → role (every card). Verified live via CDP click + screenshot (`fold-house.png`): all lanes collapsed to head + summary chip, the toggle read "⌂ house". |
 
 ### A6 · Micro-brand + site (CRAFT §6/§7)
 
@@ -150,7 +150,7 @@ of the wound is depth of play, not comprehension.
 |---|---|---|
 | Landing `/` | ✅ | Six sections: idea · three faces · the model (five nouns + a real boot slice) · live ask · run-it · what-ships. Missing only OG image and scrollytelling. |
 | Viewer `/viewer/` | 🟡 | Layout, floors, landmarks, torch, entrance, dossier-by-verb, palette, flags, verb colours, orientation card all ✅ verified. Missing: view presets, focus-camera dolly, d-pad walk, breadcrumb, weak-GPU guard. |
-| Staff board `/chart/` | 🟡 | Lanes stack downward, scrolls correctly, 15 real vendor marks, 3D hover, personas + rule counts + boot-order rules + contracts, read-only apply ✅. Missing: the CRAFT §5 craft pass — engraved cards on brass rails, show-the-law overlay, ledger shelf, semantic zoom. Staff cards still repeat the role line and carry no health/bucket/last-report on the face. |
+| Staff board `/chart/` | ✅ | Lanes stack downward, scrolls correctly, 15 real vendor marks, 3D hover, personas + rule counts + boot-order rules + contracts, read-only apply ✅. The CRAFT §5 craft pass shipped 2026-07-19 — see A5: brass rails + elbows, card faces (health/reach/rules/last-report, redundant role line gone), show-the-law overlay, ledger shelf, semantic zoom. All five verified live (screenshots below). Still open: golden-frame CI (A7), mobile pass (C9). |
 | ASK `/mcp` | ✅ | Authless Streamable-HTTP, 8 tools incl. `booboo_count`, verified live from a real claude.ai connector: 3 majors this week, 98-vs-14 absences, boot slice correct. |
 | Brand domain | ✅ | `booboo.fractionalhq.uk` — A record via Porkbun API, propagated, cert valid, all routes 200. |
 | README | 🟡 | Leads with the zero-config command; badges; demo link. Not yet updated for `booboo_count` or the brand URL. |
@@ -213,10 +213,13 @@ the row it closes.
 **Tier 3 — the craft pass (THE OPEN WORK) and proof**
 
 8. **The craft pass** — the one that decides whether this is a category of
-   one. See `design/HANDOFF.md`. Staff-card faces, engraved brass rails,
-   show-the-law overlay, ledger shelf, semantic zoom (A5); light-shaft
-   spines (A2, the unbuilt signature); view presets over fourteen sliders
-   (A4).
+   one. See `design/HANDOFF.md`.
+   - GOVERN (A5) — **shipped + verified live 2026-07-19**: staff-card faces,
+     engraved brass rails + elbows, show-the-law overlay, ledger shelf,
+     semantic zoom. All five confirmed against the live site (three via a
+     CDP-driven click/hover + screenshot, not just a static render).
+   - SEE — still open: light-shaft spines (A2, the unbuilt signature); view
+     presets over fourteen sliders (A4).
 9. OG image (C8) · 10. mobile pass (C9) · 11. the 30-second trace (A3) ·
 12. weak-GPU guard (C7) · 13. golden CI (C10) · 14. million-node proof (C11).
 

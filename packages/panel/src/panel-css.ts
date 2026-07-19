@@ -26,6 +26,12 @@ export const PANEL_CSS = String.raw`
   --font: "DM Sans", -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --display: "Fraunces", ui-serif, Georgia, serif;
+  /* brass — the staff-board's own material, used only on rails, plaques and
+     the ledger shelf so it stays a deliberate accent, not a retint of --accent */
+  --brass-hi: #f3dfa0;
+  --brass: #c9a04a;
+  --brass-lo: #8a6a28;
+  --brass-line: linear-gradient(180deg, var(--brass-hi), var(--brass) 55%, var(--brass-lo));
 }
 
 /* LIGHT theme — same verdigris accent, swapped surfaces. Toggle in the top bar. */
@@ -357,6 +363,40 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .zoomer button:hover { background: var(--accent-dim); color: var(--ink); }
 .zoomer button.on { color: var(--accent); }
 .zoomer-pct { min-width: 40px; text-align: center; color: var(--ink-3); }
+.zoomer-sep { width: 1px; height: 16px; background: var(--line); margin: 0 2px; }
+
+/* ── the ledger shelf: every bucket as a pigeonhole, hover a role to see its
+   reach. Docked under the chart, always visible — the memory half of the
+   two pillars (structure above, memory below), never a separate tab. */
+.ledger-shelf {
+  position: relative; z-index: 2; flex: 0 0 auto; margin-top: 14px;
+  padding: 10px 16px 12px; border-radius: 10px;
+  border: 1px solid var(--line); border-top: 2px solid var(--brass-lo);
+  background: linear-gradient(180deg, rgba(201, 160, 74, 0.05), var(--bg-1) 60%);
+  width: min(1180px, 92vw);
+}
+.shelf-label {
+  display: block; font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--brass); margin-bottom: 8px;
+}
+.shelf-slots { display: flex; flex-wrap: wrap; gap: 6px; }
+.shelf-slot {
+  font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px;
+  padding: 4px 9px; transition: border-color .18s ease, color .18s ease, box-shadow .25s ease, transform .18s ease;
+}
+.shelf-slot.lit {
+  color: var(--brass-hi); border-color: var(--brass); transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(201, 160, 74, 0.3), 0 6px 16px -6px rgba(201, 160, 74, 0.5);
+  background: rgba(201, 160, 74, 0.1);
+}
+.shelf-slot.sealed { color: var(--ink-3); font-style: italic; border-style: dashed; opacity: 0.75; }
+.shelf-slot.sealed.lit { color: var(--ink-3); border-color: var(--line); background: var(--bg-2); box-shadow: none; transform: none; }
+@media (prefers-reduced-motion: reduce) { .shelf-slot { transition: none; } }
+
+/* the law toggle in the top bar */
+.law-toggle { font-family: var(--mono); letter-spacing: 0.02em; }
+.law-toggle.on { color: var(--brass-hi); border-color: var(--brass); background: rgba(201, 160, 74, 0.12); }
 /* min-width:max-content keeps connectors geometrically correct at natural size
    BEFORE scaling; the measured --fit shrinks the whole block toward its head. */
 /* transform is set inline by Panel.tsx (see the note there) — only origin,
@@ -367,11 +407,12 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform;
 }
 .ocn { display: flex; flex-direction: column; align-items: center; }
-.oc-down { width: 1.5px; height: 18px; position: relative;
-  background: linear-gradient(180deg, hsl(165 40% 45% / 0.5), var(--line)); }
+/* the connective tissue reads brass everywhere — a company chart drawn with
+   the house's own material, not a generic diagram line. */
+.oc-down { width: 2px; height: 18px; position: relative; background: var(--brass-line); opacity: 0.75; }
 .oc-down::after { content: ""; position: absolute; bottom: -2px; left: 50%;
   width: 5px; height: 5px; transform: translateX(-50%); border-radius: 50%;
-  background: var(--accent); box-shadow: 0 0 8px rgba(79, 184, 160, 0.5); }
+  background: var(--brass-hi); box-shadow: 0 0 8px rgba(201, 160, 74, 0.55); }
 .oc-row { display: flex; align-items: flex-start; }
 
 /* ── THE STAFF BOARD: departments as lanes, stacking DOWNWARD ──────────────
@@ -432,23 +473,84 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .oc-row.lanes > .oc-child::after { display: none; }
 .oc-row.lanes > .oc-child > .ocn > .oc-down { display: none; }
 
-/* inside a lane: head card top-left, its service tray beneath the head, its
-   people filling the right. Explicit areas — an implicit 2-column grid put the
-   tray in the staff slot the moment every department gained services, which
-   shunted the people into a one-card column. */
+/* inside a lane: head card top-left, its service tray beneath the head, a
+   brass rail column, its people filling the right. Explicit areas — an
+   implicit 2-column grid put the tray in the staff slot the moment every
+   department gained services, which shunted the people into a one-card
+   column. The rail column is the elbow HANDOFF.md flagged as hidden: the
+   department head commanding its people, drawn once, orthogonally. */
 .oc-row.lanes > .oc-child > .ocn {
   display: grid;
-  grid-template-columns: minmax(190px, 232px) 1fr;
+  grid-template-columns: minmax(190px, 232px) 22px 1fr;
   grid-template-areas:
-    "head staff"
-    "macs staff";
+    "head rail staff"
+    "macs rail staff";
   grid-template-rows: auto 1fr;
   align-items: start;
-  gap: 10px 18px;
+  gap: 10px 0;
 }
 .oc-row.lanes > .oc-child > .ocn > .ag      { grid-area: head; }
 .oc-row.lanes > .oc-child > .ocn > .oc-tray { grid-area: macs; }
-.oc-row.lanes > .oc-child > .ocn > .oc-row  { grid-area: staff; }
+.oc-row.lanes > .oc-child > .ocn > .oc-row  { grid-area: staff; margin-left: 4px; }
+
+/* the rail: a vertical brass spine for the department, capped where it meets
+   the head, with one orthogonal branch reaching into the staff block. This
+   is the ".oc-down" element — hidden below (line ~490 in the old cascade),
+   here it's re-purposed as the rail instead of the plain tree drop-line. */
+.oc-row.lanes > .oc-child > .ocn > .oc-down {
+  display: block; grid-area: rail; position: relative; width: 100%; height: 100%;
+  min-height: 44px;
+}
+.oc-row.lanes > .oc-child > .ocn > .oc-down::before {
+  content: ""; position: absolute; left: 50%; top: 2px; bottom: 2px; width: 2px;
+  transform: translateX(-50%); background: var(--brass-line); border-radius: 2px;
+  box-shadow: 0 0 6px rgba(201, 160, 74, 0.22);
+}
+.oc-row.lanes > .oc-child > .ocn > .oc-down::after {
+  content: ""; position: absolute; left: 50%; top: 24px; width: 60%; height: 2px;
+  background: var(--brass-line); box-shadow: 0 0 6px rgba(201, 160, 74, 0.22);
+}
+.oc-row.lanes > .oc-child > .ocn:hover > .oc-down::before,
+.oc-row.lanes > .oc-child > .ocn:hover > .oc-down::after { box-shadow: 0 0 10px rgba(201, 160, 74, 0.4); }
+
+/* semantic zoom lever: the rail itself is the fold/unfold control at the
+   department level — house → department → role, one click at a time. */
+.oc-down.foldable { cursor: pointer; }
+.oc-down.foldable:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; border-radius: 4px; }
+.oc-fold-glyph {
+  position: absolute; left: 50%; top: 22px; transform: translate(-50%, -50%);
+  font-style: normal; font-size: 10px; line-height: 1; width: 15px; height: 15px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--bg-1); border: 1px solid var(--brass); color: var(--brass-hi);
+  transition: transform .15s ease, background .15s ease;
+}
+.oc-down.foldable:hover .oc-fold-glyph { background: rgba(201, 160, 74, 0.18); transform: translate(-50%, -50%) scale(1.15); }
+.oc-down.folded .oc-fold-glyph { color: var(--ink-2); border-color: var(--line); }
+
+/* the folded department: head visible, staff summarised to one line — the
+   "department" rung of house → department → role. */
+.oc-folded-summary {
+  grid-area: staff; align-self: center; justify-self: start; text-align: left;
+  background: none; border: 1px dashed var(--line); border-radius: 8px;
+  padding: 9px 13px; margin-left: 4px; cursor: pointer;
+  font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+  transition: border-color .15s ease, color .15s ease;
+}
+.oc-folded-summary:hover { border-color: var(--brass); color: var(--brass-hi); }
+/* the law flows through the lane rail too — vertical AND the horizontal branch */
+.law-on .oc-row.lanes > .oc-child > .ocn > .oc-down::before {
+  background: repeating-linear-gradient(180deg, var(--brass-hi) 0 5px, transparent 5px 11px);
+  animation: law-flow-v 700ms linear infinite;
+}
+.law-on .oc-row.lanes > .oc-child > .ocn > .oc-down::after {
+  background: repeating-linear-gradient(90deg, var(--brass-hi) 0 5px, transparent 5px 11px);
+  animation: law-flow-h 700ms linear infinite;
+}
+@keyframes law-flow-h { from { background-position-x: 0; } to { background-position-x: 11px; } }
+@media (prefers-reduced-motion: reduce) {
+  .law-on .oc-row.lanes > .oc-child > .ocn > .oc-down::before,
+  .law-on .oc-row.lanes > .oc-child > .ocn > .oc-down::after { animation: none; }
+}
 
 /* the tray is the department's stack of real services — one per line, so the
    vendor marks read as a list of systems rather than a scatter of chips */
@@ -464,6 +566,8 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
     grid-template-columns: 1fr;
     grid-template-areas: "head" "macs" "staff";
   }
+  /* no rail column on a single-column stack — the rail has nothing to span */
+  .oc-row.lanes > .oc-child > .ocn > .oc-down { display: none; }
   .oc-row.lanes > .oc-child > .ocn > .oc-tray { max-width: none; flex-direction: row; flex-wrap: wrap; }
 }
 /* inside a lane the people always flow right and wrap — the ".wrap" grid
@@ -492,20 +596,32 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
   .oc-row.lanes > .oc-child > .ocn { grid-template-columns: 1fr; gap: 12px; }
 }
 .oc-child { position: relative; padding: 18px 5px 0; display: flex; flex-direction: column; align-items: center; }
-.oc-child::before { content: ""; position: absolute; top: 0; left: 50%; width: 1.5px; height: 18px;
-  background: linear-gradient(180deg, var(--line), hsl(var(--h, 165) 32% 34%)); }
+.oc-child::before { content: ""; position: absolute; top: 0; left: 50%; width: 2px; height: 18px;
+  background: var(--brass-line); opacity: 0.6; }
 .oc-child::after { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 16px;
-  border-top: 1.5px solid var(--line); }
-.oc-child:first-child::after { left: 50%; border-left: 1.5px solid var(--line); border-top-left-radius: 14px; }
-.oc-child:last-child::after { right: 50%; border-right: 1.5px solid var(--line); border-top-right-radius: 14px; }
+  border-top: 2px solid var(--brass); opacity: 0.5; }
+.oc-child:first-child::after { left: 50%; border-left: 2px solid var(--brass); border-top-left-radius: 14px; opacity: 0.5; }
+.oc-child:last-child::after { right: 50%; border-right: 2px solid var(--brass); border-top-right-radius: 14px; opacity: 0.5; }
 .oc-child:first-child::before, .oc-child:last-child::before { display: none; }
 .oc-child:only-child::after { display: none; }
 .oc-child:only-child::before { display: block; }
 
 /* the branch wakes when you hover its parent */
 .ocn:has(> .ag:hover) > .oc-down,
-.ocn:has(> .ag:hover) > .oc-row > .oc-child::before { background: hsl(165 45% 45% / 0.6); }
-.ocn:has(> .ag:hover) > .oc-row > .oc-child::after { border-color: hsl(165 45% 45% / 0.6); }
+.ocn:has(> .ag:hover) > .oc-row > .oc-child::before { opacity: 1; }
+.ocn:has(> .ag:hover) > .oc-row > .oc-child::after { opacity: 1; border-color: var(--brass-hi); }
+
+/* "show the law": every rail in the tree flows gold, downward — the same
+   physical lines, read as authority instead of org-chart plumbing. */
+.law-on .oc-down,
+.law-on .oc-child::before {
+  background: repeating-linear-gradient(180deg, var(--brass-hi) 0 5px, transparent 5px 11px);
+  opacity: 1; animation: law-flow-v 700ms linear infinite;
+}
+.law-on .oc-child::after { border-color: var(--brass-hi); opacity: 0.9; }
+.law-on .oc-down::after { background: var(--brass-hi); box-shadow: 0 0 10px rgba(232, 200, 119, 0.85); }
+@keyframes law-flow-v { from { background-position-y: 0; } to { background-position-y: 11px; } }
+@media (prefers-reduced-motion: reduce) { .law-on .oc-down, .law-on .oc-child::before { animation: none; } }
 
 /* wide sibling sets — grouped subtrees that wrap to natural width (never crush a
    branch into a fixed cell — that overflowed and collided with the next branch) */
@@ -569,7 +685,14 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
   border: 1px solid hsl(var(--h) 45% 45% / 0.35);
   box-shadow: inset 0 1px 0 hsl(var(--h) 50% 60% / 0.25), 0 4px 10px -4px hsl(var(--h) 50% 30% / 0.6);
 }
-.ag-name { font-size: 13px; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+/* engraved, not printed — the same technique as the cosmos floor's clock-face
+   band names: a dark groove first, the ink lifted a hair above it. */
+.ag-name {
+  font-size: 13px; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+[data-theme="light"] .ag-name { text-shadow: none; }
 .ag-role { font-size: 11px; color: var(--ink-2); line-height: 1.35;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ag-meta { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 2px; }
@@ -578,6 +701,39 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
   font-size: 10px; background: var(--accent-dim); color: var(--accent); border-radius: 99px;
   padding: 2px 8px; font-variant-numeric: tabular-nums; font-weight: 650; text-transform: uppercase; letter-spacing: 0.06em;
 }
+
+/* ── the card face: health · bucket reach · rule count · last report ───────
+   Replaces a role line that used to just repeat the name ("Lift Engineer" /
+   "Lift Engineer — Engineering"). Four small facts, engraved-flat, no chrome. */
+.ag-facts {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 3px 7px; margin-top: 1px; padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ag-fact {
+  font-style: normal; font-family: var(--mono); font-size: 9px; color: var(--ink-3);
+  letter-spacing: 0.02em; display: inline-flex; align-items: center; gap: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.fact-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); flex: 0 0 auto; }
+.ag-fact-health.ok .fact-dot { background: var(--accent); box-shadow: 0 0 5px rgba(79, 184, 160, 0.7); }
+.ag-fact-health.warn .fact-dot { background: var(--warn); box-shadow: 0 0 5px rgba(224, 180, 95, 0.7); }
+.ag-fact-health.fail .fact-dot { background: #e07b6a; box-shadow: 0 0 6px rgba(224, 123, 106, 0.8); }
+.ag-fact-health.ok, .ag-fact-health.warn, .ag-fact-health.fail { color: var(--ink-2); }
+.ag-fact-report { color: var(--ink-3); }
+
+/* "show the law": the boot-order chain, printed on the card only while the
+   toggle is on — the product's core idea, made literal per card. */
+.ag-law {
+  display: none;
+}
+.law-on .ag-law {
+  display: block; margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(201, 160, 74, 0.35);
+  font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.02em; color: var(--brass-hi);
+  line-height: 1.6; text-align: center; word-break: break-word;
+}
+.ag-law-arrow { font-style: normal; color: var(--brass); margin: 0 3px; opacity: 0.8; }
+.law-on.ag { box-shadow: 0 0 0 1px rgba(201, 160, 74, 0.28), 0 16px 32px -18px hsl(var(--h) 55% 40% / 0.28); }
 
 /* the dossier */
 .doss {

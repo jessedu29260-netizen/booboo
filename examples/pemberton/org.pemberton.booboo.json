@@ -2,7 +2,7 @@
   "booboo_org": "1.0",
   "title": "The Pemberton Grand",
   "root": "gm",
-  "updated": "2026-07-19T09:58:29.465Z",
+  "updated": "2026-07-19T10:49:16.276Z",
   "agents": [
     {
       "id": "gm",
@@ -147,266 +147,222 @@
     {
       "id": "front-office-night-porter",
       "name": "Night Porter",
-      "parent": "front-office",
-      "role": "Night Porter — Front Office"
+      "parent": "front-office"
     },
     {
       "id": "front-office-concierge",
       "name": "Concierge",
-      "parent": "front-office",
-      "role": "Concierge — Front Office"
+      "parent": "front-office"
     },
     {
       "id": "front-office-guest-relations",
       "name": "Guest Relations",
-      "parent": "front-office",
-      "role": "Guest Relations — Front Office"
+      "parent": "front-office"
     },
     {
       "id": "front-office-reception",
       "name": "Reception",
-      "parent": "front-office",
-      "role": "Reception — Front Office"
+      "parent": "front-office"
     },
     {
       "id": "front-office-reservations",
       "name": "Reservations",
-      "parent": "front-office",
-      "role": "Reservations — Front Office"
+      "parent": "front-office"
     },
     {
       "id": "front-office-bell-desk",
       "name": "Bell Desk",
-      "parent": "front-office",
-      "role": "Bell Desk — Front Office"
+      "parent": "front-office"
     },
     {
       "id": "f-and-b-head-chef",
       "name": "Head Chef",
-      "parent": "f-and-b",
-      "role": "Head Chef — F&B"
+      "parent": "f-and-b"
     },
     {
       "id": "f-and-b-sommelier",
       "name": "Sommelier",
-      "parent": "f-and-b",
-      "role": "Sommelier — F&B"
+      "parent": "f-and-b"
     },
     {
       "id": "f-and-b-chef-de-rang",
       "name": "Chef de Rang",
-      "parent": "f-and-b",
-      "role": "Chef de Rang — F&B"
+      "parent": "f-and-b"
     },
     {
       "id": "f-and-b-room-service",
       "name": "Room Service",
-      "parent": "f-and-b",
-      "role": "Room Service — F&B"
+      "parent": "f-and-b"
     },
     {
       "id": "f-and-b-pastry-chef",
       "name": "Pastry Chef",
-      "parent": "f-and-b",
-      "role": "Pastry Chef — F&B"
+      "parent": "f-and-b"
     },
     {
       "id": "f-and-b-restaurant-manager",
       "name": "Restaurant Manager",
-      "parent": "f-and-b",
-      "role": "Restaurant Manager — F&B"
+      "parent": "f-and-b"
     },
     {
       "id": "f-and-b-bar-manager",
       "name": "Bar Manager",
-      "parent": "f-and-b",
-      "role": "Bar Manager — F&B"
+      "parent": "f-and-b"
     },
     {
       "id": "housekeeping-floor-supervisor-east",
       "name": "Floor Supervisor East",
-      "parent": "housekeeping",
-      "role": "Floor Supervisor East — Housekeeping"
+      "parent": "housekeeping"
     },
     {
       "id": "housekeeping-floor-supervisor-west",
       "name": "Floor Supervisor West",
-      "parent": "housekeeping",
-      "role": "Floor Supervisor West — Housekeeping"
+      "parent": "housekeeping"
     },
     {
       "id": "housekeeping-laundry",
       "name": "Laundry",
-      "parent": "housekeeping",
-      "role": "Laundry — Housekeeping"
+      "parent": "housekeeping"
     },
     {
       "id": "housekeeping-minibar",
       "name": "Minibar",
-      "parent": "housekeeping",
-      "role": "Minibar — Housekeeping"
+      "parent": "housekeeping"
     },
     {
       "id": "housekeeping-linen-room",
       "name": "Linen Room",
-      "parent": "housekeeping",
-      "role": "Linen Room — Housekeeping"
+      "parent": "housekeeping"
     },
     {
       "id": "housekeeping-turndown",
       "name": "Turndown",
-      "parent": "housekeeping",
-      "role": "Turndown — Housekeeping"
+      "parent": "housekeeping"
     },
     {
       "id": "engineering-lift-engineer",
       "name": "Lift Engineer",
-      "parent": "engineering",
-      "role": "Lift Engineer — Engineering"
+      "parent": "engineering"
     },
     {
       "id": "engineering-hvac",
       "name": "HVAC",
-      "parent": "engineering",
-      "role": "HVAC — Engineering"
+      "parent": "engineering"
     },
     {
       "id": "engineering-night-engineer",
       "name": "Night Engineer",
-      "parent": "engineering",
-      "role": "Night Engineer — Engineering"
+      "parent": "engineering"
     },
     {
       "id": "engineering-pool-plant",
       "name": "Pool Plant",
-      "parent": "engineering",
-      "role": "Pool Plant — Engineering"
+      "parent": "engineering"
     },
     {
       "id": "engineering-electrician",
       "name": "Electrician",
-      "parent": "engineering",
-      "role": "Electrician — Engineering"
+      "parent": "engineering"
     },
     {
       "id": "engineering-decorator",
       "name": "Painter & Decorator",
-      "parent": "engineering",
-      "role": "Painter & Decorator — Engineering"
+      "parent": "engineering"
     },
     {
       "id": "spa-leisure-therapist-rota",
       "name": "Therapist Rota",
-      "parent": "spa-leisure",
-      "role": "Therapist Rota — Spa & Leisure"
+      "parent": "spa-leisure"
     },
     {
       "id": "spa-leisure-pool-attendant",
       "name": "Pool Attendant",
-      "parent": "spa-leisure",
-      "role": "Pool Attendant — Spa & Leisure"
+      "parent": "spa-leisure"
     },
     {
       "id": "spa-leisure-gym-attendant",
       "name": "Gym Attendant",
-      "parent": "spa-leisure",
-      "role": "Gym Attendant — Spa & Leisure"
+      "parent": "spa-leisure"
     },
     {
       "id": "spa-leisure-spa-reception",
       "name": "Spa Reception",
-      "parent": "spa-leisure",
-      "role": "Spa Reception — Spa & Leisure"
+      "parent": "spa-leisure"
     },
     {
       "id": "spa-leisure-treatments-lead",
       "name": "Treatments Lead",
-      "parent": "spa-leisure",
-      "role": "Treatments Lead — Spa & Leisure"
+      "parent": "spa-leisure"
     },
     {
       "id": "events-banqueting-wedding-coordinator",
       "name": "Wedding Coordinator",
-      "parent": "events-banqueting",
-      "role": "Wedding Coordinator — Events & Banqueting"
+      "parent": "events-banqueting"
     },
     {
       "id": "events-banqueting-av",
       "name": "AV",
-      "parent": "events-banqueting",
-      "role": "AV — Events & Banqueting"
+      "parent": "events-banqueting"
     },
     {
       "id": "events-banqueting-banqueting-supervisor",
       "name": "Banqueting Supervisor",
-      "parent": "events-banqueting",
-      "role": "Banqueting Supervisor — Events & Banqueting"
+      "parent": "events-banqueting"
     },
     {
       "id": "events-banqueting-events-sales",
       "name": "Events Sales",
-      "parent": "events-banqueting",
-      "role": "Events Sales — Events & Banqueting"
+      "parent": "events-banqueting"
     },
     {
       "id": "events-banqueting-florist",
       "name": "Florist",
-      "parent": "events-banqueting",
-      "role": "Florist — Events & Banqueting"
+      "parent": "events-banqueting"
     },
     {
       "id": "events-banqueting-setup-crew-lead",
       "name": "Setup Crew Lead",
-      "parent": "events-banqueting",
-      "role": "Setup Crew Lead — Events & Banqueting"
+      "parent": "events-banqueting"
     },
     {
       "id": "security-night-watch",
       "name": "Night Watch",
-      "parent": "security",
-      "role": "Night Watch — Security"
+      "parent": "security"
     },
     {
       "id": "security-cctv",
       "name": "CCTV",
-      "parent": "security",
-      "role": "CCTV — Security"
+      "parent": "security"
     },
     {
       "id": "security-key-custody",
       "name": "Key Custody",
-      "parent": "security",
-      "role": "Key Custody — Security"
+      "parent": "security"
     },
     {
       "id": "security-door-team",
       "name": "Door Team",
-      "parent": "security",
-      "role": "Door Team — Security"
+      "parent": "security"
     },
     {
       "id": "security-loading-bay",
       "name": "Loading Bay",
-      "parent": "security",
-      "role": "Loading Bay — Security"
+      "parent": "security"
     },
     {
       "id": "finance-procurement-procurement",
       "name": "Procurement",
-      "parent": "finance-procurement",
-      "role": "Procurement — Finance & Procurement"
+      "parent": "finance-procurement"
     },
     {
       "id": "finance-procurement-payables",
       "name": "Payables",
-      "parent": "finance-procurement",
-      "role": "Payables — Finance & Procurement"
+      "parent": "finance-procurement"
     },
     {
       "id": "finance-procurement-night-audit",
       "name": "Night Audit",
       "parent": "finance-procurement",
-      "role": "Night Audit — Finance & Procurement",
       "kind": "automation",
       "cadence": 24,
       "emoji": "🌙",
@@ -415,50 +371,42 @@
     {
       "id": "finance-procurement-receivables",
       "name": "Receivables",
-      "parent": "finance-procurement",
-      "role": "Receivables — Finance & Procurement"
+      "parent": "finance-procurement"
     },
     {
       "id": "finance-procurement-cost-controller",
       "name": "Cost Controller",
-      "parent": "finance-procurement",
-      "role": "Cost Controller — Finance & Procurement"
+      "parent": "finance-procurement"
     },
     {
       "id": "finance-procurement-paymaster",
       "name": "Paymaster",
-      "parent": "finance-procurement",
-      "role": "Paymaster — Finance & Procurement"
+      "parent": "finance-procurement"
     },
     {
       "id": "people-culture-rota",
       "name": "Rota",
-      "parent": "people-culture",
-      "role": "Rota — People & Culture"
+      "parent": "people-culture"
     },
     {
       "id": "people-culture-training",
       "name": "Training",
-      "parent": "people-culture",
-      "role": "Training — People & Culture"
+      "parent": "people-culture"
     },
     {
       "id": "people-culture-recruitment",
       "name": "Recruitment",
-      "parent": "people-culture",
-      "role": "Recruitment — People & Culture"
+      "parent": "people-culture"
     },
     {
       "id": "people-culture-staff-welfare",
       "name": "Staff Welfare",
-      "parent": "people-culture",
-      "role": "Staff Welfare — People & Culture"
+      "parent": "people-culture"
     },
     {
       "id": "people-culture-payroll-liaison",
       "name": "Payroll Liaison",
-      "parent": "people-culture",
-      "role": "Payroll Liaison — People & Culture"
+      "parent": "people-culture"
     },
     {
       "id": "svc-pms",

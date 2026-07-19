@@ -221,12 +221,75 @@ function bucketHue(name: string): number {
   return h;
 }
 
+// The ledger shelf (CRAFT §5): every bucket the org declares, laid out as a
+// row of pigeonholes. Hovering a role lights the ones it can reach — the
+// same bucket set the dossier and the card's own ▤ chip already agree on.
+// The sealed bucket is a real node in the dataset (bucket:guest-registry,
+// DESIGN.md §Buckets) that no agent ever declares — it renders, locked,
+// forever unlit: the wall shown, never the secrets behind it.
+const SEALED_BUCKET = "guest-registry";
+function LedgerShelf({ org, lit }: { org: BOrg; lit: Set<string> }) {
+  const buckets = useMemo(() => {
+    const s = new Set<string>();
+    for (const a of org.agents) for (const b of a.buckets ?? []) s.add(b);
+    return [...s].sort();
+  }, [org]);
+  return (
+    <div className="ledger-shelf" role="list" aria-label="the ledger — hover a role to see what it reaches">
+      <span className="shelf-label">the ledger</span>
+      <div className="shelf-slots">
+        {buckets.map((b) => (
+          <span key={b} className={`shelf-slot${lit.has(b) ? " lit" : ""}`} role="listitem">{b}</span>
+        ))}
+        <span className="shelf-slot sealed" role="listitem" title="ledger:guest-registry — sealed by wall. Visible, never emitted.">
+          🔒 {SEALED_BUCKET}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* ────────────────────────── ORGANIGRAM ────────────────────────── */
 
+// The card's fact row (CRAFT §5: "health chip · bucket chips · rule count ·
+// last report" — the four things that matter, replacing a role line that
+// used to just repeat the name). Reach comes from the same orgBootSlice the
+// dossier already uses, so a card and its dossier never disagree.
+function AgentFacts({ a, org, health, showLaw }: { a: BOrgAgent; org: BOrg; health: HealthMap | null; showLaw?: boolean }) {
+  const slice = useMemo(() => orgBootSlice(org, a.id), [org, a.id]);
+  const pulse = pulseFor(a, health);
+  const light = lightFor(a, health);
+  if (!slice) return null;
+  return (
+    <>
+      <span className="ag-facts">
+        <em className={`ag-fact ag-fact-health ${light}`} title={`health: ${light === "none" ? "no reports filed" : light}`}>
+          <i className={`fact-dot ${light}`} />{light === "none" ? "quiet" : light}
+        </em>
+        <em className="ag-fact" title={`reaches ${slice.buckets.length} bucket${slice.buckets.length === 1 ? "" : "s"}: ${slice.buckets.join(", ") || "none"}`}>▤ {slice.buckets.length}</em>
+        <em className="ag-fact" title={`bound by ${slice.rules.length} rule${slice.rules.length === 1 ? "" : "s"} in boot order`}>§ {slice.rules.length}</em>
+        <em className="ag-fact ag-fact-report" title={pulse?.lastAt ? `last report ${relTime(pulse.lastAt)}` : "no report filed yet"}>
+          {pulse?.lastAt ? relTime(pulse.lastAt) : "—"}
+        </em>
+      </span>
+      {/* the law, made visible: the boot-order chain that binds this card —
+          House Standard → SOP → role — only drawn while the toggle is on. */}
+      {showLaw && (
+        <span className="ag-law" title="inheritance in boot order">
+          {slice.chain.map((c, i) => (
+            <span key={c.id}>{i > 0 && <i className="ag-law-arrow">↓</i>}{c.name}</span>
+          ))}
+        </span>
+      )}
+    </>
+  );
+}
+
 function AgentCard({
-  a, isRoot, depth, order, selected, dragId, onSelect, onDragStart, onDropOn, childCount, light = "none",
+  a, org, isRoot, depth, order, selected, dragId, onSelect, onDragStart, onDropOn, childCount, light = "none", health = null, onHover, showLaw = false,
 }: {
   a: BOrgAgent;
+  org: BOrg;
   isRoot: boolean;
   depth: number;
   order: number;
@@ -237,13 +300,17 @@ function AgentCard({
   onDropOn: (id: string) => void;
   childCount: number;
   light?: Light;
+  health?: HealthMap | null;
+  /** reports this card's own id on hover-in, null on hover-out — the ledger
+   *  shelf uses it to light the buckets this role can reach. */
+  onHover?: (id: string | null) => void;
+  showLaw?: boolean;
 }) {
   const [over, setOver] = useState(false);
-  const nBuckets = a.buckets?.length ?? 0;
   const nSkills = a.skills?.length ?? 0;
   return (
     <div
-      className={`ag${isRoot ? " root" : ""}${selected ? " sel" : ""}${over ? " over" : ""}${dragId === a.id ? " dragging" : ""}`}
+      className={`ag${isRoot ? " root" : ""}${selected ? " sel" : ""}${over ? " over" : ""}${dragId === a.id ? " dragging" : ""}${showLaw ? " law-on" : ""}`}
       style={{ ["--h" as string]: bucketHue(a.id), ["--d" as string]: depth, animationDelay: `${Math.min(depth * 70 + order * 45, 600)}ms` }}
       draggable={!isRoot}
       tabIndex={0}
@@ -253,16 +320,20 @@ function AgentCard({
       onDragOver={(e) => { if (dragId && dragId !== a.id) { e.preventDefault(); setOver(true); } }}
       onDragLeave={() => setOver(false)}
       onDrop={(e) => { e.preventDefault(); setOver(false); onDropOn(a.id); }}
+      onMouseEnter={() => onHover?.(a.id)}
+      onMouseLeave={() => onHover?.(null)}
     >
       {light !== "none" && <i className={`ag-light ${light}`} title={`fleet health: ${light}`} />}
       <span className="ag-ava">{a.emoji || "🤖"}</span>
       <span className="ag-name">{a.name}</span>
-      <span className="ag-role">{a.role || " "}</span>
-      <span className="ag-meta">
-        {nBuckets > 0 && <em title="memory buckets">▤ {nBuckets}</em>}
-        {nSkills > 0 && <em title="skills">✦ {nSkills}</em>}
-        {childCount > 0 && <span className="ag-kids" title="direct reports">{childCount} reports</span>}
-      </span>
+      {a.role && <span className="ag-role">{a.role}</span>}
+      <AgentFacts a={a} org={org} health={health} showLaw={showLaw} />
+      {(nSkills > 0 || childCount > 0) && (
+        <span className="ag-meta">
+          {nSkills > 0 && <em title="skills">✦ {nSkills}</em>}
+          {childCount > 0 && <span className="ag-kids" title="direct reports">{childCount} reports</span>}
+        </span>
+      )}
     </div>
   );
 }
@@ -282,6 +353,13 @@ function ChartNode({
   onSelect: (id: string) => void;
   onDragStart: (id: string) => void;
   onDropOn: (id: string) => void;
+  onHover?: (id: string | null) => void;
+  /** "show the law": traces House Standard → SOP → role on every rail + card */
+  showLaw?: boolean;
+  /** semantic zoom (house → department → role): department ids collapsed to
+   *  head-only. Click a department's rail to fold or unfold its staff. */
+  collapsed?: Set<string>;
+  onToggleCollapse?: (id: string) => void;
 }) {
   // Automations are machines this node OPERATES, not org units — they render
   // as a compact TRAY of chips under the owner's card (with health lights),
@@ -305,6 +383,11 @@ function ChartNode({
   })();
   const lights = machines.map((m) => lightFor(m, cardProps.health));
   const trayLight = worst(lights);
+  // semantic zoom lever: department-level nodes (depth 1) fold their staff
+  // behind a click on their own rail — house → department → role, one level
+  // at a time, without leaving the board.
+  const isDept = depth === 1 && kids.length > 0;
+  const folded = isDept && cardProps.collapsed?.has(a.id);
   const TRAY_MAX = 8;
   const hidden = machines.length - TRAY_MAX;
   const hiddenBad = machines.slice(TRAY_MAX).reduce(
@@ -315,6 +398,7 @@ function ChartNode({
     <div className="ocn">
       <AgentCard
         a={a}
+        org={org}
         isRoot={a.id === org.root}
         depth={depth}
         order={order}
@@ -325,6 +409,9 @@ function ChartNode({
         onDropOn={cardProps.onDropOn}
         childCount={kids.length}
         light={trayLight}
+        health={cardProps.health}
+        onHover={cardProps.onHover}
+        showLaw={cardProps.showLaw}
       />
       {machines.length > 0 && (
         <div className={`oc-tray ${trayLight}`}>
@@ -357,13 +444,32 @@ function ChartNode({
       )}
       {kids.length > 0 && (
         <>
-          <div className="oc-down" />
+          <div
+            className={`oc-down${isDept ? " foldable" : ""}${folded ? " folded" : ""}`}
+            role={isDept ? "button" : undefined}
+            tabIndex={isDept ? 0 : undefined}
+            title={isDept ? (folded ? `${kids.length} staff — click to expand (semantic zoom: department → role)` : "click to fold this department to head-only (semantic zoom: role → department)") : undefined}
+            onClick={isDept ? (e) => { e.stopPropagation(); cardProps.onToggleCollapse?.(a.id); } : undefined}
+            onKeyDown={isDept ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); cardProps.onToggleCollapse?.(a.id); } } : undefined}
+          >
+            {isDept && <i className="oc-fold-glyph">{folded ? "▸" : "▾"}</i>}
+          </div>
           {/* The staff-board law: departments are LANES that stack DOWNWARD.
               Nine of them fanned sideways forced a 17%-zoom canvas nobody
               could read. Each lane is a self-contained row — head on the left,
               its people flowing right — so the board reads like a document and
               every card stays legible. Deeper generations keep the old rule
               (≤4 fan, more → a compact grid that grows down). */}
+          {folded ? (
+            <button
+              type="button"
+              className="oc-folded-summary"
+              onClick={(e) => { e.stopPropagation(); cardProps.onToggleCollapse?.(a.id); }}
+              title="click to expand — semantic zoom: department → role"
+            >
+              {kids.length} staff · folded to department level — click to expand
+            </button>
+          ) : (
           <div className={`oc-row${depth > 0 && kids.length > 3 ? " wrap" : ""}${depth === 0 ? " lanes" : ""}`}>
             {kids.map((k, i) => (
               <div className="oc-child" key={k.id} style={{ ["--h" as string]: bucketHue(k.id) }}>
@@ -371,6 +477,7 @@ function ChartNode({
               </div>
             ))}
           </div>
+          )}
         </>
       )}
     </div>
@@ -736,7 +843,7 @@ function Dossier({
 }
 
 function OrgScreen({
-  draft, selected, dragId, setSelected, setDragId, dropOn, hasSnapshot, onUpdate, onAdd, onRemove,
+  draft, selected, dragId, setSelected, setDragId, dropOn, hasSnapshot, onUpdate, onAdd, onRemove, showLaw,
 }: {
   draft: BOrg;
   selected: string | null;
@@ -748,6 +855,7 @@ function OrgScreen({
   onUpdate: (id: string, patch: Partial<BOrgAgent>) => void;
   onAdd: (parentId: string) => void;
   onRemove: (id: string) => void;
+  showLaw: boolean;
 }) {
   const api = useApi();
   // The heartbeat: one fetch of every report powers all the lights.
@@ -756,6 +864,23 @@ function OrgScreen({
     if (!hasSnapshot) return;
     fetchReports(api, null, 10000).then(({ nodes }) => setHealth(buildHealthMap(nodes))).catch(() => {});
   }, [hasSnapshot, api]);
+
+  // The ledger shelf: hovering a role's card lights the buckets it can reach.
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const litBuckets = useMemo(
+    () => new Set(hoverId ? (orgBootSlice(draft, hoverId)?.buckets ?? []) : []),
+    [hoverId, draft],
+  );
+
+  // Semantic zoom: house → department → role. Each department folds to
+  // head-only on a rail click; these two controls fold/unfold every
+  // department at once — house-level and role-level in one press.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const depts = useMemo(() => draft.agents.filter((a) => a.parent === draft.root), [draft]);
+  const toggleCollapse = useCallback((id: string) => {
+    setCollapsed((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }, []);
+  const allFolded = depts.length > 0 && depts.every((d) => collapsed.has(d.id));
 
   // Measured fit-to-viewport: scale the whole chart so the full org is always
   // visible on both axes with no page scroll. We read the chart's NATURAL
@@ -798,7 +923,7 @@ function OrgScreen({
     ro.observe(vp);
     ro.observe(chart);
     return () => ro.disconnect();
-  }, [draft, health, selected]);
+  }, [draft, health, selected, collapsed]);
 
   // ctrl/⌘ + wheel zooms (native listener — React's delegated wheel is passive,
   // so preventDefault would be ignored there). Plain wheel keeps scrolling.
@@ -820,8 +945,12 @@ function OrgScreen({
   const root = draft.agents.find((a) => a.id === draft.root);
   return (
     <div className="body" onClick={() => setSelected(null)}>
-      <main className="tree" onClick={(e) => e.stopPropagation()}>
-        <p className="tree-hint">drag an agent — or a tray machine — onto its new parent · click for its dossier · machine trays show live health</p>
+      <main className={`tree${showLaw ? " law-on" : ""}`} onClick={(e) => e.stopPropagation()}>
+        <p className="tree-hint">
+          {showLaw
+            ? "the rails now trace authority, not org lines — gold flows down from the House Standard through every SOP to every role"
+            : "drag an agent — or a tray machine — onto its new parent · click for its dossier · machine trays show live health"}
+        </p>
         <div className={`chart-fit${zoom !== null ? " zoomed" : ""}`} ref={fitRef}>
           {/* spacer sized to the SCALED footprint so the scroll extent matches
               what you can actually see (transform doesn't resize the layout box) */}
@@ -849,17 +978,31 @@ function OrgScreen({
                 onSelect={setSelected}
                 onDragStart={setDragId}
                 onDropOn={dropOn}
+                onHover={setHoverId}
+                showLaw={showLaw}
+                collapsed={collapsed}
+                onToggleCollapse={toggleCollapse}
               />
             )}
           </div>
           </div>
         </div>
         <div className="zoomer">
+          <button
+            type="button"
+            className={allFolded ? "on" : ""}
+            title={allFolded ? "unfold every department — see roles again" : "fold every department to head-only — house → department"}
+            onClick={() => setCollapsed(allFolded ? new Set() : new Set(depts.map((d) => d.id)))}
+          >
+            {allFolded ? "⌂ house" : "▾ roles"}
+          </button>
+          <span className="zoomer-sep" />
           <button type="button" title="zoom out (ctrl+wheel)" onClick={() => setZoom(Math.max(0.2, eff / 1.25))}>−</button>
           <span className="zoomer-pct">{Math.round(eff * 100)}%</span>
           <button type="button" title="zoom in (ctrl+wheel)" onClick={() => setZoom(Math.min(2.5, eff * 1.25))}>＋</button>
           <button type="button" className={zoom === null ? "on" : ""} title="fit the whole org in view" onClick={() => setZoom(null)}>fit</button>
         </div>
+        <LedgerShelf org={draft} lit={litBuckets} />
       </main>
       {selected && (
         <Dossier
@@ -1270,6 +1413,10 @@ function App() {
   const memTotal = useCountUp(totals?.mem ?? 0, 1100);
   const repTotal = useCountUp(totals?.rep ?? 0, 1300);
   const [theme, toggleTheme] = useTheme();
+  // "Show the law": the product's core idea, made visible on demand — rule
+  // inheritance (House Standard → SOP → role) traced as a second reading of
+  // the same rails, gold on dim, plus the boot-order chain on every card.
+  const [showLaw, setShowLaw] = useState(false);
 
   if (err && !draft) return <div className="pnl-fatal">{err}</div>;
   if (!draft) return <div className="pnl-fatal calm">waking the organigram…</div>;
@@ -1286,6 +1433,16 @@ function App() {
           {totals && <span onClick={() => nav("/reports")} className="tap"><b>{repTotal.toLocaleString()}</b> reports</span>}
         </div>
         <div className="bar-actions">
+          {tab === "org" && (
+            <button
+              className={`btn ghost law-toggle${showLaw ? " on" : ""}`}
+              title="trace rule inheritance — House Standard → SOP → role"
+              aria-pressed={showLaw}
+              onClick={() => setShowLaw((v) => !v)}
+            >
+              ⚖ show the law
+            </button>
+          )}
           <button className="btn ghost theme-toggle" title="light / dark" aria-label="toggle light or dark theme" onClick={toggleTheme}>{theme === "dark" ? "☀" : "☾"}</button>
           {changes.length > 0 ? (
             <>
@@ -1329,6 +1486,7 @@ function App() {
             onUpdate={updateAgent}
             onAdd={addAgent}
             onRemove={removeAgent}
+            showLaw={showLaw}
           />
         )}
         {tab === "buckets" && <BucketsScreen org={draft} param={param} hasSnapshot={!!stats} />}

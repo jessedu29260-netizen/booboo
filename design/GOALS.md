@@ -132,6 +132,12 @@ authoring/inference product, not a rendering one. It probably starts as a single
 ---
 
 ## G4 · Forkable UI, and a merge on main reaches everyone
+> **Proven end-to-end 2026-07-19.** The full chain ran once for real: bump →
+> `pnpm publish` (spec · panel · viewer · create-booboo) → npm → `npm update` in
+> Dionisos OS → deploy → the OS renders the current panel over the real 93-agent
+> fleet. A merge on main now has a demonstrated path to every host, ours included.
+> What remains for the goal is *discipline* (nothing yet forces the bump/publish
+> on merge), not capability.
 
 **What it means.** The interface is not welded to our hosting. Any OS or host
 mounts it. A fix landed on main propagates to every user — including our own:

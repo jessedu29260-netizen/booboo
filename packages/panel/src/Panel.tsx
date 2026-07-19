@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { BNode, BOrg, BOrgAgent } from "@booboo-brain/spec";
-import { orgBootSlice } from "@booboo-brain/spec";
+import { orgBootSlice, relTime } from "@booboo-brain/spec";
 import { PANEL_CSS } from "./panel-css";
 
 // THE PANEL — Booboo's control plane. Five tabs over one org file + one
@@ -32,18 +32,6 @@ const TABS = [
   { id: "graph", glyph: "◉", label: "graph" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
-
-function relTime(iso?: unknown): string {
-  if (typeof iso !== "string") return "";
-  const t = new Date(iso).getTime();
-  if (!t) return "";
-  const s = (Date.now() - t) / 1000;
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  if (s < 172800) return "yesterday";
-  return `${Math.floor(s / 86400)}d ago`;
-}
 
 // Timestamps vary by adapter — accept the common field names; "" = undated.
 function nodeAt(n: BNode): string {
@@ -104,6 +92,19 @@ function pulseFor(a: BOrgAgent, health: HealthMap | null): Pulse | null {
     if (p && (!best || p.lastMs > best.lastMs)) best = p;
   }
   return best;
+}
+
+/** Cadence in hours → the words a person would actually use. "expected every
+ *  720h" is a machine talking to itself; the board is read by someone deciding
+ *  whether silence is normal, and "monthly" answers that instantly. */
+function everyN(h: number): string {
+  if (h <= 1) return "hourly";
+  if (h < 24) return `every ${h}h`;
+  if (h === 24) return "daily";
+  if (h === 168) return "weekly";
+  if (h >= 672 && h <= 744) return "monthly";
+  if (h % 24 === 0) return `every ${h / 24} days`;
+  return `every ${h}h`;
 }
 
 function lightFor(a: BOrgAgent, health: HealthMap | null): Light {
@@ -490,8 +491,17 @@ function AgentFacts({ a, org, health, showLaw }: { a: BOrgAgent; org: BOrg; heal
       {consequence && <span className="ag-flows" title="what flows out of this node — the org file is the source booboo_boot reads">{consequence}</span>}
       <span className="ag-facts">
         <em className={`ag-fact ag-fact-health ${light}`}>{HEALTH_WORD[light]}</em>
-        <em className="ag-fact ag-fact-report" title={pulse?.lastAt ? `last report filed ${relTime(pulse.lastAt)}` : "no report filed yet"}>
+        {/* "reported 4d ago" alone is an oracle: the lamp knows whether that is
+            fine and the reader does not. Naming the expected beat next to it
+            makes the judgement checkable — 4d against weekly is obviously ok,
+            4d against daily is obviously not. */}
+        <em className="ag-fact ag-fact-report" title={typeof a.cadence === "number"
+          ? `${pulse?.lastAt ? `last report filed ${relTime(pulse.lastAt)}` : "no report filed yet"} · expected ${everyN(a.cadence)}; amber past about twice that`
+          : pulse?.lastAt ? `last report filed ${relTime(pulse.lastAt)}` : "no report filed yet"}>
           {pulse?.lastAt ? `reported ${relTime(pulse.lastAt)}` : ""}
+          {typeof a.cadence === "number" && a.kind !== "automation" && (
+            <b className="ag-cadence"> · {everyN(a.cadence)}</b>
+          )}
         </em>
       </span>
       {/* the law, made visible: the boot-order chain that binds this card —
@@ -940,7 +950,7 @@ function Dossier({
             </b>
             {p?.lastAt && <span>last run {relTime(p.lastAt)}</span>}
             {p && p.n > 0 && <span>{Math.round(((p.n - p.fails) / p.n) * 100)}% ok of {p.n}</span>}
-            {typeof a.cadence === "number" && <span>expected every {a.cadence}h</span>}
+            {typeof a.cadence === "number" && <span>reports {everyN(a.cadence)}</span>}
           </div>
         );
       })()}

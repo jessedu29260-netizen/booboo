@@ -903,6 +903,9 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .ag-fact-health.fail .fact-dot { background: var(--fail); box-shadow: 0 0 7px rgba(224, 123, 106, 0.85); }
 .ag-fact-health.ok, .ag-fact-health.warn, .ag-fact-health.fail { color: var(--ink-2); }
 .ag-fact-report { margin-left: auto; color: var(--ink-3); font-weight: 400; font-family: var(--mono); font-size: 10px; }
+/* the expected beat, quieter than the fact it qualifies — it is the ruler, not
+   the measurement, so it must never out-shout "reported 4d ago". */
+.ag-cadence { font-weight: 400; color: var(--ink-3); opacity: .62; }
 
 /* "show the law": the boot-order chain, printed on the plate only while the
    toggle is on — the product's core idea, made literal per plate. */

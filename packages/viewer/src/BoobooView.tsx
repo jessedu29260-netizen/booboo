@@ -1,5 +1,5 @@
 import { Component, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { BoobooGraph, BNode, BLink } from "@booboo-brain/spec";
+import { relTime, type BoobooGraph, type BNode, type BLink } from "@booboo-brain/spec";
 import { Booboo, defaultCfg, type BoobooCfg } from "./Booboo";
 import { usePersisted } from "./usePersisted";
 
@@ -513,20 +513,6 @@ function healthOf(status: string | null, p0: number | null): { score: number; co
 }
 
 /** "3h ago" / "2 days ago" / "14 months ago" — undated returns "". */
-function relTime(iso?: unknown): string {
-  if (typeof iso !== "string" || !iso) return "";
-  const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return "";
-  const s = (Date.now() - t) / 1000;
-  if (s < 90) return "just now";
-  if (s < 5400) return `${Math.round(s / 60)}m ago`;
-  if (s < 172800) return `${Math.round(s / 3600)}h ago`;
-  const days = Math.round(s / 86400);
-  if (days < 60) return `${days}d ago`;
-  const months = Math.round(days / 30.4);
-  return months < 24 ? `${months}mo ago` : `${(months / 12).toFixed(1)}y ago`;
-}
-
 /* ── Dossier: the node menu — health-first, tabbed ── */
 function Dossier({
   n,

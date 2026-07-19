@@ -361,9 +361,18 @@ Rules of thumb worth holding:
 
 ## 4. Write it
 
-- \`org.booboo.json\` — the agents, their parents, roles, \`buckets\`, \`rules\`, and a
-  \`boot\` line for the root. **Remove \`"seed": true\`** — that is the whole point of
-  this step, and the gate in AGENTS.md reads it.
+- \`org.booboo.json\` — the agents, their parents, roles, \`buckets\`, \`rules\`, a
+  \`boot\` line for the root, and a \`cadence\` on every division (see below).
+  **Remove \`"seed": true\`** — that is the whole point of this step, and the gate
+  in AGENTS.md reads it.
+
+  **Set \`cadence\` on every division: expected HOURS between reports.** Daily is
+  24, weekly 168, monthly 720. This is what the health lamp judges — silence past
+  about twice the cadence turns a card amber. Leaving it off does not mean "no
+  opinion"; consumers fall back to roughly a day, which is a machine's rhythm, so
+  a division that genuinely reports weekly will sit amber permanently and the
+  board stops meaning anything. Ask the human what each division's real beat is;
+  it is usually the answer to "how often would you expect to hear from them?"
 - \`booboo.config.yaml\` — set \`layers\` to the planes this system actually has, and
   \`walls\` to the answer from question 3.
 - \`data.booboo.json\` — replace the sample nodes, or point \`sources\` at the real

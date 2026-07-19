@@ -104,15 +104,26 @@ export type BOrgAgent = {
   kind?: "agent" | "automation"; // automation = a machine its parent OPERATES —
   // it inherits rules/buckets like anything else (booboo_boot works), but it is
   // not an org unit: charts render it compactly on its owner, not as a card.
-  cadence?: number; // automations: expected hours between runs. Health is
-  // recency-weighted off the LATEST report: red only if it failed · amber if it
-  // was a warn or silence passes ~2× cadence · green if ok and fresh. Older
-  // failures in the window never tint a light — at most an "instability" accent.
+  cadence?: number; // expected HOURS between reports — for ANY agent, not just
+  // automations. A department that reports daily is 24; one that reports weekly
+  // is 168; a board that reviews monthly is 720. Health is recency-weighted off
+  // the LATEST report: red only if it failed · amber if it was a warn or silence
+  // passes ~2× cadence · green if ok and fresh. Older failures in the window
+  // never tint a light — at most an "instability" accent.
+  //
+  // OMITTING THIS IS A DECISION, NOT A DEFAULT. Consumers fall back to ~26h,
+  // which is a machine's rhythm; judging a weekly department by it turns the
+  // board amber for no reason, and a board where everything is amber cannot
+  // show you the one thing that is wrong. Declare the real rhythm.
   boot?: string; // boot prompt (inline text or a ref the runner resolves)
   rules?: string[]; // rule refs (file paths / ids) — inherited down the tree
   skills?: string[];
   buckets?: string[]; // memory buckets this agent reads/writes
-  reports?: string; // ref to its report stream
+  /** @deprecated Nothing reads this. Reports are found by agent id in the
+   *  journal (`booboo_report` → `data.agent` / cluster), so a per-agent stream
+   *  ref is a second way to say the same thing — and the one that isn't wired.
+   *  Kept only because the type is published; remove at the next major. */
+  reports?: string;
   data?: Record<string, unknown>;
 };
 
@@ -198,3 +209,25 @@ export function orgBootSlice(org: BOrg, agentId: string): BOrgBootSlice | null {
 }
 
 export const ORG_SPEC_VERSION = "1.0";
+
+/** "3d ago" — how long since `iso`. Returns "" for anything undated or unparseable.
+ *
+ *  This lives here, in the package every surface already depends on, because it
+ *  was implemented TWICE (panel and viewer) and the two copies drifted: the same
+ *  report read "yesterday" on the staff board and "30h ago" in the 3D dossier,
+ *  one click apart, and a three-year-old report read "1095d ago" on one surface
+ *  and "3.0y ago" on the other. Two renderings of one fact is worse than the
+ *  duplication that caused it. One age, everywhere. */
+export function relTime(iso?: unknown): string {
+  if (typeof iso !== "string" || !iso) return "";
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "";
+  const s = (Date.now() - t) / 1000;
+  if (s < 90) return "just now";
+  if (s < 5400) return `${Math.round(s / 60)}m ago`;
+  if (s < 172800) return `${Math.round(s / 3600)}h ago`;
+  const days = Math.round(s / 86400);
+  if (days < 60) return `${days}d ago`;
+  const months = Math.round(days / 30.4);
+  return months < 24 ? `${months}mo ago` : `${(months / 12).toFixed(1)}y ago`;
+}

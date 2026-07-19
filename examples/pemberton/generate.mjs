@@ -103,16 +103,26 @@ const _three = Date.UTC(_d.getUTCFullYear(), _d.getUTCMonth(), _d.getUTCDate(), 
 const NIGHT_AUDIT_RUN = _three <= NOW ? _three : _three - DAY;
 
 // ── the nine departments (fixed order = sector enumeration order, DESIGN) ────
+// `cadence` = expected HOURS between reports. Silence past ~2× turns the lamp
+// amber. Every department used to fall through to the panel's hardcoded 26h
+// fallback — a number derived from machines, applied to nine org units that do
+// not report like machines. The result was SIX of nine departments sitting
+// amber for no reason other than a wrong default, which is worse than no lamp:
+// when everything is amber, the amber one cannot find you.
+// Front of house runs on a daily beat; back of house is weekly; the Executive
+// reviews the house monthly. Those are the real rhythms, so those are the ones
+// the board is judged against.
+const EVERY_DAY = 24, EVERY_WEEK = 168, EVERY_MONTH = 720;
 const DEPTS = [
-  { key: "front-office",        name: "Front Office",          emoji: "🛎️" },
-  { key: "f-and-b",             name: "F&B",                   emoji: "🍽️" },
-  { key: "housekeeping",        name: "Housekeeping",          emoji: "🧺" },
-  { key: "engineering",         name: "Engineering",           emoji: "🔧" },
-  { key: "spa-leisure",         name: "Spa & Leisure",         emoji: "💆" },
-  { key: "events-banqueting",   name: "Events & Banqueting",   emoji: "🎪" },
-  { key: "security",            name: "Security",              emoji: "🛡️" },
-  { key: "finance-procurement", name: "Finance & Procurement", emoji: "📒" },
-  { key: "people-culture",      name: "People & Culture",      emoji: "👥" },
+  { key: "front-office",        name: "Front Office",          emoji: "🛎️", cadence: EVERY_DAY },
+  { key: "f-and-b",             name: "F&B",                   emoji: "🍽️", cadence: EVERY_WEEK },
+  { key: "housekeeping",        name: "Housekeeping",          emoji: "🧺", cadence: EVERY_DAY },
+  { key: "engineering",         name: "Engineering",           emoji: "🔧", cadence: EVERY_DAY },
+  { key: "spa-leisure",         name: "Spa & Leisure",         emoji: "💆", cadence: EVERY_WEEK },
+  { key: "events-banqueting",   name: "Events & Banqueting",   emoji: "🎪", cadence: EVERY_WEEK },
+  { key: "security",            name: "Security",              emoji: "🛡️", cadence: EVERY_DAY },
+  { key: "finance-procurement", name: "Finance & Procurement", emoji: "📒", cadence: EVERY_DAY },
+  { key: "people-culture",      name: "People & Culture",      emoji: "👥", cadence: EVERY_WEEK },
 ];
 
 // ── the services the house runs on ──────────────────────────────────────────
@@ -770,12 +780,13 @@ const org = {
       role: EXEC_SEATS.map((s) => s.name).join(" · "),
       rules: ["rules/HOUSE_STANDARD.md"],
       buckets: ["house", "executive"],
+      cadence: EVERY_MONTH, // the house review is monthly — judge the table on that
       boot: "You are the Pemberton Grand's executive committee agent. Boot with booboo_boot('executive'). The table holds the House Standard; it alone amends it, always in writing. Route work to the nine heads; never do a department's job yourselves.",
       data: { seats: EXEC_SEATS },
     },
     ...DEPTS.map((d) => ({
       id: d.key, name: d.name, emoji: d.emoji, parent: "executive",
-      role: PERSONAS[d.key],
+      role: PERSONAS[d.key], cadence: d.cadence,
       rules: [`rules/sop/${d.key.toUpperCase().replace(/-/g, "_")}.md`],
       buckets: [d.key],
       boot: `You are the ${d.name} head agent of the Pemberton Grand. Boot with booboo_boot('${d.key}'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the Executive in writing.`,
@@ -866,6 +877,15 @@ if (obsCount !== 2100) fail(`observation count ${obsCount} ≠ 2100`);
 if (docCount !== 180) fail(`document count ${docCount} ≠ 180`);
 if (repCount !== 425) fail(`report count ${repCount} ≠ 425`);
 if (nodes.length !== 2839) fail(`node count ${nodes.length} ≠ 2839`);
+
+// Every ORG UNIT declares its own reporting cadence. Leaf staff are judged by
+// their department, and machines carry their own, but a department or the table
+// with no cadence silently inherits the panel's 26h fallback — which is how six
+// of nine departments ended up amber against a number nobody chose. An unchosen
+// default is not a default, it is a hidden decision.
+for (const a of org.agents.filter((x) => x.id === "executive" || x.parent === "executive")) {
+  if (typeof a.cadence !== "number" || a.cadence <= 0) fail(`org unit '${a.id}' declares no cadence — it will inherit the panel's silent fallback`);
+}
 
 // Every declared bucket must actually HOLD something — except guest-registry,
 // which is sealed on purpose and whose emptiness IS the privacy demonstration.

@@ -2,7 +2,7 @@
   "booboo_org": "1.0",
   "title": "The Pemberton Grand",
   "root": "executive",
-  "updated": "2026-07-19T18:08:58.461Z",
+  "updated": "2026-07-19T18:57:02.049Z",
   "agents": [
     {
       "id": "executive",
@@ -16,6 +16,7 @@
         "house",
         "executive"
       ],
+      "cadence": 720,
       "boot": "You are the Pemberton Grand's executive committee agent. Boot with booboo_boot('executive'). The table holds the House Standard; it alone amends it, always in writing. Route work to the nine heads; never do a department's job yourselves.",
       "data": {
         "seats": [
@@ -48,6 +49,7 @@
       "emoji": "🛎️",
       "parent": "executive",
       "role": "First voice a guest hears; never lets a request die in a handover.",
+      "cadence": 24,
       "rules": [
         "rules/sop/FRONT_OFFICE.md"
       ],
@@ -62,6 +64,7 @@
       "emoji": "🍽️",
       "parent": "executive",
       "role": "Runs service like a brigade; tastes everything twice.",
+      "cadence": 168,
       "rules": [
         "rules/sop/F_AND_B.md"
       ],
@@ -76,6 +79,7 @@
       "emoji": "🧺",
       "parent": "executive",
       "role": "Precise, spares no linen, escalates before apologising.",
+      "cadence": 24,
       "rules": [
         "rules/sop/HOUSEKEEPING.md"
       ],
@@ -90,6 +94,7 @@
       "emoji": "🔧",
       "parent": "executive",
       "role": "Keeps the invisible running; distrusts any gauge it hasn't tapped.",
+      "cadence": 24,
       "rules": [
         "rules/sop/ENGINEERING.md"
       ],
@@ -104,6 +109,7 @@
       "emoji": "💆",
       "parent": "executive",
       "role": "Serene front, chlorine-checked back; the calm is engineered.",
+      "cadence": 168,
       "rules": [
         "rules/sop/SPA_LEISURE.md"
       ],
@@ -118,6 +124,7 @@
       "emoji": "🎪",
       "parent": "executive",
       "role": "Choreographs 400 covers without raising a voice.",
+      "cadence": 168,
       "rules": [
         "rules/sop/EVENTS_BANQUETING.md"
       ],
@@ -132,6 +139,7 @@
       "emoji": "🛡️",
       "parent": "executive",
       "role": "Sees every door; forgets no face; logs before judging.",
+      "cadence": 24,
       "rules": [
         "rules/sop/SECURITY.md"
       ],
@@ -146,6 +154,7 @@
       "emoji": "📒",
       "parent": "executive",
       "role": "Counts what the house spends before the house feels it.",
+      "cadence": 24,
       "rules": [
         "rules/sop/FINANCE_PROCUREMENT.md"
       ],
@@ -160,6 +169,7 @@
       "emoji": "👥",
       "parent": "executive",
       "role": "Knows every rota clash before it happens; guards the roster's humans.",
+      "cadence": 168,
       "rules": [
         "rules/sop/PEOPLE_CULTURE.md"
       ],

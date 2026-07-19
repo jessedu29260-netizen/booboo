@@ -175,17 +175,33 @@ function slugify(s: string): string {
 const REDUCED = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 // Light / dark — dark by default, persisted, applied to <html data-theme> so the CSS vars swap.
+const THEME_KEY = "booboo-theme-v2"; // v1 values were auto-written, see below
+
 function readTheme(): "dark" | "light" {
-  // light is the default a stranger lands on; dark is the opt-in.
-  try { return localStorage.getItem("booboo-theme") === "dark" ? "dark" : "light"; } catch { return "light"; }
+  try {
+    // Embedded in a light page (the landing), the board is ALWAYS light. A dark
+    // board inside a white page is never what anyone wanted, and the iframe is
+    // same-origin so it would otherwise inherit the host's stored preference.
+    if (new URLSearchParams(window.location.search).get("embed")) return "light";
+    return localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
+  } catch { return "light"; }
 }
 function useTheme(): ["dark" | "light", () => void] {
   const [theme, setTheme] = useState<"dark" | "light">(readTheme);
+  const chosen = useRef(false);
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    try { localStorage.setItem("booboo-theme", theme); } catch { /* private mode */ }
+    // ONLY AN EXPLICIT TOGGLE PERSISTS. Writing on mount meant the DEFAULT
+    // persisted itself: every visit while dark was the default silently stored
+    // "dark", so the moment light became the default those visitors were pinned
+    // to a preference they never chose — and the landing page's embedded board
+    // rendered dark inside a white page. Hence the v2 key: values written by
+    // the old mount-write are indistinguishable from a real choice, so they are
+    // abandoned rather than trusted. Anyone who truly wants dark toggles once.
+    if (!chosen.current) return;
+    try { localStorage.setItem(THEME_KEY, theme); } catch { /* private mode */ }
   }, [theme]);
-  return [theme, () => setTheme((t) => (t === "dark" ? "light" : "dark"))];
+  return [theme, () => { chosen.current = true; setTheme((t) => (t === "dark" ? "light" : "dark")); }];
 }
 
 function useCountUp(target: number, ms = 900): number {

@@ -81,7 +81,7 @@ export const PANEL_CSS = String.raw`
      paper. Depth comes from layered shadow, so ink stays the only dark thing
      on screen and brass drops from material to ~5% accent. */
   --bg: #fcfbf9;
-  --bg-1: #ffffff;
+  --bg-1: #fffefb;      /* tinted toward the brass hue, never flat #fff */
   --bg-2: #f6f4f0;
   --line: #e9e5df;
   --line-soft: #f0ece6;

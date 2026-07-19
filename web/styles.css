@@ -18,7 +18,7 @@
   /* the light register — matches packages/panel exactly */
   --paper: #fcfbf9;
   --paper-2: #f6f4f0;
-  --card-l: #ffffff;
+  --card-l: #fffefb;   /* tinted, never flat #fff */
   --ink: #1b1815;
   --ink-2: #6b6459;
   --ink-3: #9a9287;

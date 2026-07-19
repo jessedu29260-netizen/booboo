@@ -6,7 +6,7 @@
     <title>🐾 Booboo Panel</title>
     <script>
       /* set the theme before first paint so surfaces never flash the wrong colour */
-      try { document.documentElement.setAttribute("data-theme", localStorage.getItem("booboo-theme") === "dark" ? "dark" : "light"); } catch (e) {}
+      try { var e_ = new URLSearchParams(location.search).get("embed"); document.documentElement.setAttribute("data-theme", (!e_ && localStorage.getItem("booboo-theme-v2") === "dark") ? "dark" : "light"); } catch (e) {}
     </script>
     <!-- the house type: loads when online (the hosted demo); the local CLI panel
          degrades gracefully to the system stacks in panel.css -->

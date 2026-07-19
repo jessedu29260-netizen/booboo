@@ -358,11 +358,13 @@ function ChartNode({
       {kids.length > 0 && (
         <>
           <div className="oc-down" />
-          {/* The staff-board law: the ROOT rank always fans horizontally — its
-              children are the departments and they must read as columns, one
-              per sector, however many there are. Deeper generations keep the
-              old rule (≤4 fan, more → a compact grid that grows down). */}
-          <div className={`oc-row${depth > 0 && kids.length > 3 ? " wrap" : ""}${depth === 0 ? " rank" : ""}`}>
+          {/* The staff-board law: departments are LANES that stack DOWNWARD.
+              Nine of them fanned sideways forced a 17%-zoom canvas nobody
+              could read. Each lane is a self-contained row — head on the left,
+              its people flowing right — so the board reads like a document and
+              every card stays legible. Deeper generations keep the old rule
+              (≤4 fan, more → a compact grid that grows down). */}
+          <div className={`oc-row${depth > 0 && kids.length > 3 ? " wrap" : ""}${depth === 0 ? " lanes" : ""}`}>
             {kids.map((k, i) => (
               <div className="oc-child" key={k.id} style={{ ["--h" as string]: bucketHue(k.id) }}>
                 <ChartNode org={org} a={k} depth={depth + 1} order={i} {...cardProps} />
@@ -755,8 +757,14 @@ function OrgScreen({
       const natW = chart.scrollWidth, natH = chart.scrollHeight;
       const availW = vp.clientWidth - PAD * 2, availH = vp.clientHeight - PAD * 2;
       if (natW <= 0 || natH <= 0) return;
-      const k = Math.min(1, availW / natW, availH / natH);
-      setFit(k > 0 ? k : 1);
+      // Fit WIDTH, then scroll. Fitting height too crushed a lane board — a
+      // document that grows downward — to 17-33% to force it onto one screen,
+      // which is unreadable and defeats the point. Height only constrains when
+      // the board is nearly square (a wide fan), where a tall shrink is mild.
+      const kW = availW / natW;
+      const kH = availH / natH;
+      const k = natH > availH * 1.35 ? kW : Math.min(kW, kH);
+      setFit(Math.min(1, k > 0 ? k : 1));
     };
     measure();
     const ro = new ResizeObserver(measure);

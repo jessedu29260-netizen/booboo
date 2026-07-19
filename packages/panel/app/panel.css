@@ -342,9 +342,97 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
   width: 5px; height: 5px; transform: translateX(-50%); border-radius: 50%;
   background: var(--accent); box-shadow: 0 0 8px rgba(79, 184, 160, 0.5); }
 .oc-row { display: flex; align-items: flex-start; }
-/* the root rank: departments as columns on one rail, never wrapped */
-.oc-row.rank { flex-wrap: nowrap; gap: 18px; padding-top: 10px; }
-.oc-row.rank > .oc-child { flex: 0 0 auto; }
+
+/* ── THE STAFF BOARD: departments as lanes, stacking DOWNWARD ──────────────
+   Nine departments fanned sideways forced a canvas nobody could read at 17%
+   zoom. Each lane is a row of the board: a brass rail down the left, the
+   head's card, then its people flowing right and wrapping inside the lane.
+   The board scrolls like a document; every card stays at legible size. */
+.oc-row.lanes {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding-top: 18px;
+  width: min(1180px, 92vw);
+}
+.oc-row.lanes > .oc-child {
+  flex: 1 1 auto;
+  padding: 0;
+  position: relative;
+  border: 1px solid var(--line);
+  border-left: 2px solid hsl(var(--h) 45% 52% / 0.55);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, hsl(var(--h) 40% 50% / 0.05), transparent 60%),
+    var(--bg-1);
+  padding: 14px 16px 16px;
+  transition: border-color .25s ease, box-shadow .35s ease, transform .35s ease;
+}
+.oc-row.lanes > .oc-child:hover {
+  border-left-color: hsl(var(--h) 55% 62% / 0.9);
+  box-shadow: 0 18px 44px -26px rgba(0,0,0,.95), 0 0 0 1px hsl(var(--h) 40% 50% / .18);
+  transform: translateY(-1px);
+}
+
+/* the lane is a stage: cards sit ON it, so hovering one tilts it toward the
+   viewer under the same key light the brass landmarks use in the cosmos. */
+.oc-row.lanes > .oc-child > .ocn { perspective: 900px; perspective-origin: 30% 0%; }
+.oc-row.lanes .ag {
+  transform-style: preserve-3d;
+  transition: transform .28s cubic-bezier(.2,.7,.25,1), box-shadow .28s ease, border-color .15s;
+}
+.oc-row.lanes .ag:hover {
+  transform: translateZ(26px) translateY(-3px) rotateX(6deg);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.09),
+    inset 0 0 0 1px hsl(var(--h) 45% 50% / .18),
+    0 2px 4px rgba(0,0,0,.55),
+    0 26px 52px -22px hsl(var(--h) 60% 42% / .5),
+    0 0 34px -16px hsl(var(--h) 70% 60% / .35);
+}
+.oc-row.lanes .ag:active { transform: translateZ(10px) translateY(-1px) rotateX(2deg); }
+@media (prefers-reduced-motion: reduce) {
+  .oc-row.lanes .ag:hover,
+  .oc-row.lanes .ag:active { transform: none; }
+  .oc-row.lanes > .oc-child:hover { transform: none; }
+}
+/* lanes own their connectors — kill the fan's drop-lines inside them */
+.oc-row.lanes > .oc-child::before,
+.oc-row.lanes > .oc-child::after { display: none; }
+.oc-row.lanes > .oc-child > .ocn > .oc-down { display: none; }
+
+/* inside a lane: head card, then its people wrapping to the right */
+.oc-row.lanes > .oc-child > .ocn {
+  display: grid;
+  grid-template-columns: minmax(190px, 232px) 1fr;
+  align-items: start;
+  gap: 18px;
+}
+/* inside a lane the people always flow right and wrap — the ".wrap" grid
+   (which grows downward) would otherwise stack a big department into a
+   one-card-wide column. Specificity here deliberately beats .oc-row.wrap. */
+.oc-row.lanes > .oc-child > .ocn > .oc-row,
+.oc-row.lanes > .oc-child > .ocn > .oc-row.wrap {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  align-content: flex-start;
+}
+.oc-row.lanes > .oc-child > .ocn > .oc-row > .oc-child { padding: 0; flex: 0 0 auto; }
+.oc-row.lanes > .oc-child > .ocn > .oc-row > .oc-child::before,
+.oc-row.lanes > .oc-child > .ocn > .oc-row > .oc-child::after { display: none; }
+
+@media (max-width: 820px) {
+  .oc-row.lanes > .oc-child > .ocn { grid-template-columns: 1fr; gap: 12px; }
+}
 .oc-child { position: relative; padding: 18px 5px 0; display: flex; flex-direction: column; align-items: center; }
 .oc-child::before { content: ""; position: absolute; top: 0; left: 50%; width: 1.5px; height: 18px;
   background: linear-gradient(180deg, var(--line), hsl(var(--h, 165) 32% 34%)); }

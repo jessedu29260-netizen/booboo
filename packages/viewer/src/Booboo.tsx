@@ -5,7 +5,7 @@ import { EffectComposer, Bloom, Vignette, ToneMapping, HueSaturation, Brightness
 import { ToneMappingMode } from "postprocessing";
 import * as THREE from "three";
 import type { BoobooGraph } from "@booboo-brain/spec";
-import { layout, planeZ, PLANE_GAP, type Laid } from "./layout";
+import { layout, planeZ, PLANE_GAP, FLAG_COLOR, type Laid, type Flagged } from "./layout";
 import { truncateLabel } from "./label";
 
 // Effect intensities are numbers (sliders): 0 = off, 1 = default, >1 = more.
@@ -151,6 +151,52 @@ function PulseLinks({ laid, cfg, focus, introUni }: { laid: Laid; cfg: BoobooCfg
     <lineSegments geometry={geo} frustumCulled={false}>
       <shaderMaterial ref={matRef} uniforms={uni} vertexShader={PULSE_VERT} fragmentShader={PULSE_FRAG} transparent depthWrite={false} blending={cfg.bloom > 0 ? THREE.AdditiveBlending : THREE.NormalBlending} />
     </lineSegments>
+  );
+}
+
+// ── flags: luminance rank 1, the brightest thing on screen (CRAFT §1). A ringed
+// beacon that breathes, sits above its node, and ignites LAST in the entrance so
+// the eye lands on the problem rather than wandering to it. If a frame's brightest
+// pixel is not one of these (or a badge), the frame fails QA.
+function Flags({ flags, onSelect, introBox, reduced }: { flags: Flagged[]; onSelect?: (id: string | null) => void; introBox: IntroBox; reduced: boolean }) {
+  const grp = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    const g = grp.current; if (!g) return;
+    const t = introBox.current.t;
+    const e = Math.min(1, Math.max(0, (t - 2.8) / 0.7)); // last beat of the entrance
+    g.visible = e > 0.01;
+    // a slow pulse — alarm, not disco. Reduced-motion holds it steady and lit.
+    const pulse = reduced ? 1 : 0.82 + 0.18 * Math.sin(clock.getElapsedTime() * 2.1);
+    const s = (1 - Math.pow(1 - e, 3)) * pulse;
+    g.children.forEach((c) => c.scale.setScalar(Math.max(0.001, s)));
+  });
+  if (!flags.length) return null;
+  return (
+    <group ref={grp}>
+      {flags.map((f) => {
+        const col = FLAG_COLOR[f.kind];
+        return (
+          <group key={f.id} position={f.pos}>
+            <mesh
+              onClick={(e) => { e.stopPropagation(); onSelect?.(f.id); }}
+              onPointerOver={() => { document.body.style.cursor = "pointer"; }}
+              onPointerOut={() => { document.body.style.cursor = "auto"; }}
+            >
+              <ringGeometry args={[16, 22, 32]} />
+              <meshBasicMaterial color={col} transparent opacity={0.95} side={THREE.DoubleSide} depthTest={false} depthWrite={false} toneMapped={false} />
+            </mesh>
+            <mesh raycast={() => null}>
+              <ringGeometry args={[30, 33, 32]} />
+              <meshBasicMaterial color={col} transparent opacity={0.38} side={THREE.DoubleSide} depthTest={false} depthWrite={false} toneMapped={false} />
+            </mesh>
+            <mesh raycast={() => null}>
+              <circleGeometry args={[9, 20]} />
+              <meshBasicMaterial color={col} transparent opacity={0.9} depthTest={false} depthWrite={false} toneMapped={false} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
   );
 }
 
@@ -502,6 +548,7 @@ export function Booboo({ data, cfg, onSelect, sel, intro = true }: { data: Boobo
         <PulseLinks laid={laid} cfg={c} focus={focus.link} introUni={introUni} />
         <Field laid={laid} cfg={c} onPick={(i) => onSelect?.(laid.ids[i])} focus={focus.node} introUni={introUni} />
         <Landmarks data={data} laid={laid} cfg={c} focus={focus.node} sel={sel} onSelect={onSelect} introBox={introBox} />
+        <Flags flags={laid.flags} onSelect={onSelect} introBox={introBox} reduced={!!reduced} />
         {c.labels && <NodeLabels data={data} laid={laid} />}
       </Spin>
       <OrbitControls autoRotate={false} enableRotate enableZoom enablePan screenSpacePanning enableDamping dampingFactor={0.08} target={[0, 0, 0]} minPolarAngle={0} maxPolarAngle={Math.PI} makeDefault />

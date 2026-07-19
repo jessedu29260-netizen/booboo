@@ -40,7 +40,7 @@ Declared order: `flags > badges > pulses > landmarks > field > edges > discs > b
 
 | Rank | State | Reality |
 |---|---|---|
-| flags | 🔴 | **Not rendered anywhere.** Dataset has 4 flags + 10 health values; the viewer draws none. Only a code comment mentions them. |
+| flags | ✅ | Ringed beacons, ranked colours, depthTest off so they never hide behind geometry, ignite last in the entrance, clickable → dossier. Health amber/red raises a flag too. Verified live: 5 beacons (4 explicit + Engineering amber), red critical reads first. |
 | badges/contracts | 🟡 | Landmarks are brass objects ✅ but carry no icon, no name plate, no contract distinction. |
 | pulses | 🟡 | Edges pulse, but uniformly — no direction, no meaning. |
 | landmarks / field / discs / bg | ✅ | Built and verified. |
@@ -58,7 +58,7 @@ in the data and looks identical to every other department on screen.
 | Sprite field: soft core, rim, depth fade | ✅ |
 | **Light-shaft spines** (cone beams, *authority as light falling*) | 🔴 **the signature element, never built** |
 | Edges: fat ribbons, source→target gradient, directional dashes | 🔴 thin GL lines |
-| **Verb → token colour on edges** | 🔴 **0 of 397 links carry colour** — every relation looks the same |
+| **Verb → token colour on edges** | ✅ VERB_COLOR default when a link has no explicit colour, + a source→target brightness gradient so direction reads in a still frame. Verified live: reports_to gold, owns teal, escalates_to red, audits violet all distinct. |
 | Atmosphere: height fog, nebula IBL | 🟡 starfield only |
 | Focus = torch (dim non-neighbourhood) | ✅ |
 | Focus = DoF/bokeh rack | 🔴 |
@@ -187,13 +187,12 @@ the row it closes.
 
 **Tier 1 — the product currently fails its own acceptance test**
 
-1. **Flags + health rendering** (A1) — the missing top of the luminance ladder.
-   Data already exists: 4 flags, 10 health values. Without this the
-   two-second test cannot be passed by anyone. *Nothing else matters more.*
-2. **Verb colours + directional flow on edges** (A2) — 397 identical lines
-   become readable relations; makes the trace legible later.
-3. **Tokens actually consumed** (A0) — otherwise every fix above hardcodes
-   more drift in.
+1. ~~**Flags + health rendering** (A1)~~ ✅ shipped + verified live.
+2. ~~**Verb colours + direction on edges** (A2)~~ ✅ shipped + verified live.
+3. **Tokens actually consumed** (A0) — still open. Generate
+   `viewer/src/tokens.ts` + site CSS vars from `design/tokens.json` so the
+   three consumers stop drifting. VERB_COLOR and FLAG_COLOR are currently
+   hand-mirrored copies — the exact drift the rule exists to prevent.
 
 **Tier 2 — the label for the machine**
 

@@ -3,11 +3,43 @@ import type { BoobooGraph } from "@booboo-brain/spec";
 // O(n) deterministic layout → flat typed arrays. Scale-first: no per-node objects, no force sim.
 // Position = f(layer-plane, cluster-sector, tier-radius, hash(id)). Same input → same output.
 
+/** Ranked alarm states (CRAFT luminance rank 1 — the brightest thing on screen).
+ *  Read from `node.data.flag`; `node.data.health: amber|red` also raises one. */
+export const FLAG_ORDER = ["critical", "overdue", "stale", "orphan"] as const;
+export type FlagKind = (typeof FLAG_ORDER)[number];
+export const FLAG_COLOR: Record<FlagKind, string> = {
+  critical: "#d05a5a",
+  overdue: "#d6a23e",
+  stale: "#c9a04a",
+  orphan: "#8a8268",
+};
+
+export type Flagged = { id: string; index: number; kind: FlagKind; label: string; pos: [number, number, number] };
+
+/** Verb → colour (design/tokens.json § verb). One relation, one hue, everywhere.
+ *  A snapshot may still override per-link with `link.color`; this is the default
+ *  so a graph that only declares link *types* still reads as distinct relations. */
+export const VERB_COLOR: Record<string, string> = {
+  reports_to: "#c9a04a",
+  declares: "#E8C877",
+  amends: "#E8C877",
+  inherits: "#8a8268",
+  owns: "#4ECDC4",
+  reads: "#3a7a74",
+  escalates_to: "#d05a5a",
+  covers: "#5fae7e",
+  supplies: "#a8815a",
+  audits: "#a78bd0",
+  spine: "#29242f",
+  tether: "#29242f",
+};
+
 export type Laid = {
   ids: string[];
   index: Map<string, number>;
   nodeLayer: string[]; // layer name per node index (for layer-isolation toggles)
   nodeTier: Int8Array; // tier per node index (landmarks = tier <= 1)
+  flags: Flagged[]; // every alarm in the graph, worst first — the "where's the problem" set
   positions: Float32Array; // n*3
   colors: Float32Array; // n*3
   sizes: Float32Array; // n
@@ -185,21 +217,49 @@ export function layout(g: BoobooGraph): Laid {
     linkPos[k * 6 + 3] = positions[b * 3];
     linkPos[k * 6 + 4] = positions[b * 3 + 1];
     linkPos[k * 6 + 5] = positions[b * 3 + 2];
-    const base = l.color ? hex2rgb(l.color) : spine ? [0.16, 0.14, 0.2] : [0.3, 0.34, 0.42];
+    // colour precedence: explicit link.color → verb token → neutral fallback.
+    // Without this every relation renders identically and the graph says nothing
+    // about WHAT connects two things (0 of 397 Pemberton links carry a colour).
+    const verbHex = VERB_COLOR[l.type];
+    const base = l.color ? hex2rgb(l.color) : verbHex ? hex2rgb(verbHex) : spine ? [0.16, 0.14, 0.2] : [0.3, 0.34, 0.42];
     const boost = spine ? 1 : ta <= 1 || tb <= 1 ? 0.7 : 0.4; // rivers dimmer than the backbone
+    // direction is carried by a gradient: the source end sits darker than the
+    // target end, so a still frame still reads which way the relation points.
     for (let e = 0; e < 2; e++) {
-      linkColors[k * 6 + e * 3] = base[0] * boost;
-      linkColors[k * 6 + e * 3 + 1] = base[1] * boost;
-      linkColors[k * 6 + e * 3 + 2] = base[2] * boost;
+      const dir = e === 0 ? 0.55 : 1.15;
+      linkColors[k * 6 + e * 3] = base[0] * boost * dir;
+      linkColors[k * 6 + e * 3 + 1] = base[1] * boost * dir;
+      linkColors[k * 6 + e * 3 + 2] = base[2] * boost * dir;
     }
     k++;
   }
+
+  // ── flags: the top of the luminance ladder. A node earns one from an explicit
+  // data.flag, or from data.health amber/red (a department in trouble is an alarm
+  // even when nobody tagged it). Sorted worst-first so the eye is led in order.
+  const flags: Flagged[] = [];
+  for (let i = 0; i < n; i++) {
+    const d = (nodes[i].data ?? {}) as Record<string, unknown>;
+    const explicit = typeof d.flag === "string" ? (d.flag as string) : null;
+    const health = typeof d.health === "string" ? (d.health as string) : null;
+    const kind = (explicit ?? (health === "red" ? "critical" : health === "amber" ? "overdue" : null)) as FlagKind | null;
+    if (!kind || !FLAG_ORDER.includes(kind)) continue;
+    flags.push({
+      id: nodes[i].id,
+      index: i,
+      kind,
+      label: nodes[i].label,
+      pos: [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]],
+    });
+  }
+  flags.sort((a, b) => FLAG_ORDER.indexOf(a.kind) - FLAG_ORDER.indexOf(b.kind));
 
   return {
     ids,
     index,
     nodeLayer,
     nodeTier,
+    flags,
     positions,
     colors,
     sizes,

@@ -173,12 +173,21 @@ h2.display em { font-style: italic; color: var(--brass-l); }
 }
 .body strong { color: var(--ink); font-weight: 600; }
 
-/* ── 01 the one idea ─────────────────────────────────────────── */
-.triad { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: clamp(1.2rem, 3vw, 2.4rem); margin-top: clamp(2rem, 5vh, 3.2rem); }
-.tri { padding-top: 1.1rem; border-top: 1px solid var(--rule); position: relative; }
-.tri::before { content: ""; position: absolute; top: -1px; left: 0; width: 2.2rem; height: 1px; background: var(--brass-l); }
-.tri-n { display: block; font-family: var(--display); font-size: 1.22rem; font-weight: 500; margin-bottom: .5rem; }
-.tri p { margin: 0; color: var(--ink-2); font-size: .95rem; line-height: 1.6; }
+/* ── 01 the one idea ───────────────────────────────────────────
+   Three rule-separated equal columns is the literal fingerprint of the
+   saturated editorial-typographic lane, and identical repeated cards are a
+   ban. This is a staggered definition run instead: the first term carries
+   real weight and full measure, the next two indent and step down. Rhythm
+   from variation, not from a repeated module. */
+.defs { margin: clamp(2.2rem, 5vh, 3.4rem) 0 0; display: flex; flex-direction: column; gap: clamp(1.4rem, 3vh, 2.2rem); }
+.def { display: grid; grid-template-columns: minmax(6.5rem, 9rem) minmax(0, 1fr); gap: 0 clamp(1.2rem, 3vw, 2.4rem); align-items: baseline; max-width: 50rem; }
+.def dt { font-family: var(--display); font-weight: 500; font-size: 1.15rem; letter-spacing: -.01em; color: var(--ink); }
+.def dd { margin: 0; color: var(--ink-2); font-size: .96rem; line-height: 1.62; }
+/* the lead term is bigger and unindented; the followers step in behind it */
+.def-lead { max-width: 54rem; }
+.def-lead dt { font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); }
+.def-lead dd { font-size: 1.06rem; color: var(--ink); }
+.def:not(.def-lead) { margin-left: clamp(0rem, 4vw, 3.5rem); }
 
 /* ── 02 the board: the convince ──────────────────────────────── */
 .board { padding-bottom: clamp(3rem, 7vh, 5rem); }
@@ -208,10 +217,14 @@ h2.display em { font-style: italic; color: var(--brass-l); }
 .board-cap a { color: var(--brass-l); text-decoration: none; }
 .board-cap a:hover { color: var(--brass-l-hi); }
 
-.board-notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: clamp(1.1rem, 2.6vw, 2rem); margin-top: clamp(2.4rem, 5vh, 3.4rem); }
-.note { padding: 1.15rem 1.3rem; background: var(--card-l); border: 1px solid var(--rule); border-radius: 13px; box-shadow: var(--sh-1); }
-.note-n { display: block; font-weight: 600; font-size: .95rem; margin-bottom: .4rem; }
-.note p { margin: 0; color: var(--ink-2); font-size: .89rem; line-height: 1.55; }
+/* three identical cards was a banned module. These are claims, not objects:
+   no chrome, a bold lead-in doing the work a heading used to, widths that
+   vary so the run reads as prose rather than a grid. */
+.board-notes { margin-top: clamp(2.4rem, 5vh, 3.4rem); max-width: 52rem; }
+.board-notes p { margin: 0 0 .85rem; color: var(--ink-2); font-size: .96rem; line-height: 1.6; }
+.board-notes p:nth-child(2) { padding-left: clamp(0rem, 3vw, 2.5rem); }
+.board-notes p:nth-child(3) { padding-left: clamp(0rem, 6vw, 5rem); }
+.board-notes b { color: var(--ink); font-weight: 600; }
 
 /* ── 03 the proof ────────────────────────────────────────────── */
 .chips { display: flex; flex-wrap: wrap; gap: .6rem; margin: clamp(1.6rem,4vh,2.4rem) 0 1.2rem; }

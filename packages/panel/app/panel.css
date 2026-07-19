@@ -561,7 +561,7 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
    department head commanding its people, drawn once, orthogonally. */
 .oc-row.lanes > .oc-child > .ocn {
   display: grid;
-  grid-template-columns: minmax(190px, 232px) 22px 1fr;
+  grid-template-columns: minmax(278px, 300px) var(--rail-w, 56px) 1fr;
   grid-template-areas:
     "head rail staff"
     "macs rail staff";
@@ -686,29 +686,54 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
    per CRAFT §0 (radii 2/3/6) — the old 15px rounded rect is what made this
    read as a SaaS card. Content is left-aligned like a name plate, not
    centred like a business card. */
+/* ══ THE SOURCE CARD (variant B — "the spine") ══════════════════════════
+   This board is not a picture of the org: it IS the org file booboo_boot
+   reads. Rules inherit down it, bucket reach derives from it, every agent
+   boots against it. So the card states its CONSEQUENCE, not just its
+   attributes — what it declares, who it binds, what it boots on.
+   Health is the card's own left edge, so scanning nine stacked departments
+   you find the amber one peripherally, before reading a single word. */
 .ag {
-  position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 0;
-  width: calc(268px - min(var(--d, 0), 2) * 28px); /* 268 / 240 / 212 by rank */
-  padding: 13px 15px; text-align: left;
+  position: relative; display: flex; flex-direction: column; align-items: stretch;
+  width: calc(300px - min(var(--d, 0), 2) * 22px); /* 300 / 278 / 256 by rank */
+  padding: 15px 18px 13px 21px; text-align: left;
   background: var(--bg-1);
-  border: 1px solid var(--line); border-radius: 14px; cursor: grab;
+  border: 1px solid var(--line); border-radius: 14px; cursor: grab; overflow: hidden;
   box-shadow: var(--sh-2);
   transition: box-shadow .22s var(--ease), transform .22s var(--ease), border-color .18s ease, opacity .18s ease;
   animation: settle .45s var(--settle) both;
 }
-/* rank IV reads lighter and rounder — a smaller bubble, not a different colour */
-.ag.staff { border-radius: 11px; padding: 11px 13px; box-shadow: var(--sh-1); }
+/* the spine — health as the card's own edge */
+.ag::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--ink-3); transition: background .2s ease;
+}
+.ag.h-ok::before { background: var(--ok); }
+.ag.h-warn::before { background: var(--warn); }
+.ag.h-fail::before { background: var(--fail); }
+/* an unhealthy card also carries a wash, so the state survives a greyscale
+   print and never rests on hue alone */
+.ag.h-warn { background: linear-gradient(180deg, var(--warn-wash), var(--bg-1) 52%); border-color: #ecd9ae; }
+.ag.h-fail { background: linear-gradient(180deg, var(--fail-wash), var(--bg-1) 52%); border-color: #edc9bf; }
 @keyframes settle { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
-/* the lift: bubbles rise toward the cursor, then settle. Slight, never showy. */
-.ag:hover { transform: translateY(-2px); box-shadow: var(--sh-3); border-color: var(--line-2, #d9d3c9); }
+.ag:hover { transform: translateY(-2px); box-shadow: var(--sh-3); border-color: var(--line-2); }
 .ag:active { transform: translateY(0) scale(.995); transition-duration: .08s; }
 .ag.sel { border-color: var(--accent); box-shadow: var(--sh-3), 0 0 0 3px var(--accent-dim); }
 .ag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ag.over { border-color: var(--accent-2); box-shadow: var(--sh-3), 0 0 0 4px var(--accent-dim); transform: scale(1.02); }
 .ag.dragging { opacity: 0.4; cursor: grabbing; }
-/* health tints the bubble's wash — amber/red earn it, green stays quiet */
-.ag.h-warn { border-color: #ecd9ae; background: linear-gradient(180deg, var(--warn-wash), var(--bg-1) 62%); }
-.ag.h-fail { border-color: #edc9bf; background: linear-gradient(180deg, var(--fail-wash), var(--bg-1) 62%); }
+
+/* WHERE IT BELONGS — reads first, so a card lifted out of its lane still
+   knows its own place. */
+.ag-eyebrow {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--accent); display: block; margin-bottom: 7px;
+}
+/* WHAT FLOWS OUT — the consequence line. Plain English, never glyphs. */
+.ag-flows {
+  display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 10px;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── THE HEALTH LIGHT ──────────────────────────────────────────────────────
    A real lamp: a lit core inside a soft halo, with a slow breath so a healthy
@@ -756,16 +781,15 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 
 /* the name — engraved: a dark groove under, a hairline of light above */
 .ag-name {
-  font-size: 13.5px; font-weight: 700; letter-spacing: -0.005em;
-  line-height: 1.2; color: var(--ink);
+  font-family: var(--display); font-size: 18px; font-weight: 600; letter-spacing: -0.015em;
+  line-height: 1.18; color: var(--ink);
   white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
 }
 /* staff plates: quieter, lighter weight — rank in the type as well as the metal */
-.ag.staff .ag-name { font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ink-2); }
+.ag.staff .ag-name { font-family: var(--font); font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
 
 .ag-role {
-  font-family: var(--mono); font-size: 9.5px; line-height: 1.45; color: var(--ink-3);
-  letter-spacing: 0.02em; margin-top: 5px;
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-2); margin-top: 6px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .ag-meta { display: flex; align-items: center; gap: 9px; margin-top: 7px; }
@@ -779,21 +803,20 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
    Replaces a role line that used to just repeat the name ("Lift Engineer" /
    "Lift Engineer — Engineering"). Four facts, left-aligned, mono, no chrome. */
 .ag-facts {
-  display: flex; align-items: center; flex-wrap: wrap;
-  gap: 3px 10px; margin-top: 9px; padding-top: 8px;
-  border-top: 1px solid var(--line-soft);
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line);
 }
-.ag-fact {
-  font-style: normal; font-family: var(--mono); font-size: 9px; color: var(--ink-3);
-  letter-spacing: 0.03em; display: inline-flex; align-items: center; gap: 4px;
-  font-variant-numeric: tabular-nums;
-}
+.ag-fact { font-style: normal; font-size: 11.5px; font-weight: 600; color: var(--ink-3); }
+.ag-fact-health.ok { color: var(--ok); }
+.ag-fact-health.warn { color: var(--warn); }
+.ag-fact-health.fail { color: var(--fail); }
+.ag-fact-health.none { color: var(--ink-3); font-weight: 500; }
 .fact-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-3); flex: 0 0 auto; }
 .ag-fact-health.ok .fact-dot { background: var(--ok); box-shadow: 0 0 6px rgba(139, 233, 176, 0.75); }
 .ag-fact-health.warn .fact-dot { background: var(--brass); box-shadow: 0 0 6px rgba(217, 160, 91, 0.85); }
 .ag-fact-health.fail .fact-dot { background: var(--fail); box-shadow: 0 0 7px rgba(224, 123, 106, 0.85); }
 .ag-fact-health.ok, .ag-fact-health.warn, .ag-fact-health.fail { color: var(--ink-2); }
-.ag-fact-report { margin-left: auto; color: var(--ink-3); }
+.ag-fact-report { margin-left: auto; color: var(--ink-3); font-weight: 400; font-family: var(--mono); font-size: 10px; }
 
 /* "show the law": the boot-order chain, printed on the plate only while the
    toggle is on — the product's core idea, made literal per plate. */

@@ -407,21 +407,47 @@ function CascadeRails({ chartRef, version }: { chartRef: React.RefObject<HTMLDiv
 // last report" — the four things that matter, replacing a role line that
 // used to just repeat the name). Reach comes from the same orgBootSlice the
 // dossier already uses, so a card and its dossier never disagree.
+const HEALTH_WORD: Record<Light, string> = { ok: "Healthy", warn: "Needs a look", fail: "Failing", none: "No reports yet" };
+
+/** Everything that FLOWS OUT of this node.
+ *  The board is not a picture of the org — it is the source the org is
+ *  generated from: `booboo_boot` reads it, rules inherit down it, bucket reach
+ *  derives from it. So a card has to state its consequence, not just its
+ *  attributes. A node with children shows what it EMITS downward (rules it
+ *  declares, agents bound by them); a leaf shows what it RECEIVES (its own boot
+ *  slice). Same question — "what does this node do to the system" — answered in
+ *  whichever direction actually carries weight for that rank. */
+function consequenceOf(a: BOrgAgent, org: BOrg, slice: ReturnType<typeof orgBootSlice>): string {
+  if (!slice) return "";
+  const descendants = (id: string): number => {
+    const kids = org.agents.filter((x) => x.parent === id);
+    return kids.reduce((n, k) => n + 1 + descendants(k.id), 0);
+  };
+  const declares = a.rules?.length ?? 0;
+  const below = descendants(a.id);
+  if (below > 0) {
+    const parts = [];
+    if (declares) parts.push(`declares ${declares} rule${declares === 1 ? "" : "s"}`);
+    parts.push(`binds ${below} below`);
+    return parts.join(" · ");
+  }
+  return `boots on ${slice.rules.length} rule${slice.rules.length === 1 ? "" : "s"} · reaches ${slice.buckets.length} bucket${slice.buckets.length === 1 ? "" : "s"}`;
+}
+
 function AgentFacts({ a, org, health, showLaw }: { a: BOrgAgent; org: BOrg; health: HealthMap | null; showLaw?: boolean }) {
   const slice = useMemo(() => orgBootSlice(org, a.id), [org, a.id]);
+  const consequence = useMemo(() => consequenceOf(a, org, slice), [a, org, slice]);
   const pulse = pulseFor(a, health);
   const light = lightFor(a, health);
   if (!slice) return null;
   return (
     <>
+      {/* what this node does to the system, in plain English */}
+      <span className="ag-flows" title="what flows out of this node — the org file is the source booboo_boot reads">{consequence}</span>
       <span className="ag-facts">
-        <em className={`ag-fact ag-fact-health ${light}`} title={`health: ${light === "none" ? "no reports filed" : light}`}>
-          <i className={`fact-dot ${light}`} />{light === "none" ? "quiet" : light}
-        </em>
-        <em className="ag-fact" title={`reaches ${slice.buckets.length} bucket${slice.buckets.length === 1 ? "" : "s"}: ${slice.buckets.join(", ") || "none"}`}>▤ {slice.buckets.length}</em>
-        <em className="ag-fact" title={`bound by ${slice.rules.length} rule${slice.rules.length === 1 ? "" : "s"} in boot order`}>§ {slice.rules.length}</em>
-        <em className="ag-fact ag-fact-report" title={pulse?.lastAt ? `last report ${relTime(pulse.lastAt)}` : "no report filed yet"}>
-          {pulse?.lastAt ? relTime(pulse.lastAt) : "—"}
+        <em className={`ag-fact ag-fact-health ${light}`}>{HEALTH_WORD[light]}</em>
+        <em className="ag-fact ag-fact-report" title={pulse?.lastAt ? `last report filed ${relTime(pulse.lastAt)}` : "no report filed yet"}>
+          {pulse?.lastAt ? `reported ${relTime(pulse.lastAt)}` : ""}
         </em>
       </span>
       {/* the law, made visible: the boot-order chain that binds this card —
@@ -460,9 +486,10 @@ function AgentCard({
 }) {
   const [over, setOver] = useState(false);
   const nSkills = a.skills?.length ?? 0;
+  const parentName = a.parent ? org.agents.find((x) => x.id === a.parent)?.name : null;
   return (
     <div
-      className={`ag${isRoot ? " root" : ""}${depth >= 2 ? " staff" : ""}${selected ? " sel" : ""}${over ? " over" : ""}${dragId === a.id ? " dragging" : ""}${showLaw ? " law-on" : ""}${light === "warn" ? " h-warn" : light === "fail" ? " h-fail" : ""}`}
+      className={`ag${isRoot ? " root" : ""}${depth >= 2 ? " staff" : ""}${selected ? " sel" : ""}${over ? " over" : ""}${dragId === a.id ? " dragging" : ""}${showLaw ? " law-on" : ""}${light !== "none" ? " h-" + light : ""}`}
       /* no --h: rank reads through brass FINISH, never through hash-hue */
       style={{ ["--d" as string]: depth, animationDelay: `${Math.min(depth * 70 + order * 45, 600)}ms` }}
       draggable={!isRoot}
@@ -490,6 +517,12 @@ function AgentCard({
           title={`health: ${light === "ok" ? "healthy" : light === "warn" ? "needs a look" : "failing"}`}
         />
       )}
+      {/* WHERE IT BELONGS, first — a staff card lifted out of its lane used to
+          be orphaned: "Lift Engineer" with no way to know it was Engineering's.
+          Rank is named too, so the card carries its own place in the cascade. */}
+      <span className="ag-eyebrow">
+        {depth === 0 ? "The house · rank II" : depth === 1 ? "Department · rank III" : (parentName ?? "Staff")}
+      </span>
       <div className="ag-head">
         {/* the mark is earned by rank. Staff plates carry none — 51 identical
             🤖 avatars were the cheapest visual token on the board, and a

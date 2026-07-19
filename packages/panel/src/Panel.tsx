@@ -886,12 +886,13 @@ function Dossier({
 
   return (
     <aside className="doss" onClick={(e) => e.stopPropagation()}>
+      {/* The role sits OUTSIDE this flex row. Inside it, the action buttons
+          claimed their width first and the role took what was left, so The
+          Executive's four seats wrapped into a 7-line ribbon down one side of
+          the panel. Name and controls share the row; the role gets the panel. */}
       <div className="doss-head">
         <span className="doss-emoji">{a.emoji || "🤖"}</span>
-        <div>
-          <h2>{a.name} {a.kind === "automation" && <span className="auto-badge">automation</span>}</h2>
-          {a.role && <p className="doss-role">{a.role}</p>}
-        </div>
+        <h2>{a.name} {a.kind === "automation" && <span className="auto-badge">automation</span>}</h2>
         <div className="doss-head-actions">
           {!edit && (
             <button className="doss-3d" title="edit this agent" onClick={startEdit}>✎ edit</button>
@@ -902,6 +903,7 @@ function Dossier({
           <button className="doss-close" title="close the dossier" aria-label="close the dossier" onClick={onClose}>✕</button>
         </div>
       </div>
+      {a.role && <p className="doss-role">{a.role}</p>}
 
       {edit && (
         <div className="doss-edit">

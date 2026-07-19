@@ -30,6 +30,9 @@
   --line-soft: #f0ece6;
   --line-2: #d9d3c9;
   --surface-tray: rgba(255, 255, 255, .5);
+  /* the ground-plane dot. White-on-white rendered NOTHING on the light board
+     — the texture was there in the stylesheet and absent on screen. */
+  --dot: rgba(27, 24, 21, 0.055);
   --surface-lift: linear-gradient(180deg, #fffdf8, #ffffff);
   --surface-lift-edge: #e8d9bd;
   --ink: #1b1815;
@@ -67,6 +70,7 @@
   --line-soft: rgba(244, 238, 226, 0.08);
   --line-2: rgba(244, 238, 226, 0.22);
   --surface-tray: rgba(11, 5, 9, .4);
+  --dot: rgba(255, 255, 255, 0.035);
   --surface-lift: linear-gradient(168deg, #3a2a16, #1d1410);
   --surface-lift-edge: rgba(239, 195, 137, .4);
   --ink: var(--cream);
@@ -235,7 +239,7 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 
 /* rules */
 .rule-list { display: flex; flex-direction: column; gap: 9px; }
-.rule-card { background: var(--bg-1); border: 1px solid var(--line); border-left: 2px solid var(--accent); border-radius: 11px; padding: 12px 15px 10px; animation: settle 0.35s ease both; transition: border-color 0.15s; }
+.rule-card { background: var(--bg-1); border: 1px solid var(--line); border-radius: 11px; padding: 12px 15px 10px; animation: settle 0.35s ease both; transition: border-color 0.15s; }
 .rule-card:hover { border-color: var(--accent); }
 .rule-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 5px; }
 .rule-ref { font-family: var(--mono); font-size: 12.5px; }
@@ -377,7 +381,7 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
      + a verdigris pool anchoring the eye at the root. Static — capture-safe. */
   background:
     radial-gradient(900px 420px at 50% 120px, rgba(79, 184, 160, 0.05), transparent 70%),
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.035) 1px, transparent 1.5px);
+    radial-gradient(circle at 1px 1px, var(--dot) 1px, transparent 1.5px);
   background-size: auto, 28px 28px;
 }
 .tree-hint { color: var(--ink-3); font-family: var(--mono); font-size: 10px; letter-spacing: .05em; margin: 0 0 14px; text-align: center; }
@@ -861,10 +865,12 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
   padding: 26px 24px 40px; overflow-y: auto; animation: slidein 0.25s ease both;
 }
 @keyframes slidein { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
-.doss-head { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
-.doss-emoji { font-size: 30px; }
-.doss h2 { margin: 0; font-size: 18px; }
-.doss-role { margin: 3px 0 0; color: var(--ink-2); font-size: 12.5px; }
+.doss-head { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+.doss-emoji { font-size: 30px; flex: none; }
+.doss h2 { margin: 0; font-size: 18px; min-width: 0; }
+/* full panel width: a body of four seats is a list, not a subtitle squeezed
+   beside three buttons. Middots become the wrap points. */
+.doss-role { margin: 0 0 14px; color: var(--ink-2); font-size: 12.5px; line-height: 1.55; }
 
 .doss-chain { font-size: 11px; color: var(--ink-3); margin-bottom: 18px; line-height: 1.7; }
 .doss-chain i { font-style: normal; margin: 0 5px; }
@@ -885,8 +891,12 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .doss-rules em { color: var(--ink-3); font-style: normal; font-size: 9.5px; margin-left: 5px; }
 .doss-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .doss-reps { display: flex; flex-direction: column; gap: 7px; }
+/* No side-stripe. It was a 2px brass border-left that said nothing the
+   status dot doesn't already say properly, and a coloured side-stripe on a
+   card is a banned pattern in the house design laws. Full 1px border; the
+   whole edge answers on hover. */
 .doss-rep {
-  background: var(--bg-1); border: 1px solid var(--line); border-left: 2px solid var(--accent);
+  background: var(--bg-1); border: 1px solid var(--line);
   border-radius: 9px; padding: 9px 11px; animation: settle 0.35s ease both;
 }
 .doss-rep-top { display: flex; align-items: baseline; gap: 9px; }
@@ -894,7 +904,7 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .doss-rep-label { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .doss-rep-sum { margin: 5px 0 0; font-size: 11.5px; color: var(--ink-2); line-height: 1.55; }
 .doss-rep.tap { cursor: pointer; transition: border-color .12s ease, background .12s ease; }
-.doss-rep.tap:hover { border-left-color: var(--warn); background: rgba(255, 255, 255, 0.03); }
+.doss-rep.tap:hover { border-color: var(--accent); background: var(--accent-dim); }
 .doss-rep.tap:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .doss-rep-caret { margin-left: auto; font-size: 10px; color: var(--ink-2); align-self: center; }
 .rep-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; align-self: center; }

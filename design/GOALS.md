@@ -145,12 +145,37 @@ mounts it. A fix landed on main propagates to every user — including our own:
   file no host loaded.
 - Seven packages published under `@booboo-brain/*`, per-package semver.
 - The viewer is equally mountable and is already embedded in two places.
+- **Dionisos OS already mounts the real panel** (2026-07-19 finding, correcting
+  the line below that used to say it "renders something else" — it does not).
+  `dionisos-graph/src/components/os/OrganigramPage.tsx` renders
+  `@booboo-brain/panel` (`ssr:false`, "never a fork"), and
+  `/api/booboo/[fn]` + `/api/org` adapt the live Dionisos brain (atlas_snapshot ·
+  dionisos_reports · cron_runs · prompt_registry) to the panel's routes. The
+  architecture is the correct one: consume from npm, spread on publish.
+- **The current panel renders the real 79-agent fleet, and it is excellent** —
+  proven this session by running the current panel against the live Dionisos
+  brain (`booboo panel --org dionisos.org --snapshot dionisos.booboo.json`):
+  the House Standard binding 79, Dionisos with 3,038 memories in reach and 52
+  machines it operates, every real bucket in the ledger, the cron fleet as
+  automation cards with health dots. Screenshot banked. *This* is what the OS
+  will show once the packages are published.
 
-**What is missing.**
-- **Dionisos OS is not using it.** The flagship proof of "fork it onto your OS"
-  is our own OS, and it renders something else.
-- **No release discipline** connecting main → npm → hosts. Nothing makes a merge
-  actually reach anyone; publishing is manual and Jesse-gated.
+**What is missing — it is narrower than it looked.**
+- **Version drift, not a missing mount.** The OS is pinned to `panel ^0.5.2`
+  (installed 0.5.2), wired on 2026-07-04 — *before the entire craft pass*. So it
+  renders a two-week-old panel: no source cards, no cascade, no health lamps, no
+  cadence. Closing it is a **release**, not a build: publish spec + panel + viewer
+  + create-booboo (they must ship together — panel and viewer now import `relTime`
+  from spec), then `npm update` in the OS and redeploy. Both steps are Jesse-gated
+  (npm publish · Dionisos production deploy).
+- **The OS adapter's cadence gap is fixed** (branch `booboo-panel-cadence`): every
+  org card now declares a real reporting rhythm, so the fleet is not falsely amber
+  the moment the new panel lands. Parser verified against all ~60 live crons; tsc
+  clean; live render pends the gated deploy.
+- **No release discipline** connecting main → npm → hosts, and the root cause is
+  now concrete: dozens of commits landed on the packages this session with **no
+  version bump**, so npm can never receive them. A merge does not reach anyone
+  until someone bumps + publishes.
 - **Deploys are manual.** The site is built from a local `web/dist` and pushed by
   hand. It is now *provably* reproducible from the repo (verified by wiping and
   rebuilding: zero drift) but nothing structural prevents that drifting again.

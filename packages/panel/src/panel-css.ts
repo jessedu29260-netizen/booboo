@@ -315,7 +315,21 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
    junction node where the parent's line meets the bar. Pure CSS. */
 /* the measuring viewport — flex:1 + min-height:0 lets it consume the height
    .tree gives it; align/justify center the scaled block for narrow orgs. */
-.chart-fit { position: relative; flex: 1; min-height: 0; display: flex; align-items: flex-start; justify-content: center; overflow: hidden; }
+/* Always scrollable. It used to be overflow:hidden unless the user manually
+   zoomed — safe only while auto-fit guaranteed the whole board fit one screen.
+   A lane board grows downward, so that assumption sealed every lane below the
+   fold behind an invisible wall. */
+.chart-fit { position: relative; flex: 1; min-height: 0; display: flex; align-items: flex-start; justify-content: center; overflow: auto; }
+/* transform:scale() does not change layout size, so the scaled block gets a
+   spacer sized to its VISUAL footprint — otherwise the scroll extent is the
+   unscaled height and you scroll into empty space. */
+/* overflow:hidden clips the UNSCALED layout box of the absolutely-positioned
+   chart, which otherwise adds its full natural height to the scroll extent —
+   ~900px of empty scroll past the last lane. The visual (scaled) content is
+   exactly the spacer's size, so nothing real is clipped. */
+.chart-scaled { position: relative; flex: 0 0 auto; overflow: hidden; }
+.chart-scaled > .chart { position: absolute; top: 0; left: 50%; transform-origin: top center; }
+.chart-fit.zoomed .chart-scaled > .chart { left: 0; transform-origin: top left; }
 /* user-zoomed: native scroll is the pan; top-left origin keeps the scaled
    overflow fully reachable (top/center origin would clip the left half). */
 .chart-fit.zoomed { overflow: auto; justify-content: flex-start; }
@@ -335,9 +349,11 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .zoomer-pct { min-width: 40px; text-align: center; color: var(--ink-3); }
 /* min-width:max-content keeps connectors geometrically correct at natural size
    BEFORE scaling; the measured --fit shrinks the whole block toward its head. */
+/* transform is set inline by Panel.tsx (see the note there) — only origin,
+   sizing and the easing live here. */
 .chart {
   min-width: max-content; padding: 8px 14px 20px;
-  transform: scale(var(--fit, 1)); transform-origin: top center;
+  transform-origin: top center;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform;
 }
 .ocn { display: flex; flex-direction: column; align-items: center; }

@@ -748,6 +748,9 @@ function OrgScreen({
   // the −/＋ controls or ctrl+wheel; "fit" resets. When zoomed, the wrapper
   // scrolls natively (top-left origin so the overflow is fully reachable).
   const [zoom, setZoom] = useState<number | null>(null);
+  // natural (unscaled) size of the chart, so the scroll spacer can be sized to
+  // the visual footprint after scaling
+  const [nat, setNat] = useState({ w: 0, h: 0 });
   const eff = zoom ?? fit;
   useLayoutEffect(() => {
     const vp = fitRef.current, chart = chartRef.current;
@@ -761,6 +764,7 @@ function OrgScreen({
       // document that grows downward — to 17-33% to force it onto one screen,
       // which is unreadable and defeats the point. Height only constrains when
       // the board is nearly square (a wide fan), where a tall shrink is mild.
+      setNat((p) => (p.w === natW && p.h === natH ? p : { w: natW, h: natH }));
       const kW = availW / natW;
       const kH = availH / natH;
       const k = natH > availH * 1.35 ? kW : Math.min(kW, kH);
@@ -796,7 +800,20 @@ function OrgScreen({
       <main className="tree" onClick={(e) => e.stopPropagation()}>
         <p className="tree-hint">drag an agent — or a tray machine — onto its new parent · click for its dossier · machine trays show live health</p>
         <div className={`chart-fit${zoom !== null ? " zoomed" : ""}`} ref={fitRef}>
-          <div className="chart" ref={chartRef} style={{ ["--fit" as string]: eff }}>
+          {/* spacer sized to the SCALED footprint so the scroll extent matches
+              what you can actually see (transform doesn't resize the layout box) */}
+          <div className="chart-scaled" style={{ width: nat.w * eff, height: nat.h * eff }}>
+          {/* transform applied inline, not via a CSS var: the var indirection
+              silently resolved to scale(1) here, leaving the board unscaled
+              inside a spacer sized for the scaled footprint (dead scroll). */}
+          <div
+            className="chart"
+            ref={chartRef}
+            style={{
+              ["--fit" as string]: eff,
+              transform: zoom !== null ? `scale(${eff})` : `translateX(-50%) scale(${eff})`,
+            }}
+          >
             {root && (
               <ChartNode
                 org={draft}
@@ -811,6 +828,7 @@ function OrgScreen({
                 onDropOn={dropOn}
               />
             )}
+          </div>
           </div>
         </div>
         <div className="zoomer">

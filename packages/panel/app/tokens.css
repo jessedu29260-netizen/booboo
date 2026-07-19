@@ -1,5 +1,5 @@
 /* GENERATED from design/tokens.json by scripts/gen-tokens.mjs — DO NOT EDIT */
-:root {
+.pnl, .pnl-fatal {
   --bg: #06080e;
   --bg-lift: #0a0d15;
   --card: #0f131c;

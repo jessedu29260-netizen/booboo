@@ -5,7 +5,7 @@
 // then run scripts/sync-css.mjs to re-sync (manual copies drift — this one did).
 export const PANEL_CSS = String.raw`
 /* GENERATED from design/tokens.json by scripts/gen-tokens.mjs — DO NOT EDIT */
-:root {
+.pnl, .pnl-fatal {
   --bg: #06080e;
   --bg-lift: #0a0d15;
   --card: #0f131c;
@@ -59,7 +59,12 @@ export const PANEL_CSS = String.raw`
    the dachshund's collar), a slow aurora breathing behind everything, cards
    that lift and settle, numbers that count up. Dark by default. */
 
-:root {
+/* Scoped to the panel's own roots, NEVER :root — see scripts/gen-tokens.mjs.
+   A custom property on :root is shadowed by any ancestor declaring the same
+   name, so a host whose shell declares --bg-1/--line/--gold silently repaints
+   the board. Declaring them here means nothing can sit between these names and
+   the elements that read them. */
+.pnl, .pnl-fatal {
   /* THE STAFF BOARD — a master-key rack, not a dashboard.
      Structure comes from two real artefacts: a master-key hierarchy (passe
      général → passe partiel → cylinder, which is literally how a hotel is
@@ -118,8 +123,10 @@ export const PANEL_CSS = String.raw`
 }
 
 /* DARK — the wine-and-brass board, now one toggle away instead of the default.
-   Same structure, same shadows-as-depth logic, inverted ground. */
-:root[data-theme="dark"] {
+   Same structure, same shadows-as-depth logic, inverted ground.
+   Scoped to the panel's own root (not :root) for two reasons: the panel must
+   not read a HOST's data-theme as its own, and it must not write one either. */
+.pnl[data-theme="dark"], .pnl-fatal[data-theme="dark"] {
   --bg: var(--wine);
   --bg-1: var(--plate);
   --bg-2: var(--wine2);
@@ -146,15 +153,19 @@ export const PANEL_CSS = String.raw`
   --sh-2: 0 2px 4px rgba(0, 0, 0, .5), 0 16px 34px -18px rgba(0, 0, 0, .85);
   --sh-3: 0 4px 8px rgba(0, 0, 0, .5), 0 22px 48px -18px rgba(0, 0, 0, .9);
 }
-[data-theme="dark"] body { background: var(--wine); }
-[data-theme="dark"] .ag { background: linear-gradient(168deg, var(--plate-lift), #180e16); }
-[data-theme="dark"] .bar, [data-theme="dark"] .tabs { background: rgba(11, 5, 9, 0.72); }
-[data-theme="dark"] .rack .wt { background: #fff; border-color: transparent; }
-[data-theme="dark"] .pnl-stars { opacity: .45; }
+/* The [data-theme="dark"] body rule that used to live here is GONE. A mounted
+   component has no business repainting its host's <body> — in Dionisos OS it
+   turned the cockpit's body white while the cards stayed dark, which is half of
+   what "split-brain" looked like. The standalone app paints its own body in
+   app/index.html, which is the page that actually owns it. */
+.pnl[data-theme="dark"] .ag { background: linear-gradient(168deg, var(--plate-lift), #180e16); }
+.pnl[data-theme="dark"] .bar, .pnl[data-theme="dark"] .tabs { background: rgba(11, 5, 9, 0.72); }
+.pnl[data-theme="dark"] .rack .wt { background: #fff; border-color: transparent; }
+.pnl[data-theme="dark"] .pnl-stars { opacity: .45; }
 
-* { box-sizing: border-box; }
-body { font-family: var(--font); color: var(--ink); background: var(--bg); overflow-x: hidden; }
+.pnl, .pnl-fatal, .pnl *, .pnl-fatal * { box-sizing: border-box; }
 
+.pnl, .pnl-fatal { font-family: var(--font); color: var(--ink); background: var(--bg); }
 .pnl { display: flex; flex-direction: column; position: relative; overflow: hidden; }
 
 /* the ground — warm wine light pooling from the top-left, exactly as the hero

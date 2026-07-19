@@ -188,11 +188,18 @@ function readTheme(): "dark" | "light" {
     return localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
   } catch { return "light"; }
 }
-function useTheme(): ["dark" | "light", () => void] {
+// `pinned` is the host's `theme` prop: a mounting app states the theme it wants
+// and the panel obeys, with no toggle offered. Dionisos OS is a dark cockpit and
+// pins dark; the demo leaves it unset and defaults light for strangers.
+function useTheme(pinned?: "dark" | "light"): ["dark" | "light", (() => void) | null] {
   const [theme, setTheme] = useState<"dark" | "light">(readTheme);
   const chosen = useRef(false);
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
+    if (pinned) return;
+    // The theme now rides on the panel's OWN root element, not <html>. Writing
+    // documentElement made a mounted component reach out and restyle its host's
+    // document — and, worse, made the panel obey a host that happened to set
+    // data-theme for its own reasons.
     // ONLY AN EXPLICIT TOGGLE PERSISTS. Writing on mount meant the DEFAULT
     // persisted itself: every visit while dark was the default silently stored
     // "dark", so the moment light became the default those visitors were pinned
@@ -202,7 +209,8 @@ function useTheme(): ["dark" | "light", () => void] {
     // abandoned rather than trusted. Anyone who truly wants dark toggles once.
     if (!chosen.current) return;
     try { localStorage.setItem(THEME_KEY, theme); } catch { /* private mode */ }
-  }, [theme]);
+  }, [theme, pinned]);
+  if (pinned) return [pinned, null];
   return [theme, () => { chosen.current = true; setTheme((t) => (t === "dark" ? "light" : "dark")); }];
 }
 
@@ -1591,7 +1599,7 @@ function GraphScreen({ hasSnapshot }: { hasSnapshot: boolean }) {
 
 /* ────────────────────────── APP ────────────────────────── */
 
-function App() {
+function App({ theme: pinnedTheme }: { theme?: "dark" | "light" }) {
   const api = useApi();
   const [tab, param] = useRoute();
   const [saved, setSaved] = useState<BOrg | null>(null);
@@ -1744,17 +1752,20 @@ function App() {
   const nodeCount = useCountUp(stats?.nodes ?? 0, 1200);
   const memTotal = useCountUp(totals?.mem ?? 0, 1100);
   const repTotal = useCountUp(totals?.rep ?? 0, 1300);
-  const [theme, toggleTheme] = useTheme();
+  const [theme, toggleTheme] = useTheme(pinnedTheme);
   // "Show the law": the product's core idea, made visible on demand — rule
   // inheritance (House Standard → SOP → role) traced as a second reading of
   // the same rails, gold on dim, plus the boot-order chain on every card.
   const [showLaw, setShowLaw] = useState(false);
 
-  if (err && !draft) return <div className="pnl-fatal">{err}</div>;
-  if (!draft) return <div className="pnl-fatal calm">waking the organigram…</div>;
+  // data-theme sits on the panel's own root — the tokens are declared here too
+  // (see panel.css), so theme and palette can never be resolved by different
+  // elements, which is what let a host's shell shadow half the board.
+  if (err && !draft) return <div className="pnl-fatal" data-theme={theme}>{err}</div>;
+  if (!draft) return <div className="pnl-fatal calm" data-theme={theme}>waking the organigram…</div>;
 
   return (
-    <div className="pnl">
+    <div className="pnl" data-theme={theme}>
       <div className="pnl-aurora" aria-hidden />
       <Constellation />
       <header className="bar">
@@ -1776,7 +1787,7 @@ function App() {
               ⚖ show the law
             </button>
           )}
-          <button className="btn ghost theme-toggle" title="light / dark" aria-label="toggle light or dark theme" onClick={toggleTheme}>{theme === "dark" ? "☀" : "☾"}</button>
+          {toggleTheme && <button className="btn ghost theme-toggle" title="light / dark" aria-label="toggle light or dark theme" onClick={toggleTheme}>{theme === "dark" ? "☀" : "☾"}</button>}
           {changes.length > 0 ? (
             <>
               <span className="bar-draft">{changes.length} unapplied change{changes.length > 1 ? "s" : ""}</span>
@@ -1847,11 +1858,19 @@ function App() {
 // The mountable component. Standalone: <Panel /> talks to same-origin /api/*.
 // Embedded in a host: pass `api` to inject a backend (auth, base URL, proxy).
 // The panel carries its own styles via <style>, so a host needs no CSS import.
-export function Panel({ api = defaultApi }: { api?: ApiFn } = {}) {
+//
+// `theme` pins the palette for hosts that have a ground colour of their own —
+// a dark cockpit should not get a white slab dropped into it, and before this
+// existed a host had no way to say so (localStorage and ?embed were the only
+// levers, and neither is a host's to pull). Pinned means pinned: the in-panel
+// toggle is not rendered, so the host's choice cannot drift out from under it.
+// Left unset, the panel keeps its own behaviour: light by default, dark if the
+// visitor has explicitly toggled it.
+export function Panel({ api = defaultApi, theme }: { api?: ApiFn; theme?: "dark" | "light" } = {}) {
   return (
     <ApiCtx.Provider value={api}>
       <style>{PANEL_CSS}</style>
-      <App />
+      <App theme={theme} />
     </ApiCtx.Provider>
   );
 }

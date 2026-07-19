@@ -50,8 +50,18 @@ export const Z = ${JSON.stringify(t.z, null, 2)} as const;
 await writeFile(path.join(root, "packages", "viewer", "src", "tokens.ts"), ts);
 
 // ── site + panel: CSS custom properties ────────────────────────────────────
-const css = `/* ${BANNER} */
-:root {
+// The SITE owns its document, so :root is right there. The PANEL is mounted
+// inside someone else's app, and a custom property declared on :root is
+// shadowed by ANY ancestor that declares the same name — which is exactly what
+// Dionisos OS's `.os-root` did to eleven of these (--bg-1, --line, --gold…),
+// leaving the board rendering the host's dark values under data-theme=light.
+// Scoping the panel's tokens to its own root makes them unshadowable: nothing
+// can sit between .pnl and the elements that consume them.
+// Both roots the panel can render: the board, and the fatal/loading card it
+// returns INSTEAD of the board. Keep in step with panel.css.
+const PANEL_ROOT = ".pnl, .pnl-fatal";
+const cssFor = (sel) => `/* ${BANNER} */
+${sel} {
 ${Object.entries(color).map(([k, v]) => `  --${k.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase())}: ${v};`).join("\n")}
 ${Object.entries(verb).map(([k, v]) => `  --verb-${k.replace(/_/g, "-")}: ${v};`).join("\n")}
   --display: ${t.type.display};
@@ -62,7 +72,7 @@ ${Object.entries(verb).map(([k, v]) => `  --verb-${k.replace(/_/g, "-")}: ${v};`
 ${Object.entries(t.z).map(([k, v]) => `  --z-${k}: ${v};`).join("\n")}
 }
 `;
-await writeFile(path.join(root, "web", "tokens.css"), css);
-await writeFile(path.join(root, "packages", "panel", "app", "tokens.css"), css);
+await writeFile(path.join(root, "web", "tokens.css"), cssFor(":root"));
+await writeFile(path.join(root, "packages", "panel", "app", "tokens.css"), cssFor(PANEL_ROOT));
 
 console.log(`✓ tokens → viewer/src/tokens.ts · web/tokens.css · panel/app/tokens.css`);

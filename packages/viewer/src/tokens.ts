@@ -14,7 +14,18 @@ export const COLOR = {
   "violet": "#a78bd0",
   "green": "#5fae7e",
   "amber": "#d6a23e",
-  "red": "#d05a5a"
+  "red": "#d05a5a",
+  "wine": "#0b0509",
+  "wine2": "#140a11",
+  "plate": "#1c1119",
+  "plateLift": "#241624",
+  "brass": "#d9a05b",
+  "brassHi": "#efc389",
+  "brassDeep": "#a9753a",
+  "mint": "#8be9b0",
+  "cream": "#f4eee2",
+  "creamDim": "#b3a897",
+  "creamFaint": "#7c7365"
 } as const;
 
 /** Verb → colour. One relation, one hue, on every surface. */

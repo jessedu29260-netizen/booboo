@@ -130,7 +130,7 @@ product, play with it, and want it — without installing?
 | A4 | **Play, guided** | 🟡 | The card now hands over the real problem — "Start here · 5 flags → Water leak, Room 407" — one click into the dossier, and surfaces the palette. Still missing: view presets instead of 14 sliders, d-pad walk. |
 | A5 | See the organigram | ✅ | Section 02 gives it a first-class card with its own pitch and CTA, alongside SEE and ASK. |
 | A6 | **Understand the model** | ✅ | Section 03 teaches the five nouns — layer, agent, bucket, rule, boot — each with the Pemberton as the worked example, closing on a real unedited `booboo_boot("housekeeping")` slice showing rules in inheritance order. |
-| A7 | Try the ASK face | 🟡 | Two canned Q&As + a copyable URL. It's a screenshot in prose — there is **no way to ask anything from the page**. |
+| A7 | Try the ASK face | ✅ | Four question chips fire real JSON-RPC at `/mcp` from the page and render the answer. Verified in-browser on the live domain: 3 majors this week · 98/14/12 absence ranking · incidents by department · the Housekeeping boot slice with rules in inheritance order. |
 | A8 | Grasp "three faces" | ✅ | Section 02 names SEE / GOVERN / ASK, one card each, every one a live link. |
 | A9 | Convert | 🟡 | `npx` command + GitHub. No "hosted / done-for-you" path, no email capture, nothing for a non-technical buyer. |
 
@@ -144,8 +144,8 @@ of the wound is depth of play, not comprehension.
 
 | Surface | State | Evidence / what's missing |
 |---|---|---|
-| Landing `/` | 🟡 | Live, on-brand, story coherent. Missing: model explainer, faces section, organigram section, in-page ask. |
-| Viewer `/viewer/` | 🟡 | Layout, floors, landmarks, torch, entrance, dossier-by-verb, palette all ✅ verified on GPU. Missing: orientation/legend, guided first move, focus-camera dolly, d-pad walk, breadcrumb. |
+| Landing `/` | ✅ | Six sections: idea · three faces · the model (five nouns + a real boot slice) · live ask · run-it · what-ships. Missing only OG image and scrollytelling. |
+| Viewer `/viewer/` | 🟡 | Layout, floors, landmarks, torch, entrance, dossier-by-verb, palette, flags, verb colours, orientation card all ✅ verified. Missing: view presets, focus-camera dolly, d-pad walk, breadcrumb, weak-GPU guard. |
 | Staff board `/chart/` | 🟡 | Live, branded, ranked columns, dossier with personas + boot-order rules + contracts, read-only apply ✅. Missing: CRAFT §5 craft pass (engraved cards, rails, show-the-law overlay, ledger shelf, semantic zoom). |
 | ASK `/mcp` | ✅ | Authless Streamable-HTTP, 8 tools incl. `booboo_count`, verified live from a real claude.ai connector: 3 majors this week, 98-vs-14 absences, boot slice correct. |
 | Brand domain | ✅ | `booboo.fractionalhq.uk` — A record via Porkbun API, propagated, cert valid, all routes 200. |
@@ -201,7 +201,10 @@ the row it closes.
 5. ~~**Orientation in the viewer** (A3)~~ ✅ shipped + verified. Guided play
    (A4) partly — presets and d-pad still open.
 6. ~~**Promote the organigram** (A5/A8)~~ ✅ shipped + verified.
-7. **In-page ask** (A7) + palette ask-mode (A4) — same engine, two surfaces. **Next.**
+7. ~~**In-page ask** (A7)~~ ✅ shipped + verified in-browser. Palette
+   ask-mode (A4) still open — same engine, second surface.
+
+**Tier 2 is closed.** The label is written.
 
 **Tier 3 — proof and polish**
 

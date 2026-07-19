@@ -68,6 +68,83 @@
     }
   );
 
+  // ── Ask the house, from the page. Real JSON-RPC against /mcp — the same
+  // endpoint a claude.ai connector talks to. Stateless, so one POST per call.
+  var QUESTIONS = {
+    failures: {
+      ask: "Major failures this week",
+      call: { name: "booboo_count", arguments: { where: { "data.kind": "incident", "data.severity": "major" }, since: isoDaysAgo(7) } },
+      render: function (r) {
+        return "booboo_count · major incidents, last 7 days\n\n→ " + r.total + " major failures this week.\n" +
+          "  Room 407 water leak · Lift E2 entrapment · ballroom power failure.\n  Engineering is running amber.";
+      },
+    },
+    absence: {
+      ask: "Worst absence record, 5 years",
+      call: { name: "booboo_count", arguments: { where: { "data.kind": "absence" }, groupBy: "data.subject", limit: 3 } },
+      render: function (r) {
+        var g = r.groups || [];
+        var lines = g.map(function (x, i) {
+          return "  " + (i + 1) + ". " + x.key.replace("agent:", "") + " — " + x.count;
+        }).join("\n");
+        return "booboo_count · absences grouped by subject\n\n→ " + (g[0] ? g[0].key.replace("agent:", "") : "—") +
+          ", by a distance.\n\n" + lines + "\n\n  (" + r.total + " absences on the ledger)";
+      },
+    },
+    "incidents-by-dept": {
+      ask: "Incidents by department",
+      call: { name: "booboo_count", arguments: { where: { "data.kind": "incident" }, groupBy: "cluster", limit: 5 } },
+      render: function (r) {
+        return "booboo_count · incidents grouped by department\n\n" +
+          (r.groups || []).map(function (x) { return "  " + pad(x.key, 22) + x.count; }).join("\n") +
+          "\n\n  (" + r.total + " incidents total)";
+      },
+    },
+    boot: {
+      ask: "What does Housekeeping boot with?",
+      call: { name: "booboo_boot", arguments: { agent: "housekeeping" } },
+      render: function (r) {
+        return "booboo_boot(\"housekeeping\")\n\n" +
+          "  persona   " + (r.agent && r.agent.role ? r.agent.role : "—") + "\n" +
+          "  chain     " + (r.chain || []).map(function (c) { return c.id; }).join(" → ") + "\n" +
+          "  rules     " + (r.rules || []).join("\n            ") + "   ← ancestors first\n" +
+          "  buckets   " + (r.buckets || []).join(" · ") + "\n" +
+          "  reports   " + ((r.children || []).length) + " roles";
+      },
+    },
+  };
+
+  function pad(s, n) { s = String(s); while (s.length < n) s += " "; return s; }
+  function isoDaysAgo(d) { return new Date(Date.now() - d * 864e5).toISOString().slice(0, 10); }
+
+  var answer = document.getElementById("answer");
+  var chips = document.getElementById("chips");
+  if (answer && chips) {
+    chips.addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-q]");
+      if (!b) return;
+      var q = QUESTIONS[b.dataset.q];
+      if (!q) return;
+      Array.prototype.forEach.call(chips.querySelectorAll("button"), function (x) { x.classList.toggle("on", x === b); });
+      answer.firstChild.textContent = "asking the house…";
+      fetch("/mcp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: q.call }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var text = d && d.result && d.result.content && d.result.content[0] && d.result.content[0].text;
+          if (!text) throw new Error("no content");
+          answer.firstChild.textContent = q.render(JSON.parse(text));
+        })
+        .catch(function () {
+          answer.firstChild.textContent =
+            "The house didn't answer just now.\nThe endpoint is live at /mcp — try it from your own MCP client.";
+        });
+    });
+  }
+
   // Copy buttons
   Array.prototype.forEach.call(document.querySelectorAll(".copy"), function (btn) {
     btn.addEventListener("click", function () {

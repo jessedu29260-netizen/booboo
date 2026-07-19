@@ -355,6 +355,30 @@ h2 {
   text-transform: uppercase;
   color: var(--faint);
 }
+/* the live asker: chips → real /mcp call → answer */
+.asker { margin-top: clamp(2rem, 4.5vw, 3rem); }
+.asker-lead { margin: 0 0 .9rem; color: var(--dim); font-size: .95rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.chips button {
+  font-family: var(--mono); font-size: .76rem; letter-spacing: .02em;
+  color: var(--dim); background: var(--card);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: .5rem .95rem; cursor: pointer;
+  transition: color .25s, border-color .25s, background .25s;
+}
+.chips button:hover { color: var(--text); border-color: var(--line-hi); }
+.chips button.on { color: #06080e; background: var(--gold); border-color: var(--gold); }
+.answer {
+  margin: .9rem 0 0; padding: clamp(1rem, 2.2vw, 1.4rem);
+  min-height: 8.5rem;
+  border: 1px solid var(--line); border-left: 2px solid var(--teal);
+  border-radius: 3px; background: var(--card); overflow-x: auto;
+}
+.answer code {
+  font-family: var(--mono); font-size: clamp(.72rem, 1.5vw, .82rem);
+  line-height: 1.75; color: var(--text); white-space: pre;
+}
+
 .proof { color: var(--gold); text-decoration: none; }
 .proof:hover { color: var(--gold-hi); }
 

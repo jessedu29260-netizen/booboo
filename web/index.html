@@ -198,9 +198,20 @@
     </div>
   </div>
 
-  <p class="body muted">Add it to claude.ai as a custom connector — this endpoint is live on this very site:</p>
+  <div class="asker">
+    <p class="asker-lead">Try it yourself — these run against the live house, right now:</p>
+    <div class="chips" id="chips">
+      <button data-q="failures">Major failures this week</button>
+      <button data-q="absence">Worst absence record, 5 years</button>
+      <button data-q="incidents-by-dept">Incidents by department</button>
+      <button data-q="boot">What does Housekeeping boot with?</button>
+    </div>
+    <pre class="answer" id="answer" aria-live="polite"><code>Pick a question — the answer comes back from /mcp, not from this page.</code></pre>
+  </div>
+
+  <p class="body muted">Or add the house to claude.ai as a custom connector and ask it anything:</p>
   <div class="cmd secondary">
-    <code id="cmd3">https://booboo-black.vercel.app/mcp</code>
+    <code id="cmd3">https://booboo.fractionalhq.uk/mcp</code>
     <button class="copy" data-copy="#cmd3" aria-label="Copy connector URL">Copy</button>
   </div>
 </section>

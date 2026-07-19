@@ -275,6 +275,119 @@ function Constellation() {
   );
 }
 
+/* Rank I — THE HOUSE STANDARD. Not an agent: it is the law the root DECLARES,
+   read straight off the root's own rule refs. Rendering it as a plate is what
+   makes the cascade honest — a master-key chart starts at the master, and here
+   the thing above the GM is the standard the GM alone may amend. */
+function LawPlate({ org, selected, onSelect }: { org: BOrg; selected: boolean; onSelect: (id: string) => void }) {
+  const root = org.agents.find((a) => a.id === org.root);
+  const rules = root?.rules ?? [];
+  if (!rules.length) return null;
+  return (
+    <div
+      className={`ag law-plate${selected ? " sel" : ""}`}
+      data-rail="law"
+      tabIndex={0}
+      title="the law every agent in the house boots against"
+      onClick={(e) => { e.stopPropagation(); if (root) onSelect(root.id); }}
+      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && root) { e.preventDefault(); onSelect(root.id); } }}
+    >
+      <div className="ag-head">
+        <span className="ag-ava">§</span>
+        <span className="ag-name">The House Standard</span>
+      </div>
+      <span className="ag-role">{rules[0]}</span>
+      <span className="ag-facts">
+        <em className="ag-fact">binds {org.agents.length}</em>
+        <em className="ag-fact">{rules.length} clause{rules.length === 1 ? "" : "s"}</em>
+      </span>
+    </div>
+  );
+}
+
+/* ── the brass elbows ──────────────────────────────────────────────────────
+   Orthogonal rails between arbitrary measured boxes — the geometry of the
+   master-key chart. CSS pseudo-elements cannot do this honestly (a bus that
+   spans exactly first-child-centre to last-child-centre is not expressible),
+   so the rails are one measured SVG plane under the plates.
+   Measurement uses offsetLeft/offsetTop, NOT getBoundingClientRect: the chart
+   sits inside a CSS transform: scale(), which rect-based maths would bake in. */
+function boxIn(el: HTMLElement, root: HTMLElement) {
+  let x = 0, y = 0;
+  let cur: HTMLElement | null = el;
+  while (cur && cur !== root) {
+    x += cur.offsetLeft;
+    y += cur.offsetTop;
+    cur = cur.offsetParent as HTMLElement | null;
+  }
+  return { x, y, w: el.offsetWidth, h: el.offsetHeight, cy: y + el.offsetHeight / 2 };
+}
+
+/** an orthogonal elbow: out of the source, across at a mid-x, into the target */
+function elbow(x1: number, y1: number, x2: number, y2: number): string {
+  if (Math.abs(y2 - y1) < 1.5) return `M${x1},${y1.toFixed(1)} H${x2}`;
+  const mx = x1 + (x2 - x1) * 0.45;
+  const r = Math.min(9, Math.abs(y2 - y1) / 2);
+  const dir = y2 > y1 ? 1 : -1;
+  return `M${x1},${y1.toFixed(1)} H${(mx - r).toFixed(1)} Q${mx},${y1.toFixed(1)} ${mx},${(y1 + r * dir).toFixed(1)} V${(y2 - r * dir).toFixed(1)} Q${mx},${y2.toFixed(1)} ${(mx + r).toFixed(1)},${y2.toFixed(1)} H${x2}`;
+}
+
+function CascadeRails({ chartRef, version }: { chartRef: React.RefObject<HTMLDivElement | null>; version: string }) {
+  const [paths, setPaths] = useState<string[]>([]);
+  useLayoutEffect(() => {
+    const root = chartRef.current;
+    if (!root) return;
+    const measure = () => {
+      const pick = (sel: string) => Array.from(root.querySelectorAll<HTMLElement>(sel));
+      const law = root.querySelector<HTMLElement>('[data-rail="law"]');
+      const gm = root.querySelector<HTMLElement>('[data-rail="gm"]');
+      const depts = pick('[data-rail="dept"]');
+      const staff = pick('[data-rail="staff"]');
+      const out: string[] = [];
+      const gmB = gm ? boxIn(gm, root) : null;
+      if (law && gmB) {
+        const lawB = boxIn(law, root);
+        out.push(elbow(lawB.x + lawB.w, lawB.cy, gmB.x, gmB.cy));
+      }
+      const deptBox = new Map<string, ReturnType<typeof boxIn>>();
+      for (const d of depts) {
+        const b = boxIn(d, root);
+        deptBox.set(d.dataset.id ?? "", b);
+        if (gmB) out.push(elbow(gmB.x + gmB.w, gmB.cy, b.x, b.cy));
+      }
+      for (const s of staff) {
+        const parent = deptBox.get(s.dataset.parent ?? "");
+        if (!parent) continue;
+        const b = boxIn(s, root);
+        out.push(elbow(parent.x + parent.w, parent.cy, b.x, b.cy));
+      }
+      setPaths((prev) => (prev.length === out.length && prev.every((p, i) => p === out[i]) ? prev : out));
+    };
+    measure();
+    // the plane is position:absolute and pointer-events:none, so redrawing it
+    // never resizes `root` — no observer feedback loop.
+    const ro = new ResizeObserver(measure);
+    ro.observe(root);
+    return () => ro.disconnect();
+  }, [chartRef, version]);
+  return (
+    <svg className="rails" aria-hidden>
+      <defs>
+        <linearGradient id="railGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="var(--brass)" stopOpacity="0.3" />
+          <stop offset="1" stopColor="var(--brass-hi)" stopOpacity="0.85" />
+        </linearGradient>
+      </defs>
+      {paths.map((d, i) => (
+        <g key={i}>
+          <path className="rail-line" d={d} />
+          <path className="rail-dash" d={d} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 /* ────────────────────────── ORGANIGRAM ────────────────────────── */
 
 // The card's fact row (CRAFT §5: "health chip · bucket chips · rule count ·
@@ -349,6 +462,10 @@ function AgentCard({
       onDrop={(e) => { e.preventDefault(); setOver(false); onDropOn(a.id); }}
       onMouseEnter={() => onHover?.(a.id)}
       onMouseLeave={() => onHover?.(null)}
+      /* rail anchors: CascadeRails measures these to draw the brass elbows */
+      data-rail={isRoot ? "gm" : depth === 1 ? "dept" : "staff"}
+      data-id={a.id}
+      data-parent={a.parent ?? ""}
     >
       {light !== "none" && <i className={`ag-light ${light}`} title={`fleet health: ${light}`} />}
       <div className="ag-head">
@@ -426,8 +543,8 @@ function ChartNode({
     (n, m) => n + (lightFor(m, cardProps.health) !== "ok" && lightFor(m, cardProps.health) !== "none" ? 1 : 0),
     0,
   );
-  return (
-    <div className="ocn">
+  const cardAndRack = (
+    <>
       <AgentCard
         a={a}
         org={org}
@@ -474,6 +591,15 @@ function ChartNode({
           )}
         </div>
       )}
+    </>
+  );
+  return (
+    <div className="ocn">
+      {/* At the root, the plate + its rack occupy ONE cascade cell so the GM
+          centres against the whole lane stack. Left as two grid items they
+          fell into separate rows and the GM pinned to the top while the lanes
+          spanned both — measured, not guessed. */}
+      {depth === 0 ? <div className="casc-head">{cardAndRack}</div> : cardAndRack}
       {kids.length > 0 && (
         <>
           <div
@@ -915,6 +1041,8 @@ function OrgScreen({
     setCollapsed((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }, []);
   const allFolded = depts.length > 0 && depts.every((d) => collapsed.has(d.id));
+  // anything that moves a plate must re-measure the rails
+  const railVersion = `${draft.agents.length}:${[...collapsed].sort().join(",")}:${showLaw}:${health ? 1 : 0}:${selected ?? ""}`;
 
   // Measured fit-to-viewport: scale the whole chart so the full org is always
   // visible on both axes with no page scroll. We read the chart's NATURAL
@@ -988,8 +1116,10 @@ function OrgScreen({
         {/* rank grammar, borrowed from the ministry organigram: name the rank,
             never make the reader infer it from indentation. */}
         <div className="ranks">
-          <div className="rank"><b>I</b>The house</div>
-          <div className="rank"><b>II</b>Departments · staff · machines</div>
+          <div className="rank"><b>I</b>The standard</div>
+          <div className="rank"><b>II</b>General</div>
+          <div className="rank"><b>III</b>Departments</div>
+          <div className="rank"><b>IV</b>Staff &amp; machines</div>
         </div>
         <div className={`chart-fit${zoom !== null ? " zoomed" : ""}`} ref={fitRef}>
           {/* spacer sized to the SCALED footprint so the scroll extent matches
@@ -1006,24 +1136,28 @@ function OrgScreen({
               transform: zoom !== null ? `scale(${eff})` : `translateX(-50%) scale(${eff})`,
             }}
           >
-            {root && (
-              <ChartNode
-                org={draft}
-                a={root}
-                depth={0}
-                order={0}
-                selected={selected}
-                dragId={dragId}
-                health={health}
-                onSelect={setSelected}
-                onDragStart={setDragId}
-                onDropOn={dropOn}
-                onHover={setHoverId}
-                showLaw={showLaw}
-                collapsed={collapsed}
-                onToggleCollapse={toggleCollapse}
-              />
-            )}
+            <CascadeRails chartRef={chartRef} version={railVersion} />
+            <div className="cascade">
+              <LawPlate org={draft} selected={selected === draft.root} onSelect={setSelected} />
+              {root && (
+                <ChartNode
+                  org={draft}
+                  a={root}
+                  depth={0}
+                  order={0}
+                  selected={selected}
+                  dragId={dragId}
+                  health={health}
+                  onSelect={setSelected}
+                  onDragStart={setDragId}
+                  onDropOn={dropOn}
+                  onHover={setHoverId}
+                  showLaw={showLaw}
+                  collapsed={collapsed}
+                  onToggleCollapse={toggleCollapse}
+                />
+              )}
+            </div>
           </div>
           </div>
         </div>

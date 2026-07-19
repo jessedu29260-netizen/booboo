@@ -400,10 +400,18 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 /* ── RANK HEADERS (from the ministry organigram) ───────────────────────────
    Rank is NAMED, never inferred from indentation. Roman numerals + a rule
    under each, spanning the columns the cascade actually occupies. */
+/* four headers over the four real cascade columns: law · gm · departments ·
+   staff. Widths mirror .cascade so a header sits over the column it names —
+   headers labelling columns that do not exist is worse than no headers. */
 .ranks {
-  display: grid; grid-template-columns: var(--col-head, 268px) 1fr;
-  gap: 0 var(--rail-gap, 54px); margin: 0 0 14px; padding: 0 2px; flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 232px var(--rail-w, 56px) 268px var(--rail-w, 56px) minmax(232px, 300px) var(--rail-w, 56px) 1fr;
+  margin: 0 0 16px; padding: 0 16px; flex: 0 0 auto;
 }
+.rank:nth-child(1) { grid-column: 1; }
+.rank:nth-child(2) { grid-column: 3; }
+.rank:nth-child(3) { grid-column: 5; }
+.rank:nth-child(4) { grid-column: 7; }
 .rank {
   font-family: var(--mono); font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
   color: var(--ink-3); padding-bottom: 8px; border-bottom: 1px solid rgba(217, 160, 91, 0.16);
@@ -494,9 +502,54 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
    sizing and the easing live here. */
 .chart {
   min-width: max-content; padding: 8px 14px 20px;
-  transform-origin: top center;
+  transform-origin: top center; position: relative; /* the rail plane's origin */
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform;
 }
+/* plates sit above the rail plane */
+.chart .cascade { position: relative; z-index: 1; }
+
+/* rank I — the law. Brass-edged like the GM but unfilled: it is a document,
+   not an operator. */
+.law-plate { width: 232px; cursor: pointer; }
+.law-plate .ag-ava { font-family: var(--display); color: var(--brass-hi); }
+.law-plate .ag-name { color: var(--brass-hi); font-size: 12.5px; }
+.law-plate .ag-role { word-break: break-all; }
+/* ── THE CASCADE (master-key structure) ───────────────────────────────────
+   Rank runs LEFT TO RIGHT, one column each, exactly as a master-key chart
+   reads: THE STANDARD → GM → departments → staff. Two nested grids give the
+   four columns; the brass elbows between them are drawn by CascadeRails as
+   one measured SVG (orthogonal geometry between arbitrary boxes is not a
+   thing CSS pseudo-elements can do honestly). */
+.cascade {
+  display: grid;
+  grid-template-columns: max-content var(--rail-w, 56px) 1fr;
+  /* START, not centre. Centring is right for a 3-branch key chart; with nine
+     departments the stack is ~2,200px tall, so it buried the master key and the
+     GM below the fold — the two plates that must be seen first. Top-aligned
+     also matches the ministry chart's reading order. */
+  align-items: start;
+}
+.cascade > .law-plate { grid-column: 1; }
+.cascade > .ocn { grid-column: 3; }
+
+/* rank II–IV live inside the root .ocn, which is itself a cascade */
+.cascade > .ocn {
+  display: grid;
+  /* the lanes column is BOUNDED so staff wrap inside their lane. Left at 1fr
+     under .chart's max-content sizing it grew to fit every staff plate on one
+     row — 2,400px natural width, which fit-to-width then scaled to 52% and made
+     every plate unreadable. Rank IV wraps; the board stays legible. */
+  grid-template-columns: max-content var(--rail-w, 56px) minmax(420px, 940px);
+  grid-template-areas: "gm rail lanes";
+  align-items: start;
+}
+.cascade > .ocn > .casc-head { grid-area: gm; display: flex; flex-direction: column; align-items: stretch; }
+.cascade > .ocn > .oc-down { grid-area: rail; }
+.cascade > .ocn > .oc-row.lanes { grid-area: lanes; }
+
+/* the SVG rail plane — sits under the plates, never intercepts a click */
+.rails { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: visible; width: 100%; height: 100%; }
+
 .ocn { display: flex; flex-direction: column; align-items: center; }
 /* the connective tissue reads brass everywhere — a company chart drawn with
    the house's own material, not a generic diagram line. */
@@ -511,12 +564,14 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
    zoom. Each lane is a row of the board: a brass rail down the left, the
    head's card, then its people flowing right and wrapping inside the lane.
    The board scrolls like a document; every card stays at legible size. */
+/* the lanes are rank III+IV: one shelf per department, stacked. Width now comes
+   from the cascade's 1fr column, not a hardcoded viewport clamp. */
 .oc-row.lanes {
   flex-direction: column;
   align-items: stretch;
   gap: 14px;
-  padding-top: 18px;
-  width: min(1180px, 92vw);
+  padding-top: 0;
+  width: 100%;
 }
 /* a lane is a SHELF on the rack — a hairline tray, not a coloured panel. The
    old lane had a hash-hue left border and tint per department; the rack is one
@@ -575,17 +630,8 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
      every lane — the rail is drawn by ::before/::after, not by the box itself. */
   background: none;
 }
-.oc-row.lanes > .oc-child > .ocn > .oc-down::before {
-  content: ""; position: absolute; left: 50%; top: 2px; bottom: 2px; width: 2px;
-  transform: translateX(-50%); background: var(--brass-line); border-radius: 2px;
-  box-shadow: 0 0 6px rgba(201, 160, 74, 0.22);
-}
-.oc-row.lanes > .oc-child > .ocn > .oc-down::after {
-  content: ""; position: absolute; left: 50%; top: 24px; width: 60%; height: 2px;
-  background: var(--brass-line); box-shadow: 0 0 6px rgba(201, 160, 74, 0.22);
-}
-.oc-row.lanes > .oc-child > .ocn:hover > .oc-down::before,
-.oc-row.lanes > .oc-child > .ocn:hover > .oc-down::after { box-shadow: 0 0 10px rgba(201, 160, 74, 0.4); }
+/* No ::before/::after brass here any more — the SVG rail plane draws every
+   connector from measured box positions. Leaving these would double each rail. */
 
 /* semantic zoom lever: the rail itself is the fold/unfold control at the
    department level — house → department → role, one click at a time. */
@@ -611,20 +657,14 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
   transition: border-color .15s ease, color .15s ease;
 }
 .oc-folded-summary:hover { border-color: var(--brass); color: var(--brass-hi); }
-/* the law flows through the lane rail too — vertical AND the horizontal branch */
-.law-on .oc-row.lanes > .oc-child > .ocn > .oc-down::before {
-  background: repeating-linear-gradient(180deg, var(--brass-hi) 0 5px, transparent 5px 11px);
-  animation: law-flow-v 700ms linear infinite;
-}
-.law-on .oc-row.lanes > .oc-child > .ocn > .oc-down::after {
-  background: repeating-linear-gradient(90deg, var(--brass-hi) 0 5px, transparent 5px 11px);
-  animation: law-flow-h 700ms linear infinite;
-}
-@keyframes law-flow-h { from { background-position-x: 0; } to { background-position-x: 11px; } }
-@media (prefers-reduced-motion: reduce) {
-  .law-on .oc-row.lanes > .oc-child > .ocn > .oc-down::before,
-  .law-on .oc-row.lanes > .oc-child > .ocn > .oc-down::after { animation: none; }
-}
+/* "show the law": the SAME rails, re-read as authority. The SVG plane swaps to
+   a travelling dashed brass so the law is seen flowing down the cascade. */
+.rail-line { stroke: url(#railGrad); stroke-width: 1.6; fill: none; }
+.rail-dash { stroke: var(--brass-hi); stroke-width: 1; fill: none; stroke-dasharray: 2 9; opacity: .45; }
+.law-on .rail-line { stroke: var(--brass-hi); stroke-width: 1.9; opacity: .9; }
+.law-on .rail-dash { opacity: .95; animation: rail-flow 700ms linear infinite; }
+@keyframes rail-flow { to { stroke-dashoffset: -11; } }
+@media (prefers-reduced-motion: reduce) { .law-on .rail-dash { animation: none; } }
 
 /* the tray is the department's stack of real services — one per line, so the
    vendor marks read as a list of systems rather than a scatter of chips */
@@ -669,33 +709,10 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 @media (max-width: 820px) {
   .oc-row.lanes > .oc-child > .ocn { grid-template-columns: 1fr; gap: 12px; }
 }
-.oc-child { position: relative; padding: 18px 5px 0; display: flex; flex-direction: column; align-items: center; }
-.oc-child::before { content: ""; position: absolute; top: 0; left: 50%; width: 2px; height: 18px;
-  background: var(--brass-line); opacity: 0.6; }
-.oc-child::after { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 16px;
-  border-top: 2px solid var(--brass); opacity: 0.5; }
-.oc-child:first-child::after { left: 50%; border-left: 2px solid var(--brass); border-top-left-radius: 14px; opacity: 0.5; }
-.oc-child:last-child::after { right: 50%; border-right: 2px solid var(--brass); border-top-right-radius: 14px; opacity: 0.5; }
-.oc-child:first-child::before, .oc-child:last-child::before { display: none; }
-.oc-child:only-child::after { display: none; }
-.oc-child:only-child::before { display: block; }
-
-/* the branch wakes when you hover its parent */
-.ocn:has(> .ag:hover) > .oc-down,
-.ocn:has(> .ag:hover) > .oc-row > .oc-child::before { opacity: 1; }
-.ocn:has(> .ag:hover) > .oc-row > .oc-child::after { opacity: 1; border-color: var(--brass-hi); }
-
-/* "show the law": every rail in the tree flows gold, downward — the same
-   physical lines, read as authority instead of org-chart plumbing. */
-.law-on .oc-down,
-.law-on .oc-child::before {
-  background: repeating-linear-gradient(180deg, var(--brass-hi) 0 5px, transparent 5px 11px);
-  opacity: 1; animation: law-flow-v 700ms linear infinite;
-}
-.law-on .oc-child::after { border-color: var(--brass-hi); opacity: 0.9; }
-.law-on .oc-down::after { background: var(--brass-hi); box-shadow: 0 0 10px rgba(232, 200, 119, 0.85); }
-@keyframes law-flow-v { from { background-position-y: 0; } to { background-position-y: 11px; } }
-@media (prefers-reduced-motion: reduce) { .law-on .oc-down, .law-on .oc-child::before { animation: none; } }
+/* Connectors are drawn by the SVG rail plane now, not by pseudo-elements. The
+   old fan drop-lines/elbows here would double every rail. */
+.oc-child { position: relative; padding: 0; display: flex; flex-direction: column; align-items: center; }
+.oc-child::before, .oc-child::after { display: none; }
 
 /* wide sibling sets — grouped subtrees that wrap to natural width (never crush a
    branch into a fixed cell — that overflowed and collided with the next branch) */

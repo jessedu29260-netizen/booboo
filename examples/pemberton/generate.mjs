@@ -501,6 +501,21 @@ const obs = (id, label, bucket, cluster, data, weight) => {
 
 // routine observations — 1,910 over the last 90 days
 const ROUTINE_KINDS = ["shift-log", "inspection", "stocktake", "delivery", "meter-reading", "maintenance-note", "training-log", "walkthrough"];
+// The house and the executive are NOT departments, and they must not keep a
+// department's diary — the board does not take meter readings. They get their
+// own register: the things a building's standing record actually holds.
+const HOUSE_LEVEL = {
+  house: {
+    name: "The House",
+    kinds: ["standard-revision", "licence-renewal", "insurance-review", "fire-safety-certification", "policy-note", "annual-review", "supplier-agreement"],
+    subjects: ["agent:executive"],
+  },
+  executive: {
+    name: "The Executive",
+    kinds: ["board-minute", "capex-approval", "department-review", "budget-sign-off", "appointment", "standard-amendment"],
+    subjects: EXEC_SEATS.map((s) => `agent:executive`),
+  },
+};
 const ROUTINE = {
   "front-office": 240, "f-and-b": 260, housekeeping: 280, engineering: 250, "spa-leisure": 140,
   "events-banqueting": 160, security: 180, "finance-procurement": 200, "people-culture": 100,
@@ -508,17 +523,27 @@ const ROUTINE = {
 };
 for (const [bk, count] of Object.entries(ROUTINE)) {
   const dept = DEPTS.find((d) => d.key === bk);
-  const cluster = dept ? dept.key : null;
+  const house = HOUSE_LEVEL[bk];
+  // cluster used to fall to null for house/executive because neither is in
+  // DEPTS — so 100 observations were filed to nobody and the dossier + ledger,
+  // which both query BY CLUSTER, showed the root of the building holding
+  // nothing. The bucket parent was right the whole time, which is why it never
+  // looked like a data bug: it looked like an empty company.
+  const cluster = bk;
   const bucket = `bucket:${bk}`;
-  const deptStaff = dept ? STAFF[dept.key].map(([slug]) => `agent:${dept.key}-${slug}`) : ["agent:executive"];
+  const kinds = house ? house.kinds : ROUTINE_KINDS;
+  const subjects = house ? house.subjects : STAFF[dept.key].map(([slug]) => `agent:${dept.key}-${slug}`);
+  const label = house ? house.name : dept.name;
   for (let i = 0; i < count; i++) {
     const id = `obs:${bk}-${String(i).padStart(4, "0")}`;
-    const kind = pick(id + ":k", ROUTINE_KINDS);
+    const kind = pick(id + ":k", kinds);
     const dOff = 0.05 + h(id + ":d") * 89.9; // last 90 days
     obs(id, `${kind} · ${dayLabel(dOff)}`, bucket, cluster, {
       kind, date: isoDays(dOff),
-      subject: pick(id + ":s", deptStaff),
-      note: `${dept ? dept.name : bk} ${kind.replace(/-/g, " ")} — routine, no exceptions raised`,
+      subject: pick(id + ":s", subjects),
+      note: house
+        ? `${label} ${kind.replace(/-/g, " ")} — carried, no clause in dispute`
+        : `${label} ${kind.replace(/-/g, " ")} — routine, no exceptions raised`,
     });
   }
 }
@@ -842,6 +867,24 @@ if (docCount !== 180) fail(`document count ${docCount} ≠ 180`);
 if (repCount !== 425) fail(`report count ${repCount} ≠ 425`);
 if (nodes.length !== 2839) fail(`node count ${nodes.length} ≠ 2839`);
 
+// Every declared bucket must actually HOLD something — except guest-registry,
+// which is sealed on purpose and whose emptiness IS the privacy demonstration.
+// The dossier and the ledger shelf both count by cluster, so a bucket that
+// exists but clusters nothing renders as a real company with no memory. That
+// shipped: house and executive read 0 while every department held hundreds.
+const SEALED = new Set(["guest-registry"]);
+const perCluster = {};
+for (const n of nodes) if (n.type === "observation" && n.cluster) perCluster[n.cluster] = (perCluster[n.cluster] ?? 0) + 1;
+for (const b of nodes.filter((n) => n.type === "bucket")) {
+  const key = b.id.replace(/^bucket:/, "");
+  const held = perCluster[key] ?? 0;
+  if (SEALED.has(key)) {
+    if (held) fail(`sealed bucket ${key} holds ${held} serialised observations — the wall leaked`);
+  } else if (!held) {
+    fail(`bucket ${key} is declared but clusters 0 observations — it will render empty`);
+  }
+}
+
 // Every report must name a recipient that EXISTS. "Who does this go to?" is the
 // question the dossier answers on its face — a dangling `to` would render a
 // recipient the graph cannot show, which is worse than showing none.
@@ -864,8 +907,15 @@ for (const r of reports.filter((x) => /Room 407|riser|405\/409/i.test(x.data.sum
   }
 }
 
+// The even-ring branch needs `nClusters <= RING_MAX` (16, viewer/src/layout.ts),
+// NOT exactly 9 — this used to assert 9 and so forbade the house and the
+// executive from clustering at all, which is precisely how they ended up
+// holding nothing. Assert what the layout actually requires, plus the real
+// invariant: the nine departments are all present and named.
 const clusters = new Set(nodes.map((n) => n.cluster).filter((c) => c != null));
-if (clusters.size !== 9) fail(`distinct clusters ${clusters.size} ≠ 9 (even-ring branch needs exactly 9)`);
+const RING_MAX = 16;
+if (clusters.size > RING_MAX) fail(`distinct clusters ${clusters.size} > ${RING_MAX} — the viewer drops off the even-ring branch into phyllotaxis`);
+for (const d of DEPTS) if (!clusters.has(d.key)) fail(`department ${d.key} clusters nothing`);
 
 const flagged = nodes.filter((n) => n.data?.flag);
 if (flagged.length !== 4) fail(`flagged nodes ${flagged.length} ≠ 4: ${flagged.map((n) => n.id).join(", ")}`);

@@ -249,6 +249,32 @@ function LedgerShelf({ org, lit }: { org: BOrg; lit: Set<string> }) {
   );
 }
 
+/* The hero's atmosphere: a faint constellation behind the rack. Deterministic
+   (a seeded LCG, not Math.random) so a screenshot of the board is reproducible
+   and golden-frame diffing stays possible. Points + links only — the mockup's
+   grain/noise overlay is deliberately absent, it read as a blurry filter. */
+function Constellation() {
+  const svg = useMemo(() => {
+    const W = 1600, H = 1000, N = 58;
+    let s = 20260719;
+    const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    const pts: [number, number][] = [];
+    for (let i = 0; i < N; i++) pts.push([rnd() * W, rnd() * H]);
+    let d = "";
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const dist = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
+        if (dist < 200) d += `<line x1="${pts[i][0].toFixed(1)}" y1="${pts[i][1].toFixed(1)}" x2="${pts[j][0].toFixed(1)}" y2="${pts[j][1].toFixed(1)}" stroke="rgba(217,160,91,${((1 - dist / 200) * 0.14).toFixed(3)})" stroke-width="1"/>`;
+      }
+    }
+    for (const [x, y] of pts) d += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(rnd() * 1.4 + 0.6).toFixed(2)}" fill="rgba(239,195,137,.45)"/>`;
+    return d;
+  }, []);
+  return (
+    <svg className="pnl-stars" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden dangerouslySetInnerHTML={{ __html: svg }} />
+  );
+}
+
 /* ────────────────────────── ORGANIGRAM ────────────────────────── */
 
 // The card's fact row (CRAFT §5: "health chip · bucket chips · rule count ·
@@ -310,8 +336,9 @@ function AgentCard({
   const nSkills = a.skills?.length ?? 0;
   return (
     <div
-      className={`ag${isRoot ? " root" : ""}${selected ? " sel" : ""}${over ? " over" : ""}${dragId === a.id ? " dragging" : ""}${showLaw ? " law-on" : ""}`}
-      style={{ ["--h" as string]: bucketHue(a.id), ["--d" as string]: depth, animationDelay: `${Math.min(depth * 70 + order * 45, 600)}ms` }}
+      className={`ag${isRoot ? " root" : ""}${depth >= 2 ? " staff" : ""}${selected ? " sel" : ""}${over ? " over" : ""}${dragId === a.id ? " dragging" : ""}${showLaw ? " law-on" : ""}${light === "warn" ? " h-warn" : light === "fail" ? " h-fail" : ""}`}
+      /* no --h: rank reads through brass FINISH, never through hash-hue */
+      style={{ ["--d" as string]: depth, animationDelay: `${Math.min(depth * 70 + order * 45, 600)}ms` }}
       draggable={!isRoot}
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(a.id); } }}
@@ -324,8 +351,13 @@ function AgentCard({
       onMouseLeave={() => onHover?.(null)}
     >
       {light !== "none" && <i className={`ag-light ${light}`} title={`fleet health: ${light}`} />}
-      <span className="ag-ava">{a.emoji || "🤖"}</span>
-      <span className="ag-name">{a.name}</span>
+      <div className="ag-head">
+        {/* the mark is earned by rank. Staff plates carry none — 51 identical
+            🤖 avatars were the cheapest visual token on the board, and a
+            brass name plate does not have a cartoon on it. */}
+        {depth <= 1 && a.emoji && <span className="ag-ava">{a.emoji}</span>}
+        <span className="ag-name">{a.name}</span>
+      </div>
       {a.role && <span className="ag-role">{a.role}</span>}
       <AgentFacts a={a} org={org} health={health} showLaw={showLaw} />
       {(nSkills > 0 || childCount > 0) && (
@@ -472,7 +504,7 @@ function ChartNode({
           ) : (
           <div className={`oc-row${depth > 0 && kids.length > 3 ? " wrap" : ""}${depth === 0 ? " lanes" : ""}`}>
             {kids.map((k, i) => (
-              <div className="oc-child" key={k.id} style={{ ["--h" as string]: bucketHue(k.id) }}>
+              <div className="oc-child" key={k.id}>
                 <ChartNode org={org} a={k} depth={depth + 1} order={i} {...cardProps} />
               </div>
             ))}
@@ -498,7 +530,9 @@ function BrandMark({ agent }: { agent: BOrgAgent }) {
   return (
     <img
       className="mac-brand"
-      src={`https://cdn.simpleicons.org/${brand}`}
+      /* /000 = black glyph, which is what a white chip needs. Untinted brand
+         colour across a dozen vendors turns the rack into a sticker album. */
+      src={`https://cdn.simpleicons.org/${brand}/000`}
       alt=""
       loading="lazy"
       draggable={false}
@@ -948,9 +982,15 @@ function OrgScreen({
       <main className={`tree${showLaw ? " law-on" : ""}`} onClick={(e) => e.stopPropagation()}>
         <p className="tree-hint">
           {showLaw
-            ? "the rails now trace authority, not org lines — gold flows down from the House Standard through every SOP to every role"
-            : "drag an agent — or a tray machine — onto its new parent · click for its dossier · machine trays show live health"}
+            ? "the rails now trace authority — brass flows from the House Standard through every SOP to every role"
+            : "drag a plate — or a machine — onto its new parent · click for its dossier · machine racks show live health"}
         </p>
+        {/* rank grammar, borrowed from the ministry organigram: name the rank,
+            never make the reader infer it from indentation. */}
+        <div className="ranks">
+          <div className="rank"><b>I</b>The house</div>
+          <div className="rank"><b>II</b>Departments · staff · machines</div>
+        </div>
         <div className={`chart-fit${zoom !== null ? " zoomed" : ""}`} ref={fitRef}>
           {/* spacer sized to the SCALED footprint so the scroll extent matches
               what you can actually see (transform doesn't resize the layout box) */}
@@ -1424,6 +1464,7 @@ function App() {
   return (
     <div className="pnl">
       <div className="pnl-aurora" aria-hidden />
+      <Constellation />
       <header className="bar">
         <div className="bar-brand">🐾 <b>{draft.title || "the organigram"}</b></div>
         <div className="bar-stats">

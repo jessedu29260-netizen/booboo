@@ -17,7 +17,106 @@
 
 ---
 
-## A · The visitor journey (the conversion path)
+## A · SPEC vs SHIPPED — every commitment in CRAFT.md, checked in code
+
+The first version of this file audited the visitor journey and **not the spec**,
+which is how a whole slice went missing unnoticed. Checked by grepping the
+source, not by memory.
+
+### A0 · Tokens (CRAFT §0 — "single source, three consumers")
+
+| Commitment | State | Reality |
+|---|---|---|
+| `tokens.json` consumed by site | 🔴 | Not imported. Values hardcoded in `styles.css`. |
+| …by viewer | 🔴 | Not imported. Hardcoded in `Booboo.tsx` / `BoobooView.tsx`. |
+| …by panel | 🟡 | Values *copied* into `panel.css` by hand; the file is referenced only in a comment. |
+
+**Rule zero says "if it isn't a token it doesn't ship" — and the token file is
+currently decorative.** Any palette change today means editing three places.
+
+### A1 · The luminance ladder (CRAFT §1) — the top three ranks are missing
+
+Declared order: `flags > badges > pulses > landmarks > field > edges > discs > bg`.
+
+| Rank | State | Reality |
+|---|---|---|
+| flags | 🔴 | **Not rendered anywhere.** Dataset has 4 flags + 10 health values; the viewer draws none. Only a code comment mentions them. |
+| badges/contracts | 🟡 | Landmarks are brass objects ✅ but carry no icon, no name plate, no contract distinction. |
+| pulses | 🟡 | Edges pulse, but uniformly — no direction, no meaning. |
+| landmarks / field / discs / bg | ✅ | Built and verified. |
+
+**This is the forgotten slice.** The half of the two-second test that asks
+*"where is the problem"* has no implementation at all. Engineering runs amber
+in the data and looks identical to every other department on screen.
+
+### A2 · Scene (CRAFT §2)
+
+| Commitment | State |
+|---|---|
+| Landmarks as brass objects + contact shadows | ✅ |
+| Observatory floors: glass, etched rules, engraved names | ✅ |
+| Sprite field: soft core, rim, depth fade | ✅ |
+| **Light-shaft spines** (cone beams, *authority as light falling*) | 🔴 **the signature element, never built** |
+| Edges: fat ribbons, source→target gradient, directional dashes | 🔴 thin GL lines |
+| **Verb → token colour on edges** | 🔴 **0 of 397 links carry colour** — every relation looks the same |
+| Atmosphere: height fog, nebula IBL | 🟡 starfield only |
+| Focus = torch (dim non-neighbourhood) | ✅ |
+| Focus = DoF/bokeh rack | 🔴 |
+| Camera dolly-to-node on select | 🔴 |
+
+### A3 · Motion (CRAFT §3)
+
+| Commitment | State |
+|---|---|
+| Entrance: discs → spines → field, skippable, reduced-motion | ✅ |
+| Flags ignite **last** so the eye lands on the problem | 🔴 depends on flags existing |
+| **The 30-second trace (Act 2)** | 🔴 data present, **no choreography, no trigger, no UI** |
+
+### A4 · Chrome (CRAFT §4)
+
+| Commitment | State |
+|---|---|
+| Dossier: verb-grouped relations | ✅ |
+| Concierge palette — find mode | ✅ |
+| Palette — **ask mode** (routes to `/mcp`) | 🔴 |
+| **Four view presets** instead of fourteen sliders | 🔴 still fourteen sliders |
+| Dossier as **one shared component** (viewer + panel + site) | 🔴 two separate implementations |
+| Loading / error / empty states | 🔴 |
+
+### A5 · Organigram (CRAFT §5)
+
+| Commitment | State |
+|---|---|
+| House tokens applied | ✅ |
+| Department columns in cosmos sector order | ✅ |
+| Engraved cards on brass rails, orthogonal elbows | 🔴 |
+| Card content: persona · health chip · bucket chips · rule count · last report | 🟡 partial in dossier, not on cards |
+| **"Show the law" inheritance overlay** | 🔴 |
+| Ledger shelf (hover a role → its reach lights) | 🔴 |
+| Semantic zoom (house → department → role) | 🔴 |
+
+### A6 · Micro-brand + site (CRAFT §6/§7)
+
+| Commitment | State |
+|---|---|
+| Copy rewritten to the agent-OS story | ✅ |
+| Pemberton crest / "Est. 1927" / white-label proof | 🔴 |
+| **Scrollytelling** (scroll chapters drive camera presets) | 🔴 static sections |
+| Mobile: rendered video loop | 🔴 |
+| OG image | 🔴 |
+| Analytics events | 🔴 |
+
+### A7 · Governance (CRAFT §9)
+
+| Commitment | State |
+|---|---|
+| Golden frames committed | 🟡 one, of five |
+| CI pixel-diff | 🔴 |
+| Per-PR design QA checklist | 🔴 |
+
+---
+
+## B · The visitor journey (the conversion path)
 
 The honest test: a stranger arrives knowing nothing. Can they understand the
 product, play with it, and want it — without installing?
@@ -81,17 +180,38 @@ label. Everything is *shown*, nothing is *taught*.
 
 ---
 
-## E · What to build next, in order
+## F · Build order
 
-Ranked by *conversion impact per hour*, not by what's fun:
+Ranked by *conversion impact per hour*, not by what's fun. Every item names
+the row it closes.
 
-1. **The model explainer** (A6) — a site section that teaches bands, buckets, rules-inheritance and the boot slice, with the real JSON shown. Without this the product is a pretty object.
-2. **Orientation + guided play in the viewer** (A3/A4) — a first-run legend naming the four bands, a "start here" pointing at a department, and the palette surfaced properly.
-3. **Promote the organigram** (A5/A8) — a real section: three faces, one brain, with the staff board shown, not a topbar link.
-4. **In-page ask** (A7) — a question box that calls `/mcp` live. The strongest proof we own and it's currently prose.
-5. **OG image** (C8) — cheap, and every share is currently blank.
-6. **Mobile pass** (C9) — verify, then decide video-vs-degrade.
-7. Staff board craft pass (CRAFT §5), viewer weak-GPU guard (C7), golden CI (C10), million-node proof (C11).
+**Tier 1 — the product currently fails its own acceptance test**
 
-Items 1–4 are all the same insight: **we built the machine and never wrote the
-label.**
+1. **Flags + health rendering** (A1) — the missing top of the luminance ladder.
+   Data already exists: 4 flags, 10 health values. Without this the
+   two-second test cannot be passed by anyone. *Nothing else matters more.*
+2. **Verb colours + directional flow on edges** (A2) — 397 identical lines
+   become readable relations; makes the trace legible later.
+3. **Tokens actually consumed** (A0) — otherwise every fix above hardcodes
+   more drift in.
+
+**Tier 2 — the label for the machine**
+
+4. **The model explainer** (B/A6) — teach bands, buckets, rule inheritance,
+   boot slice, with real JSON shown.
+5. **Orientation + guided play in the viewer** (B-A3/A4) — first-run legend
+   naming the bands, "start here" pointing at the amber department.
+6. **Promote the organigram** (B-A5/A8) — a real "three faces, one brain"
+   section; the staff board shown, not a topbar link.
+7. **In-page ask** (B-A7) + palette ask-mode (A4) — same engine, two surfaces.
+
+**Tier 3 — proof and polish**
+
+8. OG image (C8) · 9. mobile pass (C9) · 10. the 30-second trace (A3) ·
+11. light-shaft spines (A2, signature) · 12. view presets (A4) ·
+13. staff-board craft pass (A5) · 14. weak-GPU guard (C7) ·
+15. golden CI (C10) · 16. million-node proof (C11).
+
+Tier 1 is why this file exists: three items that were specified, assumed
+done, and never built. Tier 2 is the same insight as before — **we built the
+machine and never wrote the label.**

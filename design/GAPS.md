@@ -21,6 +21,10 @@
 > light. This is a claim to be re-judged, not a close: the next open of
 > booboo.fractionalhq.uk is the test, not this file.
 
+> **Where this sits:**  (added 2026-07-19) states the six goals
+> and how far each is. This file stays the record of what is TRUE, with evidence.
+> Goals aim; GAPS reports. When they disagree, GAPS wins.
+
 ## Legend
 
 ✅ done + verified · 🟡 exists, incomplete · 🔴 missing · ⬜ not started

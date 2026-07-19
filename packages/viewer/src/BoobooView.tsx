@@ -150,7 +150,7 @@ export function BoobooView({
       </RenderBoundary>
 
       {/* HUD — top-left */}
-      <div style={{ position: "absolute", top: 18, left: 20, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", top: 18, left: 20, zIndex: 10, pointerEvents: "none" }}>
         <div style={{ color: T.gold, fontSize: 13, letterSpacing: 2.5, fontWeight: 700, fontFamily: T.mono }}>🐾 {data.meta.title ?? "BOOBOO"}</div>
         <div style={{ color: T.faint, fontSize: 10.5, letterSpacing: 0.6, marginTop: 3 }}>
           {data.nodes.length.toLocaleString()} nodes · {data.links.length.toLocaleString()} links · {data.meta.layers.length} layers
@@ -259,7 +259,7 @@ function Controls({
     );
   }
   return (
-    <div style={{ position: "absolute", bottom: 22, left: 20, width: 236, maxHeight: "calc(100vh - 44px)", overflowY: "auto", background: T.panel, border: `1px solid ${T.line}`, borderRadius: 10, padding: 14, display: "flex", flexDirection: "column", gap: 10, fontSize: 11, color: T.dim, backdropFilter: "blur(10px)", boxShadow: "0 12px 40px rgba(0,0,0,0.45)" }}>
+    <div style={{ position: "absolute", bottom: 22, left: 20, width: 236, maxHeight: "calc(100vh - 44px)", overflowY: "auto", zIndex: 10, background: T.panel, border: `1px solid ${T.line}`, borderRadius: 10, padding: 14, display: "flex", flexDirection: "column", gap: 10, fontSize: 11, color: T.dim, backdropFilter: "blur(10px)", boxShadow: "0 12px 40px rgba(0,0,0,0.45)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: T.text, letterSpacing: 1, fontSize: 11, fontWeight: 600 }}>Controls</span>
         <div style={{ display: "flex", gap: 6 }}>
@@ -366,7 +366,9 @@ function Dossier({
   const [tab, setTab] = useState("overview");
 
   return (
-    <div style={{ position: "absolute", top: 0, right: 0, width: 420, maxWidth: "94%", height: "100%", background: T.panelSolid, borderLeft: `1px solid ${T.line}`, color: T.text, display: "flex", flexDirection: "column", boxShadow: "-18px 0 50px rgba(0,0,0,0.45)" }}>
+    // z 20 (tokens z-map): the 3D label portals render inside the canvas
+    // container and would otherwise bleed through the panel.
+    <div style={{ position: "absolute", top: 0, right: 0, width: 420, maxWidth: "94%", height: "100%", zIndex: 20, background: T.panelSolid, borderLeft: `1px solid ${T.line}`, color: T.text, display: "flex", flexDirection: "column", boxShadow: "-18px 0 50px rgba(0,0,0,0.45)" }}>
       {/* fixed header + tabs */}
       <div style={{ flex: "0 0 auto", background: T.panelSolid, borderBottom: `1px solid ${T.line}`, borderLeft: `3px solid ${accent}` }}>
         <div style={{ padding: "16px 18px 12px", position: "relative" }}>

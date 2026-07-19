@@ -311,6 +311,8 @@ function Platform({ z, color, label, radius, planes, rings, labels, introBox, in
         </mesh>
       )}
       {rings && <mesh><torusGeometry args={[radius, radius * 0.0028, 8, 140]} /><meshBasicMaterial color={color} transparent opacity={0.55} toneMapped={false} /></mesh>}
+      {/* zIndexRange caps drei's default 16,777,271 so 3D labels sit BELOW the
+          chrome layers (hud 10 / dossier 20 / palette 30 in the token z-map) */}
       {labels && tex && (
         <mesh position={[0, 0, 0.6]}>
           <circleGeometry args={[radius * 1.0, 64]} />
@@ -318,7 +320,7 @@ function Platform({ z, color, label, radius, planes, rings, labels, introBox, in
         </mesh>
       )}
       {labels && (
-        <Html position={[radius * 1.04, 0, 0]} center style={{ pointerEvents: "none" }}>
+        <Html position={[radius * 1.04, 0, 0]} center zIndexRange={[9, 0]} style={{ pointerEvents: "none" }}>
           <div style={{ color, font: "10px var(--font-jetbrains, ui-monospace), monospace", letterSpacing: 3, opacity: 0.55, whiteSpace: "nowrap", textShadow: "0 0 8px rgba(0,0,0,.95)" }}>{label}</div>
         </Html>
       )}
@@ -416,7 +418,7 @@ function NodeLabels({ data, laid }: { data: BoobooGraph; laid: Laid }) {
   return (
     <>
       {items.map((it) => (
-        <Html key={it.id} position={it.pos} center style={{ pointerEvents: "none" }}>
+        <Html key={it.id} position={it.pos} center zIndexRange={[9, 0]} style={{ pointerEvents: "none" }}>
           <div style={{ color: "#E8DCC4", font: "11px var(--font-jetbrains, ui-monospace), monospace", letterSpacing: 0.4, whiteSpace: "nowrap", textShadow: "0 0 7px rgba(0,0,0,.95)", transform: "translateY(-14px)" }}>{it.label}</div>
         </Html>
       ))}

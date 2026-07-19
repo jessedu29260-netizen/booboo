@@ -191,6 +191,14 @@ h2.display em { font-style: italic; color: var(--brass-l); }
 
 /* ── 02 the board: the convince ──────────────────────────────── */
 .board { padding-bottom: clamp(3rem, 7vh, 5rem); }
+/* the instrument runs wider than the prose that introduces it: the page
+   opens up around the thing it is selling instead of boxing it in a column */
+@media (min-width: 1100px) {
+  /* 100vw INCLUDES the scrollbar, so it overflowed by its width on any page
+     tall enough to scroll. Percentages resolve against the gutter, which is
+     already scrollbar-aware, so widening by the padding is exact. */
+  .board-frame, .board-cap { width: min(1440px, calc(100% + var(--pad) * 2)); margin-left: 50%; transform: translateX(-50%); }
+}
 .board-frame {
   margin: clamp(2.2rem, 5vh, 3.4rem) 0 0;
   border: 1px solid var(--rule-2); border-radius: 16px;
@@ -226,20 +234,50 @@ h2.display em { font-style: italic; color: var(--brass-l); }
 .board-notes p:nth-child(3) { padding-left: clamp(0rem, 6vw, 5rem); }
 .board-notes b { color: var(--ink); font-weight: 600; }
 
+/* ── 03 the proof: DRENCHED ──────────────────────────────────────
+   Full-bleed dark with the product's own photograph behind it, at low
+   opacity so type stays the brightest thing. This is where the page stops
+   being a document and becomes the thing again. */
+.ask-wrap {
+  width: 100%; max-width: none; margin: 0; padding: 0;
+  position: relative; isolation: isolate;
+  background: var(--bg); color: var(--text);
+}
+.ask-wrap::before {
+  content: ""; position: absolute; inset: 0; z-index: -2;
+  background-image: url("./img/cosmos.png");
+  background-size: cover; background-position: 62% 45%;
+  opacity: .38;
+}
+.ask-wrap::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(to bottom, var(--paper) 0%, rgba(6,8,14,.86) 9%, rgba(6,8,14,.72) 42%, rgba(6,8,14,.92) 88%, var(--paper) 100%),
+    radial-gradient(70% 60% at 22% 46%, rgba(6,8,14,.80), transparent 72%);
+}
+.ask-wrap .ask { width: var(--gutter); margin-inline: auto; padding: clamp(6rem, 15vh, 11rem) 0; }
+.ask-wrap .tag { color: var(--gold); }
+.ask-wrap h2.display { color: var(--text); }
+.ask-wrap h2.display em { color: var(--gold-hi); }
+.ask-wrap .body { color: var(--dim); }
+.ask-wrap .body code { background: rgba(232,220,196,.08); border-color: rgba(232,220,196,.18); color: var(--text); }
+.ask-wrap .body.muted { color: var(--faint); }
+
 /* ── 03 the proof ────────────────────────────────────────────── */
 .chips { display: flex; flex-wrap: wrap; gap: .6rem; margin: clamp(1.6rem,4vh,2.4rem) 0 1.2rem; }
 .chips button {
   font-family: var(--sans); font-size: .87rem;
   padding: .62rem 1.05rem; border-radius: 100px; cursor: pointer;
-  background: var(--card-l); border: 1px solid var(--rule-2); color: var(--ink-2);
-  transition: border-color .2s, color .2s, transform .18s var(--ease), box-shadow .2s;
+  background: rgba(232,220,196,.05); border: 1px solid rgba(232,220,196,.2); color: var(--dim);
+  transition: border-color .2s, color .2s, transform .18s var(--ease), background .2s;
 }
-.chips button:hover { border-color: var(--brass-l); color: var(--ink); transform: translateY(-1px); box-shadow: var(--sh-2); }
-.chips button.on { background: var(--brass-wash); border-color: var(--brass-l); color: var(--brass-l); font-weight: 500; }
+.chips button:hover { border-color: var(--gold); color: var(--text); transform: translateY(-1px); background: rgba(201,160,74,.12); }
+.chips button.on { background: rgba(201,160,74,.18); border-color: var(--gold); color: var(--gold-hi); font-weight: 500; }
 .answer {
-  margin: 0; padding: 1.15rem 1.3rem; border-radius: 13px;
-  background: var(--ink); color: #e9e4da;
-  border: 1px solid var(--ink); box-shadow: var(--sh-2);
+  margin: 0; padding: 1.3rem 1.5rem; border-radius: 13px;
+  background: rgba(4,6,10,.72); color: #e9e4da;
+  border: 1px solid rgba(232,220,196,.14);
+  backdrop-filter: blur(6px);
   font-family: var(--mono); font-size: .82rem; line-height: 1.7;
   white-space: pre-wrap; word-break: break-word;
   max-height: 26rem; overflow: auto;
@@ -258,6 +296,10 @@ h2.display em { font-style: italic; color: var(--brass-l); }
 .cmd.big code { font-size: clamp(.95rem, .9rem + .35vw, 1.15rem); }
 .cmd.secondary { background: var(--paper-2); box-shadow: none; }
 .cmd.secondary code { color: var(--ink-2); font-size: .85rem; }
+.ask-wrap .cmd { background: rgba(232,220,196,.05); border-color: rgba(232,220,196,.18); }
+.ask-wrap .cmd code { color: var(--text); }
+.ask-wrap .copy { border-color: rgba(232,220,196,.24); color: var(--dim); }
+.ask-wrap .copy:hover { border-color: var(--gold); color: var(--gold-hi); background: rgba(201,160,74,.12); }
 .copy {
   font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
   padding: .5rem .9rem; border-radius: 100px; cursor: pointer;

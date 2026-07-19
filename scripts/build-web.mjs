@@ -30,6 +30,9 @@ await mkdir(out, { recursive: true });
 for (const f of ["index.html", "styles.css", "main.js", "tokens.css"]) {
   await cp(path.join(root, "web", f), path.join(out, f));
 }
+// page imagery: the product photographing itself. A brand landing with no
+// imagery reads as incomplete rather than restrained.
+await cp(path.join(root, "web", "img"), path.join(out, "img"), { recursive: true });
 await cp(viewerApp, path.join(out, "viewer"), { recursive: true });
 // the Pemberton demo brain — the default thing the site shows
 await cp(path.join(root, "examples", "pemberton", "pemberton.booboo.json"), path.join(out, "pemberton.booboo.json"));

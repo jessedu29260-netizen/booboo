@@ -240,6 +240,84 @@ h2 {
 .core-file { font-family: var(--mono); font-size: clamp(.95rem, 2vw, 1.2rem); color: var(--gold-hi); }
 .core-sub { font-family: var(--mono); font-size: .68rem; letter-spacing: .15em; text-transform: uppercase; color: var(--faint); }
 
+/* ══════════════════════  THREE FACES  ═════════════════════════ */
+.face-grid {
+  margin-top: clamp(2.2rem, 5vw, 3.2rem);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: clamp(.9rem, 2vw, 1.3rem);
+}
+.face {
+  display: flex; flex-direction: column;
+  padding: clamp(1.3rem, 2.8vw, 1.9rem);
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--gold);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(201,160,74,.05), transparent 60%), var(--card);
+  text-decoration: none;
+  transition: border-color .3s var(--ease-swift), transform .3s var(--ease-swift), background .3s;
+}
+.face:hover { border-color: var(--line-hi); border-top-color: var(--gold-hi); transform: translateY(-3px); }
+.face-n {
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .22em;
+  color: var(--gold); margin-bottom: .9rem;
+}
+.face h3 {
+  margin: 0 0 .7rem; font-family: var(--display); font-weight: 400;
+  font-size: clamp(1.15rem, 2.3vw, 1.5rem); line-height: 1.2;
+  color: var(--text); font-variation-settings: "opsz" 40;
+}
+.face p { margin: 0 0 1.4rem; color: var(--dim); font-size: .95rem; line-height: 1.6; }
+.face-go {
+  margin-top: auto; font-family: var(--mono); font-size: .76rem;
+  letter-spacing: .05em; color: var(--gold-hi);
+}
+@media (prefers-reduced-motion: reduce) { .face:hover { transform: none; } }
+
+/* ═══════════════════════  THE MODEL  ══════════════════════════ */
+.model-list { margin: clamp(2.4rem, 5vw, 3.4rem) 0 0; padding: 0; }
+.model-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) 1fr;
+  gap: clamp(1rem, 3vw, 2.4rem);
+  padding: clamp(1.1rem, 2.4vw, 1.5rem) 0;
+  border-top: 1px solid var(--line);
+}
+.model-list > div:last-child { border-bottom: 1px solid var(--line); }
+.model-list dt {
+  font-family: var(--display); font-weight: 400;
+  font-size: clamp(1rem, 2vw, 1.22rem); color: var(--text);
+  font-variation-settings: "opsz" 30; line-height: 1.3;
+}
+.mk {
+  display: block; font-family: var(--mono); font-size: .68rem;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--gold);
+  margin-bottom: .35rem;
+}
+.model-list dd { margin: 0; color: var(--dim); font-size: .97rem; line-height: 1.65; }
+.model-list dd em { color: var(--text); font-style: italic; }
+
+.boot {
+  margin: clamp(1rem, 2.4vw, 1.5rem) 0 0;
+  padding: clamp(1.1rem, 2.4vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--teal);
+  border-radius: 3px;
+  background: var(--card);
+  overflow-x: auto;
+}
+.boot code {
+  font-family: var(--mono); font-size: clamp(.72rem, 1.5vw, .84rem);
+  line-height: 1.75; color: var(--text); white-space: pre;
+}
+.boot .k { color: var(--gold-hi); }
+.boot .s { color: var(--teal); }
+.boot .c { color: var(--faint); font-style: italic; }
+
+@media (max-width: 700px) {
+  .model-list > div { grid-template-columns: 1fr; gap: .5rem; }
+}
+
 /* ═══════════════════════  ASK THE HOUSE  ══════════════════════ */
 .ask-grid {
   margin-top: clamp(2.2rem, 5vw, 3.2rem);

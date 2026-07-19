@@ -101,9 +101,82 @@
   </div>
 </section>
 
+<!-- ────────────────────  THE THREE FACES  ─────────────────── -->
+<section class="faces" id="faces">
+  <p class="tag">02 — Three faces, one brain</p>
+  <h2>Look at it, govern it, or just ask it.</h2>
+  <p class="body wide">
+    Same graph underneath. Which face you use depends on the question you're holding.
+  </p>
+
+  <div class="face-grid">
+    <a class="face" href="./viewer/?file=/pemberton.booboo.json">
+      <span class="face-n">SEE</span>
+      <h3>The cosmos</h3>
+      <p>Where's the problem, what's flowing, how does the house hang together. Four bands, nine departments, alarms you can spot from across the room.</p>
+      <span class="face-go">Walk in <span aria-hidden="true">→</span></span>
+    </a>
+    <a class="face" href="./chart/">
+      <span class="face-n">GOVERN</span>
+      <h3>The staff board</h3>
+      <p>Who reports to whom, which rules bind whom, who can reach which memories. Drag a role to a new head and every future boot obeys.</p>
+      <span class="face-go">Open the board <span aria-hidden="true">→</span></span>
+    </a>
+    <a class="face" href="#ask">
+      <span class="face-n">ASK</span>
+      <h3>The concierge</h3>
+      <p>Point Claude at the house over MCP and ask anything. It counts, traces and answers from the ledger — no dashboard to learn.</p>
+      <span class="face-go">Ask it something <span aria-hidden="true">→</span></span>
+    </a>
+  </div>
+</section>
+
+<!-- ─────────────────────  THE MODEL  ──────────────────────── -->
+<section class="model" id="model">
+  <p class="tag">03 — The model</p>
+  <h2>Five ideas. That's the whole contract.</h2>
+  <p class="body wide">
+    Booboo isn't a schema you learn, it's five nouns. Everything on this page —
+    the 3D view, the staff board, the answers — is those five, rendered.
+  </p>
+
+  <dl class="model-list">
+    <div>
+      <dt><span class="mk">Layer</span> a band of the house</dt>
+      <dd>A horizontal stratum: the GM, the department heads, the staff, the ledger. Layers stack, and a department reads as one vertical column through all of them.</dd>
+    </div>
+    <div>
+      <dt><span class="mk">Agent</span> a role, not a person</dt>
+      <dd>Roles are durable; the model behind them is disposable. Whatever boots into "Housekeeping" <em>becomes</em> Housekeeping — with its persona, its reach, its rules.</dd>
+    </div>
+    <div>
+      <dt><span class="mk">Bucket</span> a walled memory</dt>
+      <dd>Where an agent may read and write. Housekeeping sees Housekeeping's ledger. The guest registry is sealed — visible as a wall, never as contents.</dd>
+    </div>
+    <div>
+      <dt><span class="mk">Rule</span> law that flows down</dt>
+      <dd>Declared once, inherited by everyone beneath. The GM amends the House Standard; every department is bound by the next morning.</dd>
+    </div>
+    <div>
+      <dt><span class="mk">Boot</span> what an agent loads first</dt>
+      <dd>One call returns identity, chain of command, rules <em>in order</em>, and bucket reach. That slice is the whole point: the agent knows its place before it does anything.</dd>
+    </div>
+  </dl>
+
+  <p class="body muted">This is a real boot slice from the house, unedited:</p>
+  <pre class="boot"><code><span class="c">// booboo_boot("housekeeping")</span>
+{
+  <span class="k">"agent"</span>: { <span class="k">"id"</span>: <span class="s">"housekeeping"</span>, <span class="k">"role"</span>: <span class="s">"Precise, spares no linen, escalates before apologising."</span> },
+  <span class="k">"chain"</span>:   [ <span class="s">"gm"</span>, <span class="s">"housekeeping"</span> ],
+  <span class="k">"rules"</span>:   [ <span class="s">"rules/HOUSE_STANDARD.md"</span>, <span class="s">"rules/sop/HOUSEKEEPING.md"</span> ],  <span class="c">// ancestors first</span>
+  <span class="k">"buckets"</span>: [ <span class="s">"house"</span>, <span class="s">"executive"</span>, <span class="s">"housekeeping"</span> ],
+  <span class="k">"children"</span>: <span class="c">6 roles</span>
+}</code></pre>
+</section>
+
 <!-- ─────────────────────  ASK THE HOUSE  ──────────────────── -->
 <section class="ask" id="ask">
-  <p class="tag">02 — Ask the house</p>
+  <p class="tag">04 — Ask the house</p>
   <h2>It answers questions. Real ones.</h2>
   <p class="body wide">
     The brain behind this page is a live MCP endpoint. Point Claude at it and ask —
@@ -134,7 +207,7 @@
 
 <!-- ───────────────────────  QUICKSTART  ───────────────────── -->
 <section class="start" id="start">
-  <p class="tag">03 — Run it on yours</p>
+  <p class="tag">05 — Run it on yours</p>
   <h2>One command. No database, no config, no signup.</h2>
   <p class="body">See a synthetic brain running on your own machine before you point it at anything real.</p>
 
@@ -152,7 +225,7 @@
 
 <!-- ──────────────────────  WHAT YOU GET  ──────────────────── -->
 <section class="gets">
-  <p class="tag">04 — What ships</p>
+  <p class="tag">06 — What ships</p>
   <ol class="get-list">
     <li>
       <span class="n">01</span>

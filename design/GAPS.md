@@ -128,14 +128,15 @@ product, play with it, and want it — without installing?
 | A2 | See the brain | ✅ | `/viewer/` renders the Pemberton. |
 | A3 | **Know what they're looking at** | 🔴 | **No orientation.** No legend of what the bands mean, no "click a department", no guided first move. The HUD lists layer counts; the bottom line says "drag to rotate". Neither teaches the model. A stranger sees a pretty object, not a system. |
 | A4 | **Play, guided** | 🔴 | No affordance says *try this*. The palette (`/`) is announced in 10px at the bottom. Layer isolation, torch focus and the dossier are all discoverable only by accident. |
-| A5 | See the organigram | 🟡 | `/chart/` is live and branded — but linked **only** as a topbar item beside GitHub/npm. No section on the page shows it, explains it, or sells it. One of three faces, styled like a footer link. |
-| A6 | **Understand the model** | 🔴 | **The site never teaches the contract.** No explanation of: what a layer/band is · what a bucket is · what a rule is and how inheritance works · what an agent's boot slice contains · what the JSON actually looks like. `SPEC.md` exists in the repo; the *converting surface* has none of it. |
+| A5 | See the organigram | ✅ | Section 02 gives it a first-class card with its own pitch and CTA, alongside SEE and ASK. |
+| A6 | **Understand the model** | ✅ | Section 03 teaches the five nouns — layer, agent, bucket, rule, boot — each with the Pemberton as the worked example, closing on a real unedited `booboo_boot("housekeeping")` slice showing rules in inheritance order. |
 | A7 | Try the ASK face | 🟡 | Two canned Q&As + a copyable URL. It's a screenshot in prose — there is **no way to ask anything from the page**. |
-| A8 | Grasp "three faces" | 🔴 | SEE / GOVERN / ASK is internal framing. A visitor never learns there are three ways to use one brain. |
+| A8 | Grasp "three faces" | ✅ | Section 02 names SEE / GOVERN / ASK, one card each, every one a live link. |
 | A9 | Convert | 🟡 | `npx` command + GitHub. No "hosted / done-for-you" path, no email capture, nothing for a non-technical buyer. |
 
-**A3, A4, A6, A8 are the same wound:** we built the machine and never wrote the
-label. Everything is *shown*, nothing is *taught*.
+A6 and A8 are closed. **A3/A4 remain the open half of that wound:** the site
+now teaches the model, but the *viewer itself* still drops a stranger into a
+3D scene with no legend and no guided first move.
 
 ---
 
@@ -196,13 +197,11 @@ the row it closes.
 
 **Tier 2 — the label for the machine**
 
-4. **The model explainer** (B/A6) — teach bands, buckets, rule inheritance,
-   boot slice, with real JSON shown.
-5. **Orientation + guided play in the viewer** (B-A3/A4) — first-run legend
-   naming the bands, "start here" pointing at the amber department.
-6. **Promote the organigram** (B-A5/A8) — a real "three faces, one brain"
-   section; the staff board shown, not a topbar link.
-7. **In-page ask** (B-A7) + palette ask-mode (A4) — same engine, two surfaces.
+4. ~~**The model explainer** (A6)~~ ✅ shipped + verified.
+5. **Orientation + guided play in the viewer** (A3/A4) — first-run legend
+   naming the bands, "start here" pointing at the amber department. **Next.**
+6. ~~**Promote the organigram** (A5/A8)~~ ✅ shipped + verified.
+7. **In-page ask** (A7) + palette ask-mode (A4) — same engine, two surfaces.
 
 **Tier 3 — proof and polish**
 

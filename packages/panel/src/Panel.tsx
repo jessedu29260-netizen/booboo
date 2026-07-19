@@ -425,13 +425,16 @@ function consequenceOf(a: BOrgAgent, org: BOrg, slice: ReturnType<typeof orgBoot
   };
   const declares = a.rules?.length ?? 0;
   const below = descendants(a.id);
-  if (below > 0) {
-    const parts = [];
-    if (declares) parts.push(`declares ${declares} rule${declares === 1 ? "" : "s"}`);
-    parts.push(`binds ${below} below`);
-    return parts.join(" · ");
-  }
-  return `boots on ${slice.rules.length} rule${slice.rules.length === 1 ? "" : "s"} · reaches ${slice.buckets.length} bucket${slice.buckets.length === 1 ? "" : "s"}`;
+  // LEAVES GET NOTHING HERE. They previously read "boots on 2 rules · reaches 3
+  // buckets" — identical on all 52, because in this org every staff role
+  // inherits exactly the same slice. A fact that never varies across a column
+  // is texture pretending to be data. A leaf's "what" is its duty line; its
+  // consequence is genuinely upward, and the dossier already tells that story.
+  if (below === 0) return "";
+  const parts = [];
+  if (declares) parts.push(`declares ${declares} rule${declares === 1 ? "" : "s"}`);
+  parts.push(`binds ${below} below`);
+  return parts.join(" · ");
 }
 
 function AgentFacts({ a, org, health, showLaw }: { a: BOrgAgent; org: BOrg; health: HealthMap | null; showLaw?: boolean }) {
@@ -442,8 +445,9 @@ function AgentFacts({ a, org, health, showLaw }: { a: BOrgAgent; org: BOrg; heal
   if (!slice) return null;
   return (
     <>
-      {/* what this node does to the system, in plain English */}
-      <span className="ag-flows" title="what flows out of this node — the org file is the source booboo_boot reads">{consequence}</span>
+      {/* what this node does to the system, in plain English. Empty on leaves —
+          see consequenceOf: a line identical across 52 cards is not a fact. */}
+      {consequence && <span className="ag-flows" title="what flows out of this node — the org file is the source booboo_boot reads">{consequence}</span>}
       <span className="ag-facts">
         <em className={`ag-fact ag-fact-health ${light}`}>{HEALTH_WORD[light]}</em>
         <em className="ag-fact ag-fact-report" title={pulse?.lastAt ? `last report filed ${relTime(pulse.lastAt)}` : "no report filed yet"}>

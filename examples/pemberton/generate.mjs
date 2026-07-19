@@ -190,43 +190,81 @@ const PERSONAS = {
 };
 
 // tier-2 named-role staff (real hotel roles, DESIGN list) — 52 total
+// Every staff role carries a DUTY — one honest sentence saying what this role
+// actually does at the Pemberton. Not decoration: the leaf card's "what". The
+// board previously showed 51 staff whose only distinguishing text was their own
+// name repeated, and a consequence line ("boots on 2 rules") identical across
+// every one of them — a fact that never varies carries no information.
 const STAFF = {
   "front-office": [
-    ["night-porter", "Night Porter"], ["concierge", "Concierge"], ["guest-relations", "Guest Relations"],
-    ["reception", "Reception"], ["reservations", "Reservations"], ["bell-desk", "Bell Desk"],
+    ["night-porter", "Night Porter", "Walks every corridor at 02:00 and again at 05:00; signs the night log before handover."],
+    ["concierge", "Concierge", "Knows which restaurants still seat at eleven, and who owes the house a favour."],
+    ["guest-relations", "Guest Relations", "Reads every arrival profile before the car reaches the door."],
+    ["reception", "Reception", "Owns the desk: check-in, keys, and the first ninety seconds of a stay."],
+    ["reservations", "Reservations", "Keeps room inventory truthful across every channel the house sells on."],
+    ["bell-desk", "Bell Desk", "Moves luggage and cars without a guest ever watching it happen."],
   ],
   "f-and-b": [
-    ["head-chef", "Head Chef"], ["sommelier", "Sommelier"], ["chef-de-rang", "Chef de Rang"],
-    ["room-service", "Room Service"], ["pastry-chef", "Pastry Chef"],
-    ["restaurant-manager", "Restaurant Manager"], ["bar-manager", "Bar Manager"],
+    ["head-chef", "Head Chef", "Runs the pass; tastes every sauce before it leaves the kitchen."],
+    ["sommelier", "Sommelier", "Keeps the cellar honest and pours what the dish actually needs."],
+    ["chef-de-rang", "Chef de Rang", "Owns the section — timing, temperature, and the guest's pace."],
+    ["room-service", "Room Service", "Gets hot food to the eleventh floor still hot."],
+    ["pastry-chef", "Pastry Chef", "Bakes to the morning covers, never to the freezer."],
+    ["restaurant-manager", "Restaurant Manager", "Books the floor and fixes a service before it becomes a complaint."],
+    ["bar-manager", "Bar Manager", "Stock, licence and last orders; counts the cellar every Monday."],
   ],
   housekeeping: [
-    ["floor-supervisor-east", "Floor Supervisor East"], ["floor-supervisor-west", "Floor Supervisor West"],
-    ["laundry", "Laundry"], ["minibar", "Minibar"], ["linen-room", "Linen Room"], ["turndown", "Turndown"],
+    ["floor-supervisor-east", "Floor Supervisor East", "Inspects every east-wing room twice before it is released for sale."],
+    ["floor-supervisor-west", "Floor Supervisor West", "Inspects every west-wing room twice before it is released for sale."],
+    ["laundry", "Laundry", "Turns the house linen daily and pulls anything past its life."],
+    ["minibar", "Minibar", "Restocks and reconciles every minibar before the folio closes."],
+    ["linen-room", "Linen Room", "Counts stock in and out so the contract crew never leaves short."],
+    ["turndown", "Turndown", "Turns down every occupied room between six and eight."],
   ],
   engineering: [
-    ["lift-engineer", "Lift Engineer"], ["hvac", "HVAC"], ["night-engineer", "Night Engineer"],
-    ["pool-plant", "Pool Plant"], ["electrician", "Electrician"], ["decorator", "Painter & Decorator"],
+    ["lift-engineer", "Lift Engineer", "Keeps three cars running and every LOLER certificate current."],
+    ["hvac", "HVAC", "Holds each floor within two degrees, and the plant room within one."],
+    ["night-engineer", "Night Engineer", "The only pair of hands in the building between midnight and six."],
+    ["pool-plant", "Pool Plant", "Tests chemistry four times a day and logs every correction."],
+    ["electrician", "Electrician", "Owns the boards, the testing schedule and every emergency light."],
+    ["decorator", "Painter & Decorator", "Makes damage disappear before the room goes back on sale."],
   ],
   "spa-leisure": [
-    ["therapist-rota", "Therapist Rota"], ["pool-attendant", "Pool Attendant"], ["gym-attendant", "Gym Attendant"],
-    ["spa-reception", "Spa Reception"], ["treatments-lead", "Treatments Lead"],
+    ["therapist-rota", "Therapist Rota", "Covers every booked treatment; a cancellation is the last resort."],
+    ["pool-attendant", "Pool Attendant", "Watches the water and closes it the moment chemistry drifts."],
+    ["gym-attendant", "Gym Attendant", "Checks every machine daily and signs the equipment log."],
+    ["spa-reception", "Spa Reception", "Sequences and re-sequences the day without a guest ever waiting."],
+    ["treatments-lead", "Treatments Lead", "Owns the protocol book and trains every therapist against it."],
   ],
   "events-banqueting": [
-    ["wedding-coordinator", "Wedding Coordinator"], ["av", "AV"], ["banqueting-supervisor", "Banqueting Supervisor"],
-    ["events-sales", "Events Sales"], ["florist", "Florist"], ["setup-crew-lead", "Setup Crew Lead"],
+    ["wedding-coordinator", "Wedding Coordinator", "Carries one couple from first enquiry to the last dance."],
+    ["av", "AV", "Tests every microphone, screen and feed before the room fills."],
+    ["banqueting-supervisor", "Banqueting Supervisor", "Sets, serves and clears four hundred covers to the minute."],
+    ["events-sales", "Events Sales", "Converts enquiries without promising a room the house cannot set."],
+    ["florist", "Florist", "Cuts, conditions and places every arrangement the morning of."],
+    ["setup-crew-lead", "Setup Crew Lead", "Turns a ballroom around between two functions in a single night."],
   ],
   security: [
-    ["night-watch", "Night Watch"], ["cctv", "CCTV"], ["key-custody", "Key Custody"],
-    ["door-team", "Door Team"], ["loading-bay", "Loading Bay"],
+    ["night-watch", "Night Watch", "Patrols the perimeter hourly and logs every door opened out of hours."],
+    ["cctv", "CCTV", "Watches the estate and retains footage exactly as long as the law allows."],
+    ["key-custody", "Key Custody", "Issues, tracks and reconciles every key in the building."],
+    ["door-team", "Door Team", "First and last face at the entrance; refuses politely."],
+    ["loading-bay", "Loading Bay", "Books deliveries in, checks them off, and keeps the bay clear."],
   ],
   "finance-procurement": [
-    ["procurement", "Procurement"], ["payables", "Payables"], ["night-audit", "Night Audit"],
-    ["receivables", "Receivables"], ["cost-controller", "Cost Controller"], ["paymaster", "Paymaster"],
+    ["procurement", "Procurement", "Buys to spec and to contract; challenges every off-contract order."],
+    ["payables", "Payables", "Matches invoice to order to receipt before a penny leaves the house."],
+    ["night-audit", "Night Audit", "Runs at 03:00 unattended and reconciles every ledger while the house sleeps."],
+    ["receivables", "Receivables", "Chases every account before it ages past terms."],
+    ["cost-controller", "Cost Controller", "Counts what each department spends against what it was given."],
+    ["paymaster", "Paymaster", "Pays the house correctly and on time, every time."],
   ],
   "people-culture": [
-    ["rota", "Rota"], ["training", "Training"], ["recruitment", "Recruitment"],
-    ["staff-welfare", "Staff Welfare"], ["payroll-liaison", "Payroll Liaison"],
+    ["rota", "Rota", "Publishes every rota ahead of the week and resolves clashes before it goes out."],
+    ["training", "Training", "Owns induction and the annual refresh for every role in the house."],
+    ["recruitment", "Recruitment", "Fills a vacancy before the gap ever reaches the rota."],
+    ["staff-welfare", "Staff Welfare", "Runs every return-to-work conversation and knows who is struggling."],
+    ["payroll-liaison", "Payroll Liaison", "Reconciles hours worked to hours paid, weekly."],
   ],
 };
 
@@ -310,7 +348,7 @@ L("agent:housekeeping", "agent:engineering", "escalates_to", 0.6);
 // bronze band: 52 named-role staff (tier 2)
 const staffIds = [];
 for (const d of DEPTS) {
-  for (const [slug, label] of STAFF[d.key]) {
+  for (const [slug, label, duty] of STAFF[d.key]) {
     const id = `agent:${d.key}-${slug}`;
     staffIds.push(id);
     const stale = id === "agent:spa-leisure-pool-attendant"; // 🟡 dark-agent flag (DESIGN)
@@ -318,7 +356,7 @@ for (const d of DEPTS) {
       id, type: "agent", layer: "staff", label,
       weight: 0.5, tier: 2, parent: `agent:${d.key}`, cluster: d.key,
       data: {
-        role: label, dept: d.name,
+        role: label, dept: d.name, desc: duty,
         lastBoot: stale ? isoDays(12) : iso((0.2 + h(id + ":boot") * 2.8) * DAY),
         ...(stale ? { flag: "stale", note: "No boot in 12 days — dark agent" } : {}),
         ...(id === "agent:finance-procurement-night-audit"
@@ -718,13 +756,13 @@ const org = {
       boot: `You are the ${d.name} head agent of the Pemberton Grand. Boot with booboo_boot('${d.key}'). Obey the House Standard first, your SOP second. Work only your own buckets; escalate to the Executive in writing.`,
     })),
     ...DEPTS.flatMap((d) =>
-      STAFF[d.key].map(([slug, label]) => ({
+      STAFF[d.key].map(([slug, label, duty]) => ({
         // No `role` here on purpose: the department is already the lane the
         // card sits in, so "Lift Engineer — Engineering" said nothing a
         // second time that the lane hadn't already said once. The card face
         // shows facts instead (health · bucket reach · rule count · last
         // report) — see Panel.tsx AgentCard.
-        id: `${d.key}-${slug}`, name: label, parent: d.key,
+        id: `${d.key}-${slug}`, name: label, parent: d.key, role: duty,
         ...(d.key === "finance-procurement" && slug === "night-audit"
           ? {
               kind: "automation", cadence: 24, emoji: "🌙",

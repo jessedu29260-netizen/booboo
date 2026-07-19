@@ -22,6 +22,7 @@ const ApiCtx = createContext<ApiFn>(defaultApi);
 const useApi = () => useContext(ApiCtx);
 
 type Stats = { nodes: number; links: number; byLayer: Record<string, number> };
+type Change = { key: string; id: string; kind: "added" | "removed" | "moved" | "edited"; label: string };
 
 const TABS = [
   { id: "org", glyph: "⌂", label: "organigram" },
@@ -417,6 +418,29 @@ function CascadeRails({ chartRef, version }: { chartRef: React.RefObject<HTMLDiv
   );
 }
 
+/** A department lane that is ITSELF a drop target.
+ *  Cards were the only thing accepting a drop, so releasing over the empty
+ *  space inside a lane did nothing at all and read as "it will not let me move
+ *  this". The lane is a much larger target and its meaning is unambiguous:
+ *  drop anywhere in Engineering's row and you report to Engineering. */
+function Lane({ laneId, isLane, dragId, onDropOn, children }: {
+  laneId: string; isLane: boolean; dragId: string | null;
+  onDropOn: (id: string) => void; children: React.ReactNode;
+}) {
+  const [over, setOver] = useState(false);
+  if (!isLane) return <div className="oc-child">{children}</div>;
+  return (
+    <div
+      className={`oc-child${over && dragId && dragId !== laneId ? " lane-over" : ""}`}
+      onDragOver={(e) => { if (dragId && dragId !== laneId) { e.preventDefault(); setOver(true); } }}
+      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
+      onDrop={(e) => { e.preventDefault(); setOver(false); if (dragId && dragId !== laneId) onDropOn(laneId); }}
+    >
+      {children}
+    </div>
+  );
+}
+
 /* ────────────────────────── ORGANIGRAM ────────────────────────── */
 
 // The card's fact row (CRAFT §5: "health chip · bucket chips · rule count ·
@@ -705,9 +729,15 @@ function ChartNode({
           ) : (
           <div className={`oc-row${depth > 0 && kids.length > 3 ? " wrap" : ""}${depth === 0 ? " lanes" : ""}`}>
             {kids.map((k, i) => (
-              <div className="oc-child" key={k.id}>
+              <Lane
+                key={k.id}
+                laneId={k.id}
+                isLane={depth === 0}
+                dragId={cardProps.dragId}
+                onDropOn={cardProps.onDropOn}
+              >
                 <ChartNode org={org} a={k} depth={depth + 1} order={i} {...cardProps} />
-              </div>
+              </Lane>
             ))}
           </div>
           )}
@@ -1583,21 +1613,45 @@ function App() {
       .catch(() => setTotals(null));
   }, [api]);
 
-  const changes = useMemo(() => {
+  // Structured, not strings: every pending change has to be revertible ON ITS
+  // OWN. The only undo used to be a global "discard", which makes a single
+  // mis-drop cost you every other edit you had made, so people stop dragging.
+  const changes = useMemo<Change[]>(() => {
     if (!saved || !draft) return [];
     const before = new Map(saved.agents.map((a) => [a.id, a]));
     const after = new Map(draft.agents.map((a) => [a.id, a]));
     const name = (id: string) => after.get(id)?.name ?? before.get(id)?.name ?? id;
     const noParent = ({ parent: _p, ...rest }: BOrgAgent) => rest;
-    const out: string[] = [];
+    const out: Change[] = [];
     for (const a of draft.agents) {
       const b = before.get(a.id);
-      if (!b) { out.push(`＋ ${a.name} under ${a.parent ? name(a.parent) : "root"}`); continue; }
-      if ((b.parent ?? null) !== (a.parent ?? null)) out.push(`${a.name} → now under ${a.parent ? name(a.parent) : "root"}`);
-      if (JSON.stringify(noParent(b)) !== JSON.stringify(noParent(a))) out.push(`✎ ${a.name} edited`);
+      if (!b) { out.push({ key: `add:${a.id}`, id: a.id, kind: "added", label: `＋ ${a.name} under ${a.parent ? name(a.parent) : "root"}` }); continue; }
+      if ((b.parent ?? null) !== (a.parent ?? null)) out.push({ key: `move:${a.id}`, id: a.id, kind: "moved", label: `${a.name} → now under ${a.parent ? name(a.parent) : "root"}` });
+      if (JSON.stringify(noParent(b)) !== JSON.stringify(noParent(a))) out.push({ key: `edit:${a.id}`, id: a.id, kind: "edited", label: `✎ ${a.name} edited` });
     }
-    for (const b of saved.agents) if (!after.has(b.id)) out.push(`− ${b.name} removed`);
+    for (const b of saved.agents) if (!after.has(b.id)) out.push({ key: `rm:${b.id}`, id: b.id, kind: "removed", label: `− ${b.name} removed` });
     return out;
+  }, [saved, draft]);
+
+  /** Undo ONE pending change, leaving every other edit intact. */
+  const revertOne = useCallback((c: Change) => {
+    if (!saved || !draft) return;
+    const was = saved.agents.find((a) => a.id === c.id);
+    setDraft((d) => {
+      if (!d) return d;
+      if (c.kind === "added") return { ...d, agents: d.agents.filter((a) => a.id !== c.id) };
+      if (c.kind === "removed" && was) return { ...d, agents: [...d.agents, was] };
+      if (!was) return d;
+      return {
+        ...d,
+        agents: d.agents.map((a) => {
+          if (a.id !== c.id) return a;
+          // a move restores only the parent; an edit restores everything else,
+          // so reverting one does not silently undo the other.
+          return c.kind === "moved" ? { ...a, parent: was.parent } : { ...was, parent: a.parent };
+        }),
+      };
+    });
   }, [saved, draft]);
 
   // Tweakability — every field of every agent, plus add/remove, all draft-side.
@@ -1735,7 +1789,18 @@ function App() {
 
       {changes.length > 0 && tab === "org" && (
         <div className="pending">
-          {changes.map((c) => <span key={c} className="pending-item">{c}</span>)}
+          <span className="pending-lead">unapplied</span>
+          {changes.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              className="pending-item"
+              title="undo just this change"
+              onClick={() => revertOne(c)}
+            >
+              {c.label}<i aria-hidden="true">undo</i>
+            </button>
+          ))}
         </div>
       )}
       {err && <div className="pnl-err">{err}</div>}

@@ -183,7 +183,7 @@ load()
         // depending when you land on it. drift (a slow in-plane roll) keeps it
         // alive while staying face-on, which is what a hero actually wants.
         ? <Booboo data={data} cfg={{ ...defaultCfg(data), labels: false, orbit: 0 }} />
-        : <BoobooView data={data} initialSel={sel} />,
+        : <BoobooView data={data} initialSel={sel} controls={q.get("chrome") !== "lite"} />,
     );
     nudge();
   })

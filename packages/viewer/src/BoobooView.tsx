@@ -82,11 +82,15 @@ export function BoobooView({
   persist = true,
   initialSel = null,
   initialCfg,
+  controls = true,
 }: {
   data: BoobooGraph;
   persistKey?: string;
   persist?: boolean;
   initialSel?: string | null;
+  /** false = "lite": the scene, flags, dossier and palette, without the
+   *  fourteen-slider drawer. For embedding a playable graph in a page. */
+  controls?: boolean;
   // Opening overrides merged over defaultCfg — lets a host set its own look
   // (e.g. a de-bloomed, peeled-wide layered view) without forking the viewer.
   initialCfg?: Partial<BoobooCfg>;
@@ -185,7 +189,7 @@ export function BoobooView({
         </div>
       </div>
 
-      <Controls data={data} cfg={cfg} setCfg={setCfg} resetCfg={resetCfg} />
+      {controls && <Controls data={data} cfg={cfg} setCfg={setCfg} resetCfg={resetCfg} />}
 
       {node && <Dossier key={node.id} n={node} byId={byId} rels={adj.get(node.id) ?? []} accent={layerColor[node.layer] ?? T.gold} onClose={() => setSel(null)} onJump={setSel} />}
 

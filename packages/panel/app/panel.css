@@ -248,6 +248,16 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .oc-mac.dragging { opacity: 0.45; cursor: grabbing; }
 .oc-mac.more:hover { color: var(--accent); }
 .mac-emoji { font-size: 11px; }
+/* real vendor marks, tinted to the house so twelve logos read as one system.
+   Full brand colour on hover — recognition when you want it, calm when you
+   don't. */
+.mac-brand {
+  width: 13px; height: 13px; flex: 0 0 13px; display: block;
+  filter: grayscale(1) brightness(0) invert(0.72) sepia(0.5) saturate(1.4) hue-rotate(3deg);
+  opacity: .85; transition: filter .25s ease, opacity .25s ease, transform .25s ease;
+}
+.oc-mac:hover .mac-brand,
+.oc-mac.sel .mac-brand { filter: none; opacity: 1; transform: scale(1.08); }
 .mac-name { white-space: nowrap; max-width: 76px; overflow: hidden; text-overflow: ellipsis; }
 .mac-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 7px; display: inline-block; }
 .mac-dot.ok { background: var(--accent); box-shadow: 0 0 6px rgba(79, 184, 160, 0.7); }
@@ -417,12 +427,39 @@ body { font-family: var(--font); color: var(--ink); background: var(--bg); overf
 .oc-row.lanes > .oc-child::after { display: none; }
 .oc-row.lanes > .oc-child > .ocn > .oc-down { display: none; }
 
-/* inside a lane: head card, then its people wrapping to the right */
+/* inside a lane: head card top-left, its service tray beneath the head, its
+   people filling the right. Explicit areas — an implicit 2-column grid put the
+   tray in the staff slot the moment every department gained services, which
+   shunted the people into a one-card column. */
 .oc-row.lanes > .oc-child > .ocn {
   display: grid;
   grid-template-columns: minmax(190px, 232px) 1fr;
+  grid-template-areas:
+    "head staff"
+    "macs staff";
+  grid-template-rows: auto 1fr;
   align-items: start;
-  gap: 18px;
+  gap: 10px 18px;
+}
+.oc-row.lanes > .oc-child > .ocn > .ag      { grid-area: head; }
+.oc-row.lanes > .oc-child > .ocn > .oc-tray { grid-area: macs; }
+.oc-row.lanes > .oc-child > .ocn > .oc-row  { grid-area: staff; }
+
+/* the tray is the department's stack of real services — one per line, so the
+   vendor marks read as a list of systems rather than a scatter of chips */
+.oc-row.lanes > .oc-child > .ocn > .oc-tray {
+  display: flex; flex-direction: column; align-items: stretch;
+  gap: 4px; margin: 0; padding: 0; max-width: 232px;
+}
+.oc-row.lanes > .oc-child > .ocn > .oc-tray > .oc-mac { justify-content: flex-start; width: 100%; }
+.oc-row.lanes > .oc-child > .ocn > .oc-tray > .oc-mac .mac-name { max-width: none; }
+
+@media (max-width: 820px) {
+  .oc-row.lanes > .oc-child > .ocn {
+    grid-template-columns: 1fr;
+    grid-template-areas: "head" "macs" "staff";
+  }
+  .oc-row.lanes > .oc-child > .ocn > .oc-tray { max-width: none; flex-direction: row; flex-wrap: wrap; }
 }
 /* inside a lane the people always flow right and wrap — the ".wrap" grid
    (which grows downward) would otherwise stack a big department into a

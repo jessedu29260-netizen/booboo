@@ -339,7 +339,7 @@ function ChartNode({
               onClick={(e) => { e.stopPropagation(); cardProps.onSelect(m.id); }}
             >
               <i className={`mac-dot ${lightFor(m, cardProps.health)}${unstableFor(m, cardProps.health) ? " unstable" : ""}`} />
-              <span className="mac-emoji">{m.emoji || "⚙️"}</span>
+              <BrandMark agent={m} />
               <span className="mac-name">{m.name}</span>
             </button>
           ))}
@@ -374,6 +374,29 @@ function ChartNode({
         </>
       )}
     </div>
+  );
+}
+
+/* The real mark of a real service. `data.brand` is a simpleicons slug; the CDN
+   returns a single-colour SVG we tint to the house palette so twelve vendors
+   don't turn the board into a sticker album. Falls back to the emoji when a
+   vendor isn't in the set (or the CDN is unreachable) — a missing logo must
+   never leave an empty square. */
+function BrandMark({ agent }: { agent: BOrgAgent }) {
+  const brand = ((agent.data ?? {}) as Record<string, unknown>).brand;
+  const [failed, setFailed] = useState(false);
+  if (typeof brand !== "string" || !brand || failed) {
+    return <span className="mac-emoji">{agent.emoji || "⚙️"}</span>;
+  }
+  return (
+    <img
+      className="mac-brand"
+      src={`https://cdn.simpleicons.org/${brand}`}
+      alt=""
+      loading="lazy"
+      draggable={false}
+      onError={() => setFailed(true)}
+    />
   );
 }
 

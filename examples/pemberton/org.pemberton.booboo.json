@@ -2,7 +2,7 @@
   "booboo_org": "1.0",
   "title": "The Pemberton Grand",
   "root": "gm",
-  "updated": "2026-07-18T21:29:59.855Z",
+  "updated": "2026-07-19T09:58:29.465Z",
   "agents": [
     {
       "id": "gm",
@@ -459,6 +459,216 @@
       "name": "Payroll Liaison",
       "parent": "people-culture",
       "role": "Payroll Liaison — People & Culture"
+    },
+    {
+      "id": "svc-pms",
+      "name": "SAP Hospitality",
+      "parent": "front-office",
+      "kind": "automation",
+      "emoji": "🏨",
+      "cadence": 1,
+      "role": "Rooms, rates and folios — the system of record for every stay",
+      "boot": "You are the SAP Hospitality connector for the Pemberton Grand. Boot with booboo_boot('svc-pms'). Sync arrivals, departures and folio balances; never overwrite a human's note on a reservation.",
+      "data": {
+        "brand": "sap",
+        "vendor": "SAP",
+        "category": "property management"
+      }
+    },
+    {
+      "id": "svc-bookingcom",
+      "name": "Booking.com",
+      "parent": "front-office",
+      "kind": "automation",
+      "emoji": "🌐",
+      "cadence": 2,
+      "role": "OTA channel — inventory and rates pushed, reservations pulled",
+      "boot": "You are the Booking.com connector for the Pemberton Grand. Boot with booboo_boot('svc-bookingcom'). Keep availability truthful; an oversell is a red flag, not a rounding error.",
+      "data": {
+        "brand": "bookingdotcom",
+        "vendor": "Booking.com",
+        "category": "distribution"
+      }
+    },
+    {
+      "id": "svc-whatsapp",
+      "name": "WhatsApp Business",
+      "parent": "front-office",
+      "kind": "automation",
+      "emoji": "💬",
+      "cadence": 6,
+      "role": "Pre-arrival and in-stay messages to guests",
+      "boot": "You are the WhatsApp Business connector for the Pemberton Grand. Boot with booboo_boot('svc-whatsapp'). Never message a guest after 21:00 local unless it is a safety matter.",
+      "data": {
+        "brand": "whatsapp",
+        "vendor": "WhatsApp",
+        "category": "guest messaging"
+      }
+    },
+    {
+      "id": "svc-stripe",
+      "name": "Stripe",
+      "parent": "finance-procurement",
+      "kind": "automation",
+      "emoji": "💳",
+      "cadence": 1,
+      "role": "Card capture, deposits and refunds",
+      "boot": "You are the Stripe connector for the Pemberton Grand. Boot with booboo_boot('svc-stripe'). Reconcile against the PMS folio nightly; flag any mismatch to the Night Audit.",
+      "data": {
+        "brand": "stripe",
+        "vendor": "Stripe",
+        "category": "payments"
+      }
+    },
+    {
+      "id": "svc-xero",
+      "name": "Xero",
+      "parent": "finance-procurement",
+      "kind": "automation",
+      "emoji": "📊",
+      "cadence": 24,
+      "role": "Ledger, payables and the monthly close",
+      "boot": "You are the Xero connector for the Pemberton Grand. Boot with booboo_boot('svc-xero'). Post only what the Night Audit has already reconciled.",
+      "data": {
+        "brand": "xero",
+        "vendor": "Xero",
+        "category": "accounting"
+      }
+    },
+    {
+      "id": "svc-n8n",
+      "name": "n8n",
+      "parent": "finance-procurement",
+      "kind": "automation",
+      "emoji": "🔗",
+      "cadence": 1,
+      "role": "The glue — every cross-system workflow in the house",
+      "boot": "You are the n8n connector for the Pemberton Grand. Boot with booboo_boot('svc-n8n'). You move data between systems; you never invent it. Fail loudly.",
+      "data": {
+        "brand": "n8n",
+        "vendor": "n8n",
+        "category": "automation"
+      }
+    },
+    {
+      "id": "svc-tripadvisor",
+      "name": "Tripadvisor",
+      "parent": "f-and-b",
+      "kind": "automation",
+      "emoji": "🍴",
+      "cadence": 2,
+      "role": "Restaurant covers, waitlist and the review that follows",
+      "boot": "You are the Tripadvisor connector for the Pemberton Grand. Boot with booboo_boot('svc-tripadvisor'). Protect the brigade's pace — never seat beyond the kitchen's agreed covers.",
+      "data": {
+        "brand": "tripadvisor",
+        "vendor": "Tripadvisor",
+        "category": "covers & reputation"
+      }
+    },
+    {
+      "id": "svc-alliancelaundry",
+      "name": "Alliance Laundry",
+      "parent": "housekeeping",
+      "kind": "automation",
+      "emoji": "🧻",
+      "cadence": 12,
+      "role": "Contracted linen collection and return",
+      "boot": "You are the Alliance Laundry connector for the Pemberton Grand. Boot with booboo_boot('svc-alliancelaundry'). Track linen out versus in; a shortfall is a procurement problem, not a housekeeping one.",
+      "data": {
+        "brand": null,
+        "vendor": "Alliance Laundry Systems",
+        "category": "linen contract"
+      }
+    },
+    {
+      "id": "svc-sodexo",
+      "name": "Sodexo Clean",
+      "parent": "housekeeping",
+      "kind": "automation",
+      "emoji": "🧽",
+      "cadence": 24,
+      "role": "Deep-clean and public-area contract crew",
+      "boot": "You are the Sodexo Clean connector for the Pemberton Grand. Boot with booboo_boot('svc-sodexo'). Log every completed area; an unlogged deep-clean did not happen.",
+      "data": {
+        "brand": null,
+        "vendor": "Sodexo",
+        "category": "contract cleaning"
+      }
+    },
+    {
+      "id": "svc-siemens",
+      "name": "Siemens BMS",
+      "parent": "engineering",
+      "kind": "automation",
+      "emoji": "🌡️",
+      "cadence": 1,
+      "role": "HVAC, lifts and plant telemetry",
+      "boot": "You are the Siemens BMS connector for the Pemberton Grand. Boot with booboo_boot('svc-siemens'). Escalate any lift fault or water alarm to Engineering within the minute.",
+      "data": {
+        "brand": "siemens",
+        "vendor": "Siemens",
+        "category": "building management"
+      }
+    },
+    {
+      "id": "svc-telegram",
+      "name": "Telegram",
+      "parent": "people-culture",
+      "kind": "automation",
+      "emoji": "📣",
+      "cadence": 1,
+      "role": "Shift handover and duty-manager escalation",
+      "boot": "You are the Telegram connector for the Pemberton Grand. Boot with booboo_boot('svc-telegram'). Escalations go to a channel, never a DM — handovers must survive a person leaving.",
+      "data": {
+        "brand": "telegram",
+        "vendor": "Telegram",
+        "category": "internal comms"
+      }
+    },
+    {
+      "id": "svc-verkada",
+      "name": "Verkada",
+      "parent": "security",
+      "kind": "automation",
+      "emoji": "📹",
+      "cadence": 1,
+      "role": "Door access, key custody and camera events",
+      "boot": "You are the Verkada connector for the Pemberton Grand. Boot with booboo_boot('svc-verkada'). Access logs are evidence: append only, never edit, never delete.",
+      "data": {
+        "brand": null,
+        "vendor": "Verkada",
+        "category": "access & CCTV"
+      }
+    },
+    {
+      "id": "svc-square",
+      "name": "Square",
+      "parent": "f-and-b",
+      "kind": "automation",
+      "emoji": "🧾",
+      "cadence": 2,
+      "role": "Bar and restaurant terminals",
+      "boot": "You are the Square connector for the Pemberton Grand. Boot with booboo_boot('svc-square'). Every cover closed on a terminal must land in the folio before the Night Audit.",
+      "data": {
+        "brand": "square",
+        "vendor": "Square",
+        "category": "point of sale"
+      }
+    },
+    {
+      "id": "svc-googlecalendar",
+      "name": "Google Calendar",
+      "parent": "events-banqueting",
+      "kind": "automation",
+      "emoji": "📅",
+      "cadence": 4,
+      "role": "Function diary — every event, setup and teardown",
+      "boot": "You are the Google Calendar connector for the Pemberton Grand. Boot with booboo_boot('svc-googlecalendar'). A room double-booked is a red flag; refuse the write and escalate.",
+      "data": {
+        "brand": "googlecalendar",
+        "vendor": "Google",
+        "category": "scheduling"
+      }
     }
   ]
 }

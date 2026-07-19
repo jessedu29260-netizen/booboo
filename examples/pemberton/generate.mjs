@@ -115,6 +115,57 @@ const DEPTS = [
   { key: "people-culture",      name: "People & Culture",      emoji: "👥" },
 ];
 
+// ── the services the house runs on ──────────────────────────────────────────
+// Real vendors, named honestly: a five-star hotel is a mesh of third-party
+// systems, and a brain that can't see them is only half the operation. `brand`
+// is a simpleicons slug the panel renders as the real mark; nothing here
+// implies endorsement — it's the same "works with" usage any integrations page
+// carries. Each hangs off the department that actually depends on it.
+const INTEGRATIONS = [
+  { slug: "pms", name: "SAP Hospitality", vendor: "SAP", brand: "sap", emoji: "🏨", dept: "front-office", cadence: 1,
+    category: "property management", role: "Rooms, rates and folios — the system of record for every stay",
+    duty: "Sync arrivals, departures and folio balances; never overwrite a human's note on a reservation." },
+  { slug: "bookingcom", name: "Booking.com", vendor: "Booking.com", brand: "bookingdotcom", emoji: "🌐", dept: "front-office", cadence: 2,
+    category: "distribution", role: "OTA channel — inventory and rates pushed, reservations pulled",
+    duty: "Keep availability truthful; an oversell is a red flag, not a rounding error." },
+  { slug: "whatsapp", name: "WhatsApp Business", vendor: "WhatsApp", brand: "whatsapp", emoji: "💬", dept: "front-office", cadence: 6,
+    category: "guest messaging", role: "Pre-arrival and in-stay messages to guests",
+    duty: "Never message a guest after 21:00 local unless it is a safety matter." },
+  { slug: "stripe", name: "Stripe", vendor: "Stripe", brand: "stripe", emoji: "💳", dept: "finance-procurement", cadence: 1,
+    category: "payments", role: "Card capture, deposits and refunds",
+    duty: "Reconcile against the PMS folio nightly; flag any mismatch to the Night Audit." },
+  { slug: "xero", name: "Xero", vendor: "Xero", brand: "xero", emoji: "📊", dept: "finance-procurement", cadence: 24,
+    category: "accounting", role: "Ledger, payables and the monthly close",
+    duty: "Post only what the Night Audit has already reconciled." },
+  { slug: "n8n", name: "n8n", vendor: "n8n", brand: "n8n", emoji: "🔗", dept: "finance-procurement", cadence: 1,
+    category: "automation", role: "The glue — every cross-system workflow in the house",
+    duty: "You move data between systems; you never invent it. Fail loudly." },
+  { slug: "tripadvisor", name: "Tripadvisor", vendor: "Tripadvisor", brand: "tripadvisor", emoji: "🍴", dept: "f-and-b", cadence: 2,
+    category: "covers & reputation", role: "Restaurant covers, waitlist and the review that follows",
+    duty: "Protect the brigade's pace — never seat beyond the kitchen's agreed covers." },
+  { slug: "alliancelaundry", name: "Alliance Laundry", vendor: "Alliance Laundry Systems", brand: null, emoji: "🧻", dept: "housekeeping", cadence: 12,
+    category: "linen contract", role: "Contracted linen collection and return",
+    duty: "Track linen out versus in; a shortfall is a procurement problem, not a housekeeping one." },
+  { slug: "sodexo", name: "Sodexo Clean", vendor: "Sodexo", brand: null, emoji: "🧽", dept: "housekeeping", cadence: 24,
+    category: "contract cleaning", role: "Deep-clean and public-area contract crew",
+    duty: "Log every completed area; an unlogged deep-clean did not happen." },
+  { slug: "siemens", name: "Siemens BMS", vendor: "Siemens", brand: "siemens", emoji: "🌡️", dept: "engineering", cadence: 1,
+    category: "building management", role: "HVAC, lifts and plant telemetry",
+    duty: "Escalate any lift fault or water alarm to Engineering within the minute." },
+  { slug: "telegram", name: "Telegram", vendor: "Telegram", brand: "telegram", emoji: "📣", dept: "people-culture", cadence: 1,
+    category: "internal comms", role: "Shift handover and duty-manager escalation",
+    duty: "Escalations go to a channel, never a DM — handovers must survive a person leaving." },
+  { slug: "verkada", name: "Verkada", vendor: "Verkada", brand: null, emoji: "📹", dept: "security", cadence: 1,
+    category: "access & CCTV", role: "Door access, key custody and camera events",
+    duty: "Access logs are evidence: append only, never edit, never delete." },
+  { slug: "square", name: "Square", vendor: "Square", brand: "square", emoji: "🧾", dept: "f-and-b", cadence: 2,
+    category: "point of sale", role: "Bar and restaurant terminals",
+    duty: "Every cover closed on a terminal must land in the folio before the Night Audit." },
+  { slug: "googlecalendar", name: "Google Calendar", vendor: "Google", brand: "googlecalendar", emoji: "📅", dept: "events-banqueting", cadence: 4,
+    category: "scheduling", role: "Function diary — every event, setup and teardown",
+    duty: "A room double-booked is a red flag; refuse the write and escalate." },
+];
+
 const PERSONAS = {
   gm: "Even-keeled; walks the floors at 07:00; signs every amendment in ink.",
   "front-office": "First voice a guest hears; never lets a request die in a handover.",
@@ -564,6 +615,24 @@ const org = {
           : {}),
       })),
     ),
+    // ── the machines the house actually runs on ────────────────────────────
+    // A real hotel is a mesh of third-party services. Each is an `automation`
+    // owned by the department that depends on it, carrying a `data.brand` slug
+    // the panel renders as the real mark (simpleicons). This is what makes the
+    // Pemberton read as an operation rather than a diagram: you can see, at a
+    // glance, that Front Office lives on a PMS and a channel manager, that
+    // money moves through Stripe, that the glue is n8n.
+    ...INTEGRATIONS.map((m) => ({
+      id: `svc-${m.slug}`,
+      name: m.name,
+      parent: m.dept,
+      kind: "automation",
+      emoji: m.emoji,
+      cadence: m.cadence,
+      role: m.role,
+      boot: `You are the ${m.name} connector for the Pemberton Grand. Boot with booboo_boot('svc-${m.slug}'). ${m.duty}`,
+      data: { brand: m.brand, vendor: m.vendor, category: m.category },
+    })),
   ],
 };
 

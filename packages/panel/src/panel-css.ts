@@ -433,7 +433,8 @@ export const PANEL_CSS = String.raw`
 .pending-item:hover i { background: var(--warn); color: var(--bg-1); }
 
 /* the lane lights up as a drop target, so a near-miss is impossible */
-.oc-row.lanes > .oc-child.lane-over {
+.oc-row.lanes > .oc-child.lane-over,
+.oc-row.solo-pack > .oc-child.lane-over {
   border-color: var(--accent); background: var(--accent-dim);
   box-shadow: 0 0 0 3px var(--accent-dim), var(--sh-2);
 }
@@ -596,12 +597,21 @@ export const PANEL_CSS = String.raw`
      row — 2,400px natural width, which fit-to-width then scaled to 52% and made
      every plate unreadable. Rank IV wraps; the board stays legible. */
   grid-template-columns: max-content var(--rail-w, 56px) minmax(420px, 940px);
-  grid-template-areas: "gm rail lanes";
+  /* Row 2 carries the PACK (childless rank-III units). It is a second row and
+     not a second area on row 1 because two items cannot share one named area
+     without overlapping — and the gm/rail cells are deliberately left EMPTY on
+     row 2 so the GM stays in row 1 rather than stretching down the whole board
+     (the C18 defect, in reverse: there the lanes spanned two rows and pinned
+     the GM to the top of the first). */
+  grid-template-areas:
+    "gm rail lanes"
+    ".  .    pack";
   align-items: start;
 }
 .cascade > .ocn > .casc-head { grid-area: gm; display: flex; flex-direction: column; align-items: stretch; }
 .cascade > .ocn > .oc-down { grid-area: rail; }
 .cascade > .ocn > .oc-row.lanes { grid-area: lanes; }
+.cascade > .ocn > .oc-row.solo-pack { grid-area: pack; }
 
 /* the SVG rail plane — sits under the plates, never intercepts a click */
 .rails { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: visible; width: 100%; height: 100%; }
@@ -642,6 +652,36 @@ export const PANEL_CSS = String.raw`
   transition: border-color .25s ease, box-shadow .35s var(--ease);
 }
 .oc-row.lanes > .oc-child:hover { border-color: var(--line-2, #d9d3c9); box-shadow: var(--sh-2); }
+
+/* ── THE PACK: rank-III units that have no staff ───────────────────────────
+   A lane is a shelf for a department AND ITS PEOPLE. A unit with nobody under
+   it has no shelf to fill — it is a card, and 43 cards each claiming a
+   940px-wide tray is what turned the live fleet into a 12,000px queue
+   (GAPS C34). They pack instead: same tray material, sized to the card, wrapped
+   into rows. Still drop targets, still railed. */
+.oc-row.solo-pack {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(278px, 1fr));
+  gap: 14px;
+  width: 100%;
+  margin-top: 14px;
+  align-items: stretch;
+}
+.oc-row.solo-pack > .oc-child {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface-tray);
+  padding: 14px;
+  transition: border-color .25s ease, box-shadow .35s var(--ease);
+}
+.oc-row.solo-pack > .oc-child:hover { border-color: var(--line-2, #d9d3c9); box-shadow: var(--sh-2); }
+/* the pack owns its connectors, exactly as the lanes do */
+.oc-row.solo-pack > .oc-child::before,
+.oc-row.solo-pack > .oc-child::after { display: none; }
+.oc-row.solo-pack > .oc-child > .ocn > .oc-down { display: none; }
+.oc-row.solo-pack > .oc-child > .ocn { display: block; }
+.oc-row.solo-pack > .oc-child > .ocn > .ag { width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   .oc-row.lanes > .oc-child:hover { transform: none; }
 }

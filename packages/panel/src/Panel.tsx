@@ -635,6 +635,19 @@ function ChartNode({
   // in design/CRAFT.md — sectors in SEE, columns in GOVERN, always identical).
   const kidsRaw = org.agents.filter((c) => c.parent === a.id && c.kind !== "automation");
   const kids = depth === 0 ? [...kidsRaw].sort((x, y) => x.id.localeCompare(y.id)) : kidsRaw;
+  // A LANE earns its full-width row by HAVING people — "head on the left, its
+  // people flowing right". A childless child fills none of that: the staff
+  // column sits empty and the tray is ~940px of nothing. The Pemberton never
+  // showed this because all nine of its departments have staff. The live
+  // Dionisos fleet has 55 root children, 43 of them childless, and every one
+  // took its own full-width row — 12,211px of single file, which is not a
+  // cascade, it is a queue (GAPS C34). Childless children flow into one packed
+  // grid instead; they keep their rails (CascadeRails MEASURES the anchors, so
+  // it follows them) and stay drop targets. An org whose children all have
+  // staff renders byte-identically to before.
+  const hasStaff = (k: BOrgAgent) => org.agents.some((x) => x.parent === k.id && x.kind !== "automation");
+  const laneKids = depth === 0 ? kids.filter(hasStaff) : kids;
+  const soloKids = depth === 0 ? kids.filter((k) => !hasStaff(k)) : [];
   const machines = (() => {
     const out: BOrgAgent[] = [];
     const walk = (pid: string) => {
@@ -745,8 +758,9 @@ function ChartNode({
               {kids.length} staff · folded to department level — click to expand
             </button>
           ) : (
+          <>
           <div className={`oc-row${depth > 0 && kids.length > 3 ? " wrap" : ""}${depth === 0 ? " lanes" : ""}`}>
-            {kids.map((k, i) => (
+            {laneKids.map((k, i) => (
               <Lane
                 key={k.id}
                 laneId={k.id}
@@ -758,6 +772,22 @@ function ChartNode({
               </Lane>
             ))}
           </div>
+          {soloKids.length > 0 && (
+            <div className="oc-row solo-pack">
+              {soloKids.map((k, i) => (
+                <Lane
+                  key={k.id}
+                  laneId={k.id}
+                  isLane
+                  dragId={cardProps.dragId}
+                  onDropOn={cardProps.onDropOn}
+                >
+                  <ChartNode org={org} a={k} depth={depth + 1} order={laneKids.length + i} {...cardProps} />
+                </Lane>
+              ))}
+            </div>
+          )}
+          </>
           )}
         </>
       )}

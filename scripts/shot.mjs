@@ -112,9 +112,16 @@ await new Promise((r) => setTimeout(r, WAIT));
 const vis = await S("Runtime.evaluate", { expression: "document.visibilityState", returnByValue: true });
 if (vis.result.value !== "visible") throw new Error("page is " + vis.result.value + " — capture is not evidence");
 
+// --eval's return value is PRINTED. Reading computed style beats reading
+// pixels for anything about colour, size or overflow (GAPS C23, C32), so the
+// probe is as much the point of this script as the screenshot is.
 const js = flag("eval");
-if (js) await S("Runtime.evaluate", { expression: js, awaitPromise: true });
-if (js) await new Promise((r) => setTimeout(r, 800));
+if (js) {
+  const r = await S("Runtime.evaluate", { expression: js, awaitPromise: true, returnByValue: true });
+  if (r.exceptionDetails) console.error("eval threw:", r.exceptionDetails.text);
+  else if (r.result?.value !== undefined) console.log(JSON.stringify(r.result.value, null, 2));
+  await new Promise((r2) => setTimeout(r2, 800));
+}
 
 // A .jpg out-path asks Chrome for JPEG. Worth it for OG images: a 2x PNG of
 // the cosmos is ~1.4MB and several link unfurlers quietly skip anything that

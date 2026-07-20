@@ -123,7 +123,7 @@ in the data and looks identical to every other department on screen.
 | Pemberton crest / "Est. 1927" / white-label proof | 🔴 |
 | **Scrollytelling** (scroll chapters drive camera presets) | 🔴 static sections |
 | Mobile: rendered video loop | 🔴 |
-| OG image | 🔴 |
+| OG image | ✅ | See C8 — the real hero on all three pages, verified live. |
 | Analytics events | 🔴 |
 
 ### A7 · Governance (CRAFT §9)
@@ -184,7 +184,7 @@ of the wound is depth of play, not comprehension.
 | C5 | 3D labels bled through dossier | ✅ fixed | drei `zIndexRange` capped. |
 | C6 | `panel-css.ts` had no generator | ✅ fixed | Claimed GENERATED, drifted silently. `scripts/sync-css.mjs`. |
 | C7 | Weak-GPU/WebGL fallback | 🟡 | Guarded at the landing only. The **viewer package itself** still has none — a stranger deep-linking `/viewer/` on a weak device is unprotected. |
-| C8 | No OG image | 🔴 | Every social share of the demo renders blank. Directly undercuts the distribution push. |
+| C8 | No OG image | ✅ fixed | **The premise was two-thirds right.** `booboo.fractionalhq.uk` and `fractionalhq.uk/booboo` genuinely had no `og:image` and unfurled blank. `fractionalhq.uk` did **not** — it carried a valid 1200×630 `og.png`, live and 200 the whole time; the real defect there was that the card was captured 2026-07-06 and showed the *pre-craft-pass* page: the old type, the wine ground, and the since-deleted ticker running through the wordmark. Checked by curling all three pages for their tags rather than by trusting the backlog row, which is how the difference surfaced. **Fixed with the real product, not a logo plate:** each page's card is a live capture of that page's own hero. `booboo.fractionalhq.uk` gets the cosmos — the gold light-shafts, real geometry, real flags. The two FHQ pages get their own heroes, deliberately not the cosmos, because a share should look like the page it lands on. **Two capture traps, both found by looking at the output:** (a) `--force-prefers-reduced-motion` — the right default everywhere else, since it lands GSAP instead of photographing a tween (C17) — makes `web/main.js` swap the cosmos for the static starfield, so the first card was a picture of the *fallback*; hence `--motion` on that one capture only. (b) The hero's vignette fades to `--paper` at exactly 100% of the viewport, so rendering into a 630-tall window put the cream seam a fifth of the way up the frame as a grey wash; `--vh 860` renders tall and clips the top. Shipped as JPEG at 2400×1260 (~270KB): a 2× PNG of the cosmos is 1.4MB and several unfurlers quietly skip anything that heavy, which looks identical to having no card at all. The 2026-07-06 `og.png` is **kept on disk and still 200** — deleting it would blank every share already published against it, which is the defect this row exists to fix. **Verified live after deploy:** all three pages serve `og:image` + `og:image:width/height/alt` + `twitter:image`, and `/img/og.jpg` · `/og.jpg` · `/booboo/og.jpg` all return 200 `image/jpeg`. The capture itself is now a committed, re-runnable script (`scripts/shot.mjs`, zero-dependency CDP) instead of the ad-hoc command lines every previous capture used — the exact re-runnability C10 needs. |
 | C9 | Mobile | 🔴 | Landing degrades to a CSS starfield. `/viewer/` and `/chart/` on a phone: **unverified**, likely poor. |
 | C10 | Golden-frame CI | 🔴 | One frame committed, no diffing. Design can regress silently. |
 | C11 | Scale claim unproven | 🟡 | The million-node path has never been rendered end-to-end by me — only asserted. |

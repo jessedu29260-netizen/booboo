@@ -16,9 +16,10 @@
 # So npm publish stays Jesse-gated, but the gate is ONE approval — merge the
 # version PR — instead of a manual bump/build/publish/update/redeploy sequence.
 #
-# REQUIRES: an NPM_TOKEN repo secret (an npm automation token for the account
-# that owns @booboo-brain/*). Without it the publish step fails; versioning still
-# works, so the worst case is the old manual publish, never a broken main.
+# ARMED 2026-07-20 — the NPM_TOKEN repo secret is set (npm automation token for
+# the account that owns @booboo-brain/*, valid to ~October). The skip-guard below
+# stays: if the secret is ever rotated out or expires, releases degrade to a
+# warning instead of reddening main.
 name: Release
 
 on:

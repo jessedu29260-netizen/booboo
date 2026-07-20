@@ -1,0 +1,43 @@
+{
+  "landing/1440x900": {
+    "tokenBg": "#06080e",
+    "tokenGold": "#c9a04a",
+    "heroBg": "rgb(6, 8, 14)",
+    "heroColor": "rgb(232, 220, 196)",
+    "ogImage": true,
+    "ogAlt": true,
+    "sections": 7,
+    "canScrollX": 0
+  },
+  "landing/390x844": {
+    "hasVideo": true,
+    "videoSrc": "./img/cosmos-loop.mp4",
+    "videoLoops": true,
+    "claimsLive": false,
+    "canScrollX": 0
+  },
+  "board/1600x1000": {
+    "rows": 10,
+    "cards": 62,
+    "rails": 61,
+    "machineRacks": 8,
+    "packExists": false,
+    "boardHeight": 4793,
+    "zoom": "70%",
+    "theme": "light",
+    "cardBg": "rgb(255, 254, 251)",
+    "ink": "#1b1815"
+  },
+  "board/390x844": {
+    "rows": 10,
+    "cards": 62,
+    "rails": 61,
+    "machineRacks": 8,
+    "packExists": false,
+    "boardHeight": 4776,
+    "zoom": "45%",
+    "theme": "light",
+    "cardBg": "rgb(255, 254, 251)",
+    "ink": "#1b1815"
+  }
+}

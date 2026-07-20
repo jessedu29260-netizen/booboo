@@ -92,3 +92,29 @@ jobs:
 
       - name: booboo mcp smoke (boot + initialize handshake over stdio)
         run: node scripts/ci-mcp-smoke.mjs /tmp/smoke/brain.json
+
+  # Separate job: the golden check drives Chrome over CDP, which needs the
+  # global WebSocket that only landed for good in Node 22. The main job stays
+  # on 20 because that is the floor the packages support and it should keep
+  # being tested there.
+  golden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: node scripts/build-web.mjs
+
+      # Design can regress silently: a palette that resolves to nothing (C16),
+      # a light pivot that breaks dark (C23), a cascade that becomes a 12,000px
+      # queue (C34), a fit that crushes plates to 20% (C9). Every one shipped,
+      # and every one was found by a person looking. This compares the RENDERED
+      # surfaces to design/golden/frames.json — see that script's header for why
+      # it diffs measurements rather than pixels.
+      - name: rendered surfaces match the golden frames (GAPS C10)
+        run: node scripts/check-golden.mjs

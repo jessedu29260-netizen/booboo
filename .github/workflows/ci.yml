@@ -62,6 +62,31 @@ jobs:
           curl -sf http://localhost:8990/api/org | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); if(!Array.isArray(d.agents)) throw new Error('panel /api/org: missing agents[]'); console.log('panel smoke ok:', d.agents.length, 'agents')"
           kill $PANEL_PID
 
+      # A PR that changes a published package MUST carry a changeset. This is the
+      # hole that let the OS drift two weeks stale (C30) and shipped panel 0.5.2
+      # to every `npx booboo` user (C35): the code was on main and correct, and
+      # nothing anywhere forced the bump that would put it on npm.
+      # PR-only: a direct push to main has no base to diff against, and the
+      # release workflow handles main.
+      - name: package change requires a changeset (GAPS C35)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags --depth=1 origin ${{ github.base_ref }}
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          # only source that actually ships — docs/tests do not need a release
+          PKG=$(echo "$CHANGED" | grep -E '^packages/[^/]+/(src|app|templates)/' || true)
+          CS=$(echo "$CHANGED" | grep -E '^\.changeset/.+\.md$' || true)
+          if [ -n "$PKG" ] && [ -z "$CS" ]; then
+            echo "::error::These package files change but no changeset was added:"
+            echo "$PKG" | sed 's/^/  /'
+            echo ""
+            echo "Run: pnpm changeset   (then commit the generated .changeset/*.md)"
+            echo "Without one the change lands on main and NEVER reaches npm —"
+            echo "that is GAPS C30 and C35, both found in production."
+            exit 1
+          fi
+          echo "changeset check ok"
+
       - name: vendored index agrees with @booboo-brain/serve (GAPS C33)
         run: node scripts/check-vendored-index.mjs
 

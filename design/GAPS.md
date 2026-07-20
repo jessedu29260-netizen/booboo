@@ -133,6 +133,7 @@ in the data and looks identical to every other department on screen.
 | Golden frames committed | 🟡 one, of five |
 | CI pixel-diff | 🔴 |
 | Per-PR design QA checklist | 🔴 |
+| **Release discipline (main → npm → hosts)** | ✅ **shipped 2026-07-20** — changesets + `.github/workflows/release.yml`. A PR touching `packages/*/src\|app\|templates` fails CI without a changeset; merge to main opens a Version PR bumping changed packages **and their dependents** (`updateInternalDependencies: patch` — the structural fix for C35, where `cli` silently kept pinning `panel 0.5.2`); merging that PR publishes. The publish gate is now ONE approval. Guard logic tested against six real cases before landing: package `src/` without a changeset **blocks**, `app/` CSS **blocks**, with-changeset passes, and docs-only / tests-only / `web/`+`scripts/` changes pass so it adds no false friction. **Not yet armed:** needs an `NPM_TOKEN` repo secret; without it the release job skips with a warning instead of failing, because a permanently-red main trains everyone to ignore CI. |
 
 ---
 

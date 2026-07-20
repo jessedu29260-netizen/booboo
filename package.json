@@ -2,18 +2,42 @@
   "name": "booboo",
   "private": true,
   "version": "0.0.0",
-  "description": "Booboo — the unified operational brain. Structure + knowledge + memory + agents fused into one rooted 3D graph, queryable by REST and MCP. Renders a million-node brain at 60fps.",
+  "description": "Booboo \u2014 the unified operational brain. Structure + knowledge + memory + agents fused into one rooted 3D graph, queryable by REST and MCP. Renders a million-node brain at 60fps.",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.33.2",
-  "engines": { "node": ">=18" },
-  "workspaces": ["packages/*"],
-  "repository": { "type": "git", "url": "git+https://github.com/jessedu29260-netizen/booboo.git" },
-  "bugs": { "url": "https://github.com/jessedu29260-netizen/booboo/issues" },
+  "engines": {
+    "node": ">=18"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jessedu29260-netizen/booboo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jessedu29260-netizen/booboo/issues"
+  },
   "homepage": "https://github.com/jessedu29260-netizen/booboo#readme",
   "scripts": {
     "build": "pnpm -r build",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "release": "pnpm build && changeset publish",
+    "changeset": "changeset"
   },
-  "keywords": ["knowledge-graph", "3d", "visualization", "mcp", "agents", "memory", "react-three-fiber", "brain", "booboo"]
+  "keywords": [
+    "knowledge-graph",
+    "3d",
+    "visualization",
+    "mcp",
+    "agents",
+    "memory",
+    "react-three-fiber",
+    "brain",
+    "booboo"
+  ],
+  "devDependencies": {
+    "@changesets/cli": "^2.31.1"
+  }
 }

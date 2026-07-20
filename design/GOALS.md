@@ -178,10 +178,18 @@ mounts it. A fix landed on main propagates to every user — including our own:
   org card now declares a real reporting rhythm, so the fleet is not falsely amber
   the moment the new panel lands. Parser verified against all ~60 live crons; tsc
   clean; live render pends the gated deploy.
-- **No release discipline** connecting main → npm → hosts, and the root cause is
-  now concrete: dozens of commits landed on the packages this session with **no
-  version bump**, so npm can never receive them. A merge does not reach anyone
-  until someone bumps + publishes.
+- ~~**No release discipline** connecting main → npm → hosts~~ — **closed
+  2026-07-20.** The root cause was concrete: dozens of commits landed on the
+  packages with no version bump, so npm could never receive them. Worse than
+  known at the time — `npx booboo` was shipping **panel 0.5.2**, from before the
+  entire craft pass, because a workspace dependency is frozen at publish time
+  (GAPS C35). Now: a PR touching `packages/*/src|app|templates` **fails CI
+  without a changeset**; merging to main opens a "Version Packages" PR that bumps
+  the changed packages *and every package that depends on one*; merging that PR
+  publishes. `npm publish` stays Jesse-gated, but the gate is **one approval**
+  instead of a manual bump/build/publish/update/redeploy sequence. Needs an
+  `NPM_TOKEN` repo secret to arm; until then the release job skips with a warning
+  rather than failing, so main never goes red waiting on a credential.
 - **Deploys are manual.** The site is built from a local `web/dist` and pushed by
   hand. It is now *provably* reproducible from the repo (verified by wiping and
   rebuilding: zero drift) but nothing structural prevents that drifting again.

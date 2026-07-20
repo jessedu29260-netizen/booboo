@@ -1,0 +1,80 @@
+# RELEASE — closes G4's actual remainder: capability was proven, discipline was not.
+#
+# The failure this exists to prevent (GAPS C30, C35): dozens of commits landed on
+# the packages with no version bump, so npm could never receive them. The Dionisos
+# OS drifted two weeks stale, and `npx booboo` shipped panel 0.5.2 — from before
+# the entire craft pass — because a workspace dependency is FROZEN at publish time.
+# Both were fixed by hand, twice, which is exactly the ritual nothing was forcing.
+#
+# How it works now:
+#   1. a PR that touches packages/** must carry a changeset (enforced in ci.yml)
+#   2. on merge to main, this opens/updates a "Version Packages" PR that bumps
+#      every changed package AND every package that depends on one
+#      (updateInternalDependencies: patch — the C35 fix, structurally)
+#   3. merging THAT PR publishes to npm
+#
+# So npm publish stays Jesse-gated, but the gate is ONE approval — merge the
+# version PR — instead of a manual bump/build/publish/update/redeploy sequence.
+#
+# REQUIRES: an NPM_TOKEN repo secret (an npm automation token for the account
+# that owns @booboo-brain/*). Without it the publish step fails; versioning still
+# works, so the worst case is the old manual publish, never a broken main.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      # build before publishing — the packages ship dist/, and a publish of a
+      # stale dist is the same class of bug as a publish that never happened
+      - run: pnpm build
+
+      # Is the publish credential present? Without this the job would go red on
+      # every push to main until the secret is added, and a permanently-failing
+      # main is worse than no automation — it trains everyone to ignore CI.
+      - id: cred
+        run: |
+          if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::NPM_TOKEN is not set — versioning and publishing are SKIPPED. Add an npm automation token as a repo secret named NPM_TOKEN to arm releases. Until then, releases stay manual (bump, pnpm build, pnpm publish)."
+          fi
+
+      - if: steps.cred.outputs.ok == 'true'
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          publish: pnpm release
+          commit: "chore: version packages"
+          title: "chore: version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

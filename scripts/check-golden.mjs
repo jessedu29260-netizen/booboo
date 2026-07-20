@@ -201,11 +201,35 @@ if (!existsSync(GOLDEN)) {
 }
 const want = JSON.parse(readFileSync(GOLDEN, "utf8"));
 
+/* Probes that are allowed to move a little, and exactly why.
+ *
+ * This file's own header says text WIDTH is "a rasteriser's opinion, not a
+ * fact" — and then the first CI run failed on `boardHeight`, which is that
+ * opinion one step removed: ubuntu wraps a card's text differently from
+ * Windows, so the column gets a line taller, so the board does. golden=4776
+ * got=4662, a 2.4% difference and entirely legitimate.
+ *
+ * Deleting the probe would be the easy fix and the wrong one: board height is
+ * the C34 canary, the number that went 6,540 → 12,211 when the cascade
+ * degenerated into a single-file queue. That signal is a FACTOR; this noise is
+ * a couple of percent. A band keeps the canary and absorbs the rasteriser.
+ *
+ * Tolerance is per-key and opt-in. A blanket fuzz would quietly weaken every
+ * count and colour too, and those genuinely are exact. */
+const TOLERANT = { boardHeight: 0.08 };
+
 const drift = [];
 for (const name of Object.keys(want)) {
   if (!(name in got)) { drift.push(`  ${name}: surface missing from this run`); continue; }
   for (const [k, v] of Object.entries(want[name])) {
-    const a = JSON.stringify(v), b = JSON.stringify(got[name][k]);
+    const g = got[name][k];
+    const tol = TOLERANT[k];
+    if (tol != null && typeof v === "number" && typeof g === "number") {
+      const off = Math.abs(g - v) / (v || 1);
+      if (off > tol) drift.push(`  ${name} · ${k}: golden=${v} got=${g} (${(off * 100).toFixed(1)}% > ${tol * 100}% allowed)`);
+      continue;
+    }
+    const a = JSON.stringify(v), b = JSON.stringify(g);
     if (a !== b) drift.push(`  ${name} · ${k}: golden=${a} got=${b}`);
   }
 }

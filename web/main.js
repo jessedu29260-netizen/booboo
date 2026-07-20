@@ -43,11 +43,42 @@
   var t = tier();
   var gl = hasWebGL();
 
-  // Reduced motion: the scene auto-drifts and does not respect the preference
-  // internally, so we serve the static starfield instead.
-  if (!gl || reduced) {
-    stage.classList.add("nogl");
-    if (frame) frame.remove();
+  // Three grounds, in descending order of what the device can carry.
+  //
+  // The old branch was binary — live WebGL, or a pair of faint CSS radials
+  // that GAPS generously called "a starfield" and that render as very nearly
+  // nothing. So every phone visitor read "It's turning behind these words,
+  // live" over an empty rectangle: the claim was not just unsupported, it was
+  // contradicted, on the page whose entire pitch is that its numbers are real.
+  //
+  // The middle ground is a PRE-RENDERED LOOP of the real cosmos (GOALS G1).
+  // It is the same house, recorded from the same viewer, and it closes the
+  // weak-GPU hole (C7) in the same move: a device that cannot carry a second
+  // WebGL context gets 450KB of h264 instead of a black rectangle or a
+  // crashed tab.
+  function drop(el) { if (el && el.parentNode) el.parentNode.removeChild(el); }
+  var claim = document.getElementById("hero-claim");
+
+  if (reduced) {
+    // Never autoplay at someone who asked for stillness. The poster is the
+    // loop's own first frame, so they see the same house, held.
+    stage.classList.add("still");
+    drop(frame);
+    if (claim) claim.textContent = "It turns behind these words when you ask it to.";
+  } else if (!gl || t === "low") {
+    var v = document.createElement("video");
+    v.src = "./img/cosmos-loop.mp4";
+    v.poster = "./img/cosmos-loop.jpg";
+    v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+    v.setAttribute("muted", ""); v.setAttribute("playsinline", "");   // iOS wants the attributes, not just the props
+    v.setAttribute("aria-hidden", "true");
+    v.tabIndex = -1;
+    v.addEventListener("loadeddata", function () { v.classList.add("ready"); });
+    // If autoplay is refused anyway (low-power mode), the poster is already
+    // painted underneath, so the failure mode is a still image and not a hole.
+    stage.appendChild(v);
+    drop(frame);
+    if (claim) claim.textContent = "This is it turning — recorded from the same graph you can open below.";
   } else {
     // The hero is the Pemberton Grand — 2,414 nodes, readable on any GPU tier.
     // Scale proves itself behind the proof link; comprehension is the front door.

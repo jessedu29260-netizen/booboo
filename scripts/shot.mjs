@@ -95,7 +95,14 @@ const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: t
 const S = (m, p) => send(m, p, sessionId);
 
 await S("Page.enable");
-await S("Emulation.setDeviceMetricsOverride", { width: W, height: VH, deviceScaleFactor: DPR, mobile: false });
+// `--touch` makes the page match `(pointer: coarse)`. Without it a 390px-wide
+// headless window is still a mouse, so every touch-conditional branch stays on
+// its desktop path and a capture "proving" the phone layout proves half of it.
+await S("Emulation.setDeviceMetricsOverride", { width: W, height: VH, deviceScaleFactor: DPR, mobile: has("touch") });
+if (has("touch")) {
+  await S("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
+  await S("Emulation.setEmitTouchEventsForMouse", { enabled: true, configuration: "mobile" });
+}
 await S("Page.navigate", { url });
 await new Promise((r) => setTimeout(r, WAIT));
 

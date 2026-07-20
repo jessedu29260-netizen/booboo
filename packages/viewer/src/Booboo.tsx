@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette, ToneMapping, HueSaturation, BrightnessContrast } from "@react-three/postprocessing";
 import { ToneMappingMode } from "postprocessing";
@@ -588,6 +588,36 @@ function FrontierFog({ scale, amount }: { scale: number; amount: number }) {
   return <points ref={ref} geometry={geo} material={mat} frustumCulled={false} />;
 }
 
+// The house is a WIDE disc, and three.js `fov` is the VERTICAL angle — so the
+// horizontal one is whatever the aspect ratio leaves you. At 1600×1000 that is
+// a comfortable ~37°; at 390×844 it collapses to ~11° and the camera ends up
+// INSIDE the building, looking at three cones edge-on. That single fact is why
+// /viewer/ on a phone had never looked like anything (GAPS C9), and why the
+// first recorded hero loop was a close-up of some geometry.
+//
+// Fixed by dollying BACK rather than widening the lens: holding the horizontal
+// half-angle constant costs a 73° vertical fov on a phone, and that much
+// perspective distortion turns a measured orrery into a fisheye. Distance is
+// the free variable, so use it.
+const FIT_ASPECT = 1.6;   // the aspect the framing was composed at
+const FIT_MAX = 3.0;      // past this the house is a speck; crop instead
+function AspectFit({ base }: { base: [number, number, number] }) {
+  const { camera, size } = useThree();
+  const applied = useRef<number | null>(null);
+  useEffect(() => {
+    const aspect = size.width / Math.max(1, size.height);
+    const k = Math.min(FIT_MAX, Math.max(1, FIT_ASPECT / aspect));
+    // Only move on a real change in fit. Without this, every window resize —
+    // including the one a desktop user causes by dragging a pane — would snap
+    // the camera back and silently throw away their zoom and pan.
+    if (applied.current !== null && Math.abs(applied.current - k) < 0.01) return;
+    applied.current = k;
+    camera.position.set(base[0] * k, base[1] * k, base[2] * k);
+    camera.updateProjectionMatrix();
+  }, [camera, size.width, size.height, base[0], base[1], base[2]]);
+  return null;
+}
+
 // The graph + platforms spin together (slow wandering turn so every face shows). peel = z-scale (tier spacing).
 function Spin({ orbit, drift, peel, children }: { orbit: number; drift: number; peel: number; children: React.ReactNode }) {
   const grp = useRef<THREE.Group>(null);
@@ -702,6 +732,7 @@ export function Booboo({ data, cfg, onSelect, sel, intro = true }: { data: Boobo
       <hemisphereLight args={["#2a3350", "#06080e", 0.85]} />
       <directionalLight position={[radius * 0.6, -radius * 1.2, radius * 1.6]} intensity={1.25} color="#fff4e0" />
       <directionalLight position={[-radius, radius * 0.5, radius * 0.4]} intensity={0.35} color="#c9a04a" />
+      <AspectFit base={[0, -cam * 0.55, cam * 0.82]} />
       <IntroDriver uni={introUni} box={introBox} />
       <Starfield scale={radius / 12} />
       <FrontierFog scale={radius / 12} amount={c.fog} />

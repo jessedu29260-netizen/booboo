@@ -1225,6 +1225,10 @@ function OrgScreen({
   // the visual footprint after scaling
   const [nat, setNat] = useState({ w: 0, h: 0 });
   const eff = zoom ?? fit;
+  // The smallest scale at which a plate still reads. Measured, not guessed:
+  // the name plate is 13px, so 0.45 puts it just under 6px — the point where
+  // the card is still identifiable as a card with a name on it.
+  const FIT_FLOOR = 0.45;
   useLayoutEffect(() => {
     const vp = fitRef.current, chart = chartRef.current;
     if (!vp || !chart) return;
@@ -1241,7 +1245,13 @@ function OrgScreen({
       const kW = availW / natW;
       const kH = availH / natH;
       const k = natH > availH * 1.35 ? kW : Math.min(kW, kH);
-      setFit(Math.min(1, k > 0 ? k : 1));
+      // Floor the auto-fit. On a phone the same arithmetic that gives a laptop
+      // a comfortable 70% gives 20%, and a plate at 20% is a coloured rectangle
+      // with a grey smudge where its name should be — the board stops being a
+      // board. Below the floor, stop shrinking and let the viewport scroll:
+      // a legible board you pan beats an illegible one you can see all of.
+      // Same reasoning as the height rule above, one axis over.
+      setFit(Math.min(1, Math.max(FIT_FLOOR, k > 0 ? k : 1)));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -1650,8 +1660,13 @@ function App({ theme: pinnedTheme }: { theme?: "dark" | "light" }) {
         // for the full-screen tool (you land on something), but inside the
         // landing page it costs a quarter of the frame to a dossier nobody
         // asked for, hiding the cascade that is the reason it is embedded.
+        // The same argument settles the phone, and more strongly: at 390px the
+        // dossier is not a right rail but a sheet over more than half the
+        // screen, so auto-selecting means a visitor's first sight of the staff
+        // board is a card about one agent covering it.
         const embed = new URLSearchParams(window.location.search).get("embed");
-        if (!embed) setSelected(o.root);
+        const narrow = typeof matchMedia === "function" && matchMedia("(max-width: 720px)").matches;
+        if (!embed && !narrow) setSelected(o.root);
       })
       .catch(() => setErr("Can't load the organigram — is `booboo panel --org` running?"));
     api("/stats").then(setStats).catch(() => setStats(null));

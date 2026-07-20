@@ -39,6 +39,32 @@ const FLAG_RANK = ["critical", "overdue", "stale", "orphan"];
 const FLAG_HUE: Record<string, string> = { critical: "#d05a5a", overdue: "#d6a23e", stale: "#c9a04a", orphan: "#8a8268" };
 const ORIENT_KEY = "booboo-oriented-v1";
 
+/* ── narrow / touch ──
+   Every piece of chrome in this file is an inline style, which is exactly why
+   the viewer had no responsive behaviour at all: you cannot write a media
+   query in a style object. So the breakpoint is a hook and the handful of
+   places that genuinely differ read it.
+
+   `narrow` and `touch` are asked separately on purpose. Width decides whether
+   a 310px panel fits; input decides whether "drag to rotate · scroll to zoom ·
+   press / to find" is a lie. A small window on a laptop is narrow and not
+   touch; an iPad is touch and not narrow. */
+const NARROW = 720;
+function useMedia(query: string) {
+  const [hit, setHit] = useState(() => (typeof matchMedia === "function" ? matchMedia(query).matches : false));
+  useEffect(() => {
+    if (typeof matchMedia !== "function") return;
+    const m = matchMedia(query);
+    const on = () => setHit(m.matches);
+    m.addEventListener("change", on);
+    on();
+    return () => m.removeEventListener("change", on);
+  }, [query]);
+  return hit;
+}
+const useNarrow = () => useMedia(`(max-width: ${NARROW}px)`);
+const useTouch = () => useMedia("(pointer: coarse)");
+
 const mergeCfg = (initial: BoobooCfg, s: Partial<BoobooCfg>): BoobooCfg => ({
   ...initial,
   ...s,
@@ -233,6 +259,9 @@ export function BoobooView({
     return m;
   }, [data]);
 
+  const narrow = useNarrow();
+  const touch = useTouch();
+
   const node = sel ? byId.get(sel) ?? null : null;
   // the alarms, worst first — the orientation card leads with the real problem
   const flags = useMemo(
@@ -255,23 +284,39 @@ export function BoobooView({
     <div style={{ position: "absolute", inset: 0, background: T.bg, fontFamily: T.sans }}>
       <style>{PULSE_CSS}</style>
       <RenderBoundary>
-        <Booboo data={data} cfg={cfg} onSelect={setSel} sel={sel} />
+        {/* The band and node labels are 3D-positioned HTML. Pulled back far
+            enough to fit a phone's width, four band names and up to 150 node
+            names land within a few dozen pixels of each other and overprint
+            into an unreadable smear — a real capture showed "THE LEDGER ·
+            MEMORY / BRONZE · SILVER · DEPARTMENT HEADS" stacked on one line.
+            The Orient card already names the bands in order, so dropping them
+            here costs a narrow visitor nothing. */}
+        <Booboo data={data} cfg={narrow ? { ...cfg, labels: false } : cfg} onSelect={setSel} sel={sel} />
       </RenderBoundary>
 
-      {/* HUD — top-left */}
-      <div style={{ position: "absolute", top: 18, left: 20, zIndex: 10, pointerEvents: "none" }}>
+      {/* HUD — top-left. On narrow it drops BELOW the preset bar, which is
+          centred and eats the full width there; before this they were both at
+          top:18 and the house's own name rendered behind the buttons. */}
+      <div style={{ position: "absolute", top: narrow ? 62 : 18, left: narrow ? 12 : 20, zIndex: 10, pointerEvents: "none" }}>
         <div style={{ color: T.gold, fontSize: 13, letterSpacing: 2.5, fontWeight: 700, fontFamily: T.mono }}>🐾 {data.meta.title ?? "BOOBOO"}</div>
         <div style={{ color: T.faint, fontSize: 10.5, letterSpacing: 0.6, marginTop: 3 }}>
           {data.nodes.length.toLocaleString()} nodes · {data.links.length.toLocaleString()} links · {data.meta.layers.length} layers
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "5px 12px", marginTop: 9, fontSize: 11 }}>
-          {data.meta.layers.map((l) => (
-            <span key={l.name} style={{ color: l.color ?? "#aaa", opacity: cfg.layers[l.name] !== false ? 1 : 0.32, display: "inline-flex", alignItems: "center", gap: 5 }}>
-              <span style={{ width: 7, height: 7, borderRadius: 7, background: l.color ?? "#aaa", display: "inline-block" }} />
-              {l.label ?? l.name} <b style={{ color: T.dim, fontWeight: 600 }}>{(counts[l.name] ?? 0).toLocaleString()}</b>
-            </span>
-          ))}
-        </div>
+        {/* The band legend is dropped on narrow: it wrapped to two full-width
+            rows over the scene, and the Orient card below carries the same
+            four bands with the same colour dots, in order, with their meaning
+            spelled out. Two legends for one fact, and the worse one was on top
+            of the house. */}
+        {!narrow && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px 12px", marginTop: 9, fontSize: 11 }}>
+            {data.meta.layers.map((l) => (
+              <span key={l.name} style={{ color: l.color ?? "#aaa", opacity: cfg.layers[l.name] !== false ? 1 : 0.32, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <span style={{ width: 7, height: 7, borderRadius: 7, background: l.color ?? "#aaa", display: "inline-block" }} />
+                {l.label ?? l.name} <b style={{ color: T.dim, fontWeight: 600 }}>{(counts[l.name] ?? 0).toLocaleString()}</b>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {controls && (
@@ -282,7 +327,10 @@ export function BoobooView({
         />
       )}
 
-      {controls && (
+      {/* Fourteen sliders in a 236px drawer is not a phone interface, and its
+          button sat on top of the hint line. The four presets above stay —
+          they are the front door on every width. */}
+      {controls && !narrow && (
         <Controls
           data={data}
           cfg={cfg}
@@ -295,10 +343,17 @@ export function BoobooView({
 
       {palette && <Palette data={data} layerColor={layerColor} onJump={(id) => { setSel(id); setPalette(false); }} onClose={() => setPalette(false)} />}
 
-      {!sel && <Orient data={data} flags={flags} onJump={setSel} onAsk={() => setPalette(true)} />}
+      {!sel && <Orient data={data} flags={flags} narrow={narrow} touch={touch} onJump={setSel} onAsk={() => setPalette(true)} />}
 
-      <div style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", fontSize: 10, color: T.faint, pointerEvents: "none", letterSpacing: 0.4 }}>
-        drag to rotate · scroll to zoom · click a node · <span style={{ color: T.dim }}>press / to find</span>
+      {/* The hint sat bottom-centre at 10px and ran straight under the
+          "pro controls" button on a phone — and told a touch visitor to
+          scroll to zoom and press a key they do not have. */}
+      <div style={{ position: "absolute", bottom: narrow ? 10 : 12, left: "50%", transform: "translateX(-50%)", width: narrow ? "100%" : "auto", textAlign: "center", fontSize: 10, color: T.faint, pointerEvents: "none", letterSpacing: 0.4 }}>
+        {touch ? (
+          <>drag to turn · pinch to zoom · tap a node</>
+        ) : (
+          <>drag to rotate · scroll to zoom · click a node · <span style={{ color: T.dim }}>press / to find</span></>
+        )}
       </div>
     </div>
   );
@@ -309,7 +364,7 @@ export function BoobooView({
    legend. This names the bands top-to-bottom, then hands them the actual
    alarm to click. Dismissed state is remembered; "what am I looking at?"
    in the corner brings it back. */
-function Orient({ data, flags, onJump, onAsk }: { data: BoobooGraph; flags: Flag[]; onJump: (id: string) => void; onAsk: () => void }) {
+function Orient({ data, flags, narrow, touch, onJump, onAsk }: { data: BoobooGraph; flags: Flag[]; narrow: boolean; touch: boolean; onJump: (id: string) => void; onAsk: () => void }) {
   const [open, setOpen] = useState(() => {
     try { return localStorage.getItem(ORIENT_KEY) !== "1"; } catch { return true; }
   });
@@ -319,14 +374,19 @@ function Orient({ data, flags, onJump, onAsk }: { data: BoobooGraph; flags: Flag
   };
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} style={{ position: "absolute", top: 18, right: 20, zIndex: 10, ...btn(), padding: "6px 11px", fontSize: 10.5, background: T.panel, backdropFilter: "blur(8px)" }}>
+      <button onClick={() => setOpen(true)} style={{ position: "absolute", ...(narrow ? { bottom: 34, right: 12 } : { top: 18, right: 20 }), zIndex: 10, ...btn(), padding: "6px 11px", fontSize: 10.5, background: T.panel, backdropFilter: "blur(8px)" }}>
         what am I looking at?
       </button>
     );
   }
   const worst = flags[0];
   return (
-    <div style={{ position: "absolute", top: 18, right: 20, width: 310, maxWidth: "calc(100% - 40px)", zIndex: 10, background: T.panel, border: `1px solid ${T.line}`, borderTop: `2px solid ${T.gold}`, borderRadius: 8, padding: "15px 16px 14px", backdropFilter: "blur(10px)", boxShadow: "0 14px 44px rgba(0,0,0,.5)" }}>
+    /* On a phone this card is 350 of 390 available pixels. Anchored top-right
+       it covered the top third of the scene, so the first thing a visitor saw
+       of the brain was a card explaining a brain they could not see. Docked to
+       the bottom instead: the house reads above it, the card below, the way
+       the landing already orders hook-then-label. */
+    <div style={{ position: "absolute", ...(narrow ? { left: 10, right: 10, bottom: 30 } : { top: 18, right: 20, width: 310, maxWidth: "calc(100% - 40px)" }), zIndex: 10, background: T.panel, border: `1px solid ${T.line}`, borderTop: `2px solid ${T.gold}`, borderRadius: 8, padding: narrow ? "12px 13px 11px" : "15px 16px 14px", backdropFilter: "blur(10px)", boxShadow: "0 14px 44px rgba(0,0,0,.5)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 9 }}>
         <span style={{ fontFamily: T.mono, fontSize: 9.5, letterSpacing: 2, textTransform: "uppercase", color: T.gold }}>You're looking at</span>
         <button onClick={dismiss} title="dismiss" style={{ background: "none", border: "none", color: T.faint, cursor: "pointer", fontSize: 15, lineHeight: 1 }}>×</button>
@@ -355,8 +415,8 @@ function Orient({ data, flags, onJump, onAsk }: { data: BoobooGraph; flags: Flag
         </button>
       )}
       <div style={{ display: "flex", gap: 12, fontSize: 10, color: T.faint, fontFamily: T.mono }}>
-        <span>click any node</span>
-        <button onClick={onAsk} style={{ background: "none", border: "none", padding: 0, color: T.dim, cursor: "pointer", fontFamily: T.mono, fontSize: 10, textDecoration: "underline dotted" }}>press / to find</button>
+        <span>{touch ? "tap any node" : "click any node"}</span>
+        <button onClick={onAsk} style={{ background: "none", border: "none", padding: 0, color: T.dim, cursor: "pointer", fontFamily: T.mono, fontSize: 10, textDecoration: "underline dotted" }}>{touch ? "search" : "press / to find"}</button>
       </div>
     </div>
   );

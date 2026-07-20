@@ -12,9 +12,16 @@ type Edge = { link: BLink; other: string; dir: "out" | "in" };
  *  translation — so it reported "0 memories" over a snapshot holding 2,100 of
  *  them, and every dossier read "0 memories in reach". Same shape as the
  *  duplicated relTime (GAPS C29): two implementations of one fact, and only one
- *  of them got fixed. */
-const TYPE_ALIAS: Record<string, string> = { memory: "observation" };
-const resolveType = (t?: string): string | undefined => (t == null ? t : TYPE_ALIAS[t] ?? t);
+ *  of them got fixed.
+ *
+ *  It is a WIDENING, not a rename. `type=memory` must still match nodes
+ *  literally typed `memory` — that is what JournalWriter writes for every
+ *  remembered note (journal.ts, `type: kind`), i.e. the live half of the memory
+ *  system. A rename would have made every journal-written memory unqueryable;
+ *  the existing graph test caught exactly that and was right to. */
+const TYPE_ALSO: Record<string, readonly string[]> = { memory: ["observation"] };
+const typeMatches = (nodeType: string, want?: string): boolean =>
+  !want || nodeType === want || (TYPE_ALSO[want]?.includes(nodeType) ?? false);
 
 export type ListOpts = { layer?: string; cluster?: string; type?: string; q?: string; limit?: number; offset?: number };
 export type Neighborhood = { center: BNode | null; nodes: BNode[]; links: BLink[] };
@@ -81,11 +88,10 @@ export class BoobooIndex {
 
   /** Distinct cluster values (optionally for one node type) with counts —
    *  cheap discovery for UIs: "which buckets exist?" without paging nodes. */
-  clusters(typeIn?: string): Record<string, number> {
-    const type = resolveType(typeIn);
+  clusters(type?: string): Record<string, number> {
     const out: Record<string, number> = {};
     for (const n of this.graph.nodes) {
-      if (type && n.type !== type) continue;
+      if (!typeMatches(n.type, type)) continue;
       if (!n.cluster) continue;
       out[n.cluster] = (out[n.cluster] ?? 0) + 1;
     }
@@ -94,12 +100,11 @@ export class BoobooIndex {
 
   list(o: ListOpts = {}): { total: number; nodes: BNode[] } {
     const q = o.q?.toLowerCase();
-    const type = resolveType(o.type);
     const all = this.graph.nodes.filter(
       (n) =>
         (!o.layer || n.layer === o.layer) &&
         (!o.cluster || n.cluster === o.cluster) &&
-        (!type || n.type === type) &&
+        typeMatches(n.type, o.type) &&
         (!q || n.label.toLowerCase().includes(q) || n.id.toLowerCase().includes(q)),
     );
     const off = Math.max(0, o.offset ?? 0);
@@ -206,10 +211,9 @@ export class BoobooIndex {
       if (o.until && t > Date.parse(o.until)) return false;
       return true;
     };
-    const countType = resolveType(o.type);
     const hit = (n: BNode) =>
       (!o.layer || n.layer === o.layer) &&
-      (!countType || n.type === countType) &&
+      typeMatches(n.type, o.type) &&
       (!o.cluster || n.cluster === o.cluster) &&
       (!o.where || Object.entries(o.where).every(([k, v]) => String(get(n, k) ?? "") === String(v))) &&
       (!(o.since || o.until) || inRange(get(n, o.dateField ?? "data.date")));

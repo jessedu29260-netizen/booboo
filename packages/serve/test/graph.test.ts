@@ -31,6 +31,30 @@ describe("BoobooIndex", () => {
     expect(ix.list({ type: "memory", limit: 1 }).nodes).toHaveLength(1);
   });
 
+  // GAPS C33. `type=memory` has to answer for BOTH stored conventions: nodes
+  // the JournalWriter writes as `memory`, and ledger entries the generators
+  // write as `observation`. It was a rename in one caller (the demo site's
+  // adapter) and absent everywhere else, so `booboo panel` read 0 memories over
+  // a snapshot holding 2,100. Both directions are pinned here because the first
+  // fix widened one and broke the other.
+  it("type=memory matches both `memory` and `observation` nodes", () => {
+    const mixed = new BoobooIndex({
+      booboo: "1.0",
+      meta: { root: "core", layers: [{ name: "a" }] },
+      nodes: [
+        { id: "core", type: "root", layer: "a", label: "Core", weight: 1 },
+        { id: "j", type: "memory", layer: "a", label: "journal note", weight: 0.2, cluster: "house" },
+        { id: "o", type: "observation", layer: "a", label: "ledger entry", weight: 0.2, cluster: "house" },
+      ],
+      links: [],
+    });
+    expect(mixed.list({ type: "memory" }).total).toBe(2);
+    // and the literal type still selects only itself — the alias is one-way
+    expect(mixed.list({ type: "observation" }).total).toBe(1);
+    expect(mixed.clusters("memory")).toEqual({ house: 2 });
+    expect(mixed.count({ type: "memory" }).total).toBe(2);
+  });
+
   it("ranks search exact > prefix > substring", () => {
     const r = ix.search("alpha");
     expect(r[0].id).toBe("x"); // "Alpha" exact beats "Alphabet soup" substring

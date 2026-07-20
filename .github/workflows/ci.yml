@@ -10,6 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history. The changeset guard below diffs `base...HEAD`, which
+          # needs a MERGE BASE — and the default shallow clone plus a
+          # `--depth=1` fetch gives two unrelated one-commit histories that
+          # have none. See the note on that step.
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -71,7 +77,14 @@ jobs:
       - name: package change requires a changeset (GAPS C35)
         if: github.event_name == 'pull_request'
         run: |
-          git fetch --no-tags --depth=1 origin ${{ github.base_ref }}
+          # NOT --depth=1. A shallow fetch onto a shallow checkout produces two
+          # histories with no common ancestor, and `base...HEAD` then dies with
+          # `fatal: no merge base`, exit 128 — the guard fails CLOSED and blocks
+          # every pull request, including the Version PR it is meant to let
+          # through. That is what it did on PR #6, the first pull request this
+          # repo ever ran CI on: the guard had been tested against six invented
+          # cases and never once against a real PR.
+          git fetch --no-tags origin ${{ github.base_ref }}
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
           # only source that actually ships — docs/tests do not need a release
           PKG=$(echo "$CHANGED" | grep -E '^packages/[^/]+/(src|app|templates)/' || true)

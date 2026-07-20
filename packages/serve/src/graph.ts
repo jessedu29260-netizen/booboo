@@ -2,6 +2,27 @@ import type { BoobooGraph, BNode, BLink } from "@booboo-brain/spec";
 
 type Edge = { link: BLink; other: string; dir: "out" | "in" };
 
+/** One store, two names. A ledger entry is WRITTEN as `observation` (the
+ *  generators, the Pemberton) and ASKED FOR as `memory` (the CLI/journal
+ *  convention every client speaks, including our own panel). The alias is
+ *  resolved HERE, in the index every reader goes through, rather than by each
+ *  caller — because it was resolved by one caller and only one: the demo site's
+ *  serverless adapter (`web/api/panelapi.mjs`). `booboo panel`, the command an
+ *  OSS user actually runs, went through @booboo-brain/serve, which had no
+ *  translation — so it reported "0 memories" over a snapshot holding 2,100 of
+ *  them, and every dossier read "0 memories in reach". Same shape as the
+ *  duplicated relTime (GAPS C29): two implementations of one fact, and only one
+ *  of them got fixed.
+ *
+ *  It is a WIDENING, not a rename. `type=memory` must still match nodes
+ *  literally typed `memory` — that is what JournalWriter writes for every
+ *  remembered note (journal.ts, `type: kind`), i.e. the live half of the memory
+ *  system. A rename would have made every journal-written memory unqueryable;
+ *  the existing graph test caught exactly that and was right to. */
+const TYPE_ALSO: Record<string, readonly string[]> = { memory: ["observation"] };
+const typeMatches = (nodeType: string, want?: string): boolean =>
+  !want || nodeType === want || (TYPE_ALSO[want]?.includes(nodeType) ?? false);
+
 export type ListOpts = { layer?: string; cluster?: string; type?: string; q?: string; limit?: number; offset?: number };
 export type Neighborhood = { center: BNode | null; nodes: BNode[]; links: BLink[] };
 
@@ -70,7 +91,7 @@ export class BoobooIndex {
   clusters(type?: string): Record<string, number> {
     const out: Record<string, number> = {};
     for (const n of this.graph.nodes) {
-      if (type && n.type !== type) continue;
+      if (!typeMatches(n.type, type)) continue;
       if (!n.cluster) continue;
       out[n.cluster] = (out[n.cluster] ?? 0) + 1;
     }
@@ -83,7 +104,7 @@ export class BoobooIndex {
       (n) =>
         (!o.layer || n.layer === o.layer) &&
         (!o.cluster || n.cluster === o.cluster) &&
-        (!o.type || n.type === o.type) &&
+        typeMatches(n.type, o.type) &&
         (!q || n.label.toLowerCase().includes(q) || n.id.toLowerCase().includes(q)),
     );
     const off = Math.max(0, o.offset ?? 0);
@@ -168,4 +189,61 @@ export class BoobooIndex {
     }
     return null;
   }
+
+  /** Aggregate over the graph: filter, then group and count.
+   *
+   *  The read tools answer "which node" well and "how many, by what" not at
+   *  all — so "who logged the most absences in five years" was only ever
+   *  answerable by paging. This closes that: one pass, filters on the node's
+   *  own fields or anything under `data`, grouped by any of the same, counted
+   *  and ranked. `field`/`groupBy` accept dotted paths (`data.kind`).
+   */
+  count(o: CountOpts = {}): { total: number; groups: { key: string; count: number }[]; groupBy: string | null } {
+    const get = (n: BNode, path: string): unknown => {
+      if (!path.startsWith("data.")) return (n as unknown as Record<string, unknown>)[path];
+      return (n.data ?? {})[path.slice(5)];
+    };
+    const inRange = (v: unknown) => {
+      if (!o.since && !o.until) return true;
+      const t = Date.parse(String(v ?? ""));
+      if (Number.isNaN(t)) return false;
+      if (o.since && t < Date.parse(o.since)) return false;
+      if (o.until && t > Date.parse(o.until)) return false;
+      return true;
+    };
+    const hit = (n: BNode) =>
+      (!o.layer || n.layer === o.layer) &&
+      typeMatches(n.type, o.type) &&
+      (!o.cluster || n.cluster === o.cluster) &&
+      (!o.where || Object.entries(o.where).every(([k, v]) => String(get(n, k) ?? "") === String(v))) &&
+      (!(o.since || o.until) || inRange(get(n, o.dateField ?? "data.date")));
+
+    const rows = this.graph.nodes.filter(hit);
+    if (!o.groupBy) return { total: rows.length, groups: [], groupBy: null };
+    const tally = new Map<string, number>();
+    for (const n of rows) {
+      const k = String(get(n, o.groupBy) ?? "—");
+      tally.set(k, (tally.get(k) ?? 0) + 1);
+    }
+    const groups = [...tally.entries()]
+      .map(([key, count]) => ({ key, count }))
+      .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key))
+      .slice(0, Math.min(200, Math.max(1, o.limit ?? 20)));
+    return { total: rows.length, groups, groupBy: o.groupBy };
+  }
 }
+
+export type CountOpts = {
+  layer?: string;
+  type?: string;
+  cluster?: string;
+  /** exact-match filters on node fields or `data.*` paths */
+  where?: Record<string, string>;
+  /** ISO bounds applied to `dateField` (default `data.date`) */
+  since?: string;
+  until?: string;
+  dateField?: string;
+  /** field or `data.*` path to group by; omit for a plain total */
+  groupBy?: string;
+  limit?: number;
+};

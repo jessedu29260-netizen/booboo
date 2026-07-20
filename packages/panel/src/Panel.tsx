@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { BNode, BOrg, BOrgAgent } from "@booboo-brain/spec";
-import { orgBootSlice } from "@booboo-brain/spec";
+import { orgBootSlice, relTime } from "@booboo-brain/spec";
 import { PANEL_CSS } from "./panel-css";
 
 // THE PANEL — Booboo's control plane. Five tabs over one org file + one
@@ -22,6 +22,7 @@ const ApiCtx = createContext<ApiFn>(defaultApi);
 const useApi = () => useContext(ApiCtx);
 
 type Stats = { nodes: number; links: number; byLayer: Record<string, number> };
+type Change = { key: string; id: string; kind: "added" | "removed" | "moved" | "edited"; label: string };
 
 const TABS = [
   { id: "org", glyph: "⌂", label: "organigram" },
@@ -31,18 +32,6 @@ const TABS = [
   { id: "graph", glyph: "◉", label: "graph" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
-
-function relTime(iso?: unknown): string {
-  if (typeof iso !== "string") return "";
-  const t = new Date(iso).getTime();
-  if (!t) return "";
-  const s = (Date.now() - t) / 1000;
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  if (s < 172800) return "yesterday";
-  return `${Math.floor(s / 86400)}d ago`;
-}
 
 // Timestamps vary by adapter — accept the common field names; "" = undated.
 function nodeAt(n: BNode): string {
@@ -74,7 +63,8 @@ function timeMs(at: string): number {
 function buildHealthMap(nodes: BNode[]): HealthMap {
   const m: HealthMap = new Map();
   for (const r of nodes) {
-    if (!r.cluster) continue;
+    const who = reportAgentId(r);
+    if (!who) continue;
     const d = (r.data ?? {}) as Record<string, unknown>;
     // Only rows with an explicit status are heartbeats. Close-notes/decisions
     // carry none — defaulting them to ok let one overwrite a run's verdict.
@@ -82,13 +72,13 @@ function buildHealthMap(nodes: BNode[]): HealthMap {
     const status = d.status;
     const at = nodeAt(r);
     const atMs = timeMs(at);
-    const cur = m.get(r.cluster) ?? { lastAt: "", lastMs: -Infinity, lastStatus: "", n: 0, fails: 0 };
+    const cur = m.get(who) ?? { lastAt: "", lastMs: -Infinity, lastStatus: "", n: 0, fails: 0 };
     cur.n++;
     if (status === "fail") cur.fails++;
     // Only a dated, newer row becomes the "latest": undated rows count but never
     // overwrite a real verdict, and the comparison is on parsed time not string order.
     if (Number.isFinite(atMs) && atMs >= cur.lastMs) { cur.lastMs = atMs; cur.lastAt = at; cur.lastStatus = status; }
-    m.set(r.cluster, cur);
+    m.set(who, cur);
   }
   return m;
 }
@@ -102,6 +92,19 @@ function pulseFor(a: BOrgAgent, health: HealthMap | null): Pulse | null {
     if (p && (!best || p.lastMs > best.lastMs)) best = p;
   }
   return best;
+}
+
+/** Cadence in hours → the words a person would actually use. "expected every
+ *  720h" is a machine talking to itself; the board is read by someone deciding
+ *  whether silence is normal, and "monthly" answers that instantly. */
+function everyN(h: number): string {
+  if (h <= 1) return "hourly";
+  if (h < 24) return `every ${h}h`;
+  if (h === 24) return "daily";
+  if (h === 168) return "weekly";
+  if (h >= 672 && h <= 744) return "monthly";
+  if (h % 24 === 0) return `every ${h / 24} days`;
+  return `every ${h}h`;
 }
 
 function lightFor(a: BOrgAgent, health: HealthMap | null): Light {
@@ -130,6 +133,17 @@ function nodeSummary(n: BNode): string {
     if (typeof v === "string" && v && v !== n.label) return v;
   }
   return "";
+}
+
+/** Which agent filed this report.
+ *  `cluster` is the usual carrier, but house-level agents (the Executive) file
+ *  with cluster null — those reports rendered as "unknown" in the timeline and
+ *  vanished from the filer's own dossier, which is how the most important entry
+ *  in the house ("Amended the House Standard § 14") ended up unattributed.
+ *  Every report also carries `data.agent`; prefer cluster, fall back to it. */
+function reportAgentId(n: BNode): string {
+  const d = (n.data ?? {}) as Record<string, unknown>;
+  return n.cluster || (typeof d.agent === "string" ? d.agent : "") || "";
 }
 
 // "What the agent closed" lives as type `report` — or `decision` in systems
@@ -163,16 +177,41 @@ function slugify(s: string): string {
 const REDUCED = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 // Light / dark — dark by default, persisted, applied to <html data-theme> so the CSS vars swap.
+const THEME_KEY = "booboo-theme-v2"; // v1 values were auto-written, see below
+
 function readTheme(): "dark" | "light" {
-  try { return localStorage.getItem("booboo-theme") === "light" ? "light" : "dark"; } catch { return "dark"; }
+  try {
+    // Embedded in a light page (the landing), the board is ALWAYS light. A dark
+    // board inside a white page is never what anyone wanted, and the iframe is
+    // same-origin so it would otherwise inherit the host's stored preference.
+    if (new URLSearchParams(window.location.search).get("embed")) return "light";
+    return localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
+  } catch { return "light"; }
 }
-function useTheme(): ["dark" | "light", () => void] {
+// `pinned` is the host's `theme` prop: a mounting app states the theme it wants
+// and the panel obeys, with no toggle offered. Dionisos OS is a dark cockpit and
+// pins dark; the demo leaves it unset and defaults light for strangers.
+function useTheme(pinned?: "dark" | "light"): ["dark" | "light", (() => void) | null] {
   const [theme, setTheme] = useState<"dark" | "light">(readTheme);
+  const chosen = useRef(false);
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    try { localStorage.setItem("booboo-theme", theme); } catch { /* private mode */ }
-  }, [theme]);
-  return [theme, () => setTheme((t) => (t === "dark" ? "light" : "dark"))];
+    if (pinned) return;
+    // The theme now rides on the panel's OWN root element, not <html>. Writing
+    // documentElement made a mounted component reach out and restyle its host's
+    // document — and, worse, made the panel obey a host that happened to set
+    // data-theme for its own reasons.
+    // ONLY AN EXPLICIT TOGGLE PERSISTS. Writing on mount meant the DEFAULT
+    // persisted itself: every visit while dark was the default silently stored
+    // "dark", so the moment light became the default those visitors were pinned
+    // to a preference they never chose — and the landing page's embedded board
+    // rendered dark inside a white page. Hence the v2 key: values written by
+    // the old mount-write are indistinguishable from a real choice, so they are
+    // abandoned rather than trusted. Anyone who truly wants dark toggles once.
+    if (!chosen.current) return;
+    try { localStorage.setItem(THEME_KEY, theme); } catch { /* private mode */ }
+  }, [theme, pinned]);
+  if (pinned) return [pinned, null];
+  return [theme, () => { chosen.current = true; setTheme((t) => (t === "dark" ? "light" : "dark")); }];
 }
 
 function useCountUp(target: number, ms = 900): number {
@@ -221,12 +260,276 @@ function bucketHue(name: string): number {
   return h;
 }
 
+// The ledger shelf (CRAFT §5): every bucket the org declares, laid out as a
+// row of pigeonholes. Hovering a role lights the ones it can reach — the
+// same bucket set the dossier and the card's own ▤ chip already agree on.
+// The sealed bucket is a real node in the dataset (bucket:guest-registry,
+// DESIGN.md §Buckets) that no agent ever declares — it renders, locked,
+// forever unlit: the wall shown, never the secrets behind it.
+const SEALED_BUCKET = "guest-registry";
+function LedgerShelf({ org, lit }: { org: BOrg; lit: Set<string> }) {
+  const buckets = useMemo(() => {
+    const s = new Set<string>();
+    for (const a of org.agents) for (const b of a.buckets ?? []) s.add(b);
+    return [...s].sort();
+  }, [org]);
+  return (
+    <div className="ledger-shelf" role="list" aria-label="the ledger — hover a role to see what it reaches">
+      <span className="shelf-label">the ledger</span>
+      <div className="shelf-slots">
+        {buckets.map((b) => (
+          <span key={b} className={`shelf-slot${lit.has(b) ? " lit" : ""}`} role="listitem">{b}</span>
+        ))}
+        <span className="shelf-slot sealed" role="listitem" title="ledger:guest-registry — sealed by wall. Visible, never emitted.">
+          🔒 {SEALED_BUCKET}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* The hero's atmosphere: a faint constellation behind the rack. Deterministic
+   (a seeded LCG, not Math.random) so a screenshot of the board is reproducible
+   and golden-frame diffing stays possible. Points + links only — the mockup's
+   grain/noise overlay is deliberately absent, it read as a blurry filter. */
+function Constellation() {
+  const svg = useMemo(() => {
+    const W = 1600, H = 1000, N = 58;
+    let s = 20260719;
+    const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    const pts: [number, number][] = [];
+    for (let i = 0; i < N; i++) pts.push([rnd() * W, rnd() * H]);
+    let d = "";
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const dist = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
+        if (dist < 200) d += `<line x1="${pts[i][0].toFixed(1)}" y1="${pts[i][1].toFixed(1)}" x2="${pts[j][0].toFixed(1)}" y2="${pts[j][1].toFixed(1)}" stroke="rgba(217,160,91,${((1 - dist / 200) * 0.14).toFixed(3)})" stroke-width="1"/>`;
+      }
+    }
+    for (const [x, y] of pts) d += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(rnd() * 1.4 + 0.6).toFixed(2)}" fill="rgba(239,195,137,.45)"/>`;
+    return d;
+  }, []);
+  return (
+    <svg className="pnl-stars" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden dangerouslySetInnerHTML={{ __html: svg }} />
+  );
+}
+
+/* Rank I — THE HOUSE STANDARD. Not an agent: it is the law the root DECLARES,
+   read straight off the root's own rule refs. Rendering it as a plate is what
+   makes the cascade honest — a master-key chart starts at the master, and here
+   the thing above the GM is the standard the GM alone may amend. */
+function LawPlate({ org, selected, onSelect }: { org: BOrg; selected: boolean; onSelect: (id: string) => void }) {
+  const root = org.agents.find((a) => a.id === org.root);
+  const rules = root?.rules ?? [];
+  if (!rules.length) return null;
+  return (
+    <div
+      className={`ag law-plate${selected ? " sel" : ""}`}
+      data-rail="law"
+      tabIndex={0}
+      title="the law every agent in the house boots against"
+      onClick={(e) => { e.stopPropagation(); if (root) onSelect(root.id); }}
+      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && root) { e.preventDefault(); onSelect(root.id); } }}
+    >
+      <div className="ag-head">
+        <span className="ag-ava">§</span>
+        <span className="ag-name">The House Standard</span>
+      </div>
+      <span className="ag-role">{rules[0]}</span>
+      <span className="ag-facts">
+        <em className="ag-fact">binds {org.agents.length}</em>
+        <em className="ag-fact">{rules.length} clause{rules.length === 1 ? "" : "s"}</em>
+      </span>
+    </div>
+  );
+}
+
+/* ── the brass elbows ──────────────────────────────────────────────────────
+   Orthogonal rails between arbitrary measured boxes — the geometry of the
+   master-key chart. CSS pseudo-elements cannot do this honestly (a bus that
+   spans exactly first-child-centre to last-child-centre is not expressible),
+   so the rails are one measured SVG plane under the plates.
+   Measurement uses offsetLeft/offsetTop, NOT getBoundingClientRect: the chart
+   sits inside a CSS transform: scale(), which rect-based maths would bake in. */
+function boxIn(el: HTMLElement, root: HTMLElement) {
+  let x = 0, y = 0;
+  let cur: HTMLElement | null = el;
+  while (cur && cur !== root) {
+    x += cur.offsetLeft;
+    y += cur.offsetTop;
+    cur = cur.offsetParent as HTMLElement | null;
+  }
+  return { x, y, w: el.offsetWidth, h: el.offsetHeight, cy: y + el.offsetHeight / 2 };
+}
+
+/** an orthogonal elbow: out of the source, across at a mid-x, into the target */
+function elbow(x1: number, y1: number, x2: number, y2: number): string {
+  if (Math.abs(y2 - y1) < 1.5) return `M${x1},${y1.toFixed(1)} H${x2}`;
+  const mx = x1 + (x2 - x1) * 0.45;
+  const r = Math.min(9, Math.abs(y2 - y1) / 2);
+  const dir = y2 > y1 ? 1 : -1;
+  return `M${x1},${y1.toFixed(1)} H${(mx - r).toFixed(1)} Q${mx},${y1.toFixed(1)} ${mx},${(y1 + r * dir).toFixed(1)} V${(y2 - r * dir).toFixed(1)} Q${mx},${y2.toFixed(1)} ${(mx + r).toFixed(1)},${y2.toFixed(1)} H${x2}`;
+}
+
+function CascadeRails({ chartRef, version }: { chartRef: React.RefObject<HTMLDivElement | null>; version: string }) {
+  const [paths, setPaths] = useState<string[]>([]);
+  useLayoutEffect(() => {
+    const root = chartRef.current;
+    if (!root) return;
+    const measure = () => {
+      const pick = (sel: string) => Array.from(root.querySelectorAll<HTMLElement>(sel));
+      const law = root.querySelector<HTMLElement>('[data-rail="law"]');
+      const gm = root.querySelector<HTMLElement>('[data-rail="gm"]');
+      const depts = pick('[data-rail="dept"]');
+      const staff = pick('[data-rail="staff"]');
+      const out: string[] = [];
+      const gmB = gm ? boxIn(gm, root) : null;
+      if (law && gmB) {
+        const lawB = boxIn(law, root);
+        out.push(elbow(lawB.x + lawB.w, lawB.cy, gmB.x, gmB.cy));
+      }
+      const deptBox = new Map<string, ReturnType<typeof boxIn>>();
+      for (const d of depts) {
+        const b = boxIn(d, root);
+        deptBox.set(d.dataset.id ?? "", b);
+        if (gmB) out.push(elbow(gmB.x + gmB.w, gmB.cy, b.x, b.cy));
+      }
+      for (const s of staff) {
+        const parent = deptBox.get(s.dataset.parent ?? "");
+        if (!parent) continue;
+        const b = boxIn(s, root);
+        out.push(elbow(parent.x + parent.w, parent.cy, b.x, b.cy));
+      }
+      setPaths((prev) => (prev.length === out.length && prev.every((p, i) => p === out[i]) ? prev : out));
+    };
+    measure();
+    // the plane is position:absolute and pointer-events:none, so redrawing it
+    // never resizes `root` — no observer feedback loop.
+    const ro = new ResizeObserver(measure);
+    ro.observe(root);
+    return () => ro.disconnect();
+  }, [chartRef, version]);
+  return (
+    <svg className="rails" aria-hidden>
+      <defs>
+        <linearGradient id="railGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="var(--brass)" stopOpacity="0.3" />
+          <stop offset="1" stopColor="var(--brass-hi)" stopOpacity="0.85" />
+        </linearGradient>
+      </defs>
+      {paths.map((d, i) => (
+        <g key={i}>
+          <path className="rail-line" d={d} />
+          <path className="rail-dash" d={d} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/** A department lane that is ITSELF a drop target.
+ *  Cards were the only thing accepting a drop, so releasing over the empty
+ *  space inside a lane did nothing at all and read as "it will not let me move
+ *  this". The lane is a much larger target and its meaning is unambiguous:
+ *  drop anywhere in Engineering's row and you report to Engineering. */
+function Lane({ laneId, isLane, dragId, onDropOn, children }: {
+  laneId: string; isLane: boolean; dragId: string | null;
+  onDropOn: (id: string) => void; children: React.ReactNode;
+}) {
+  const [over, setOver] = useState(false);
+  if (!isLane) return <div className="oc-child">{children}</div>;
+  return (
+    <div
+      className={`oc-child${over && dragId && dragId !== laneId ? " lane-over" : ""}`}
+      onDragOver={(e) => { if (dragId && dragId !== laneId) { e.preventDefault(); setOver(true); } }}
+      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(false); }}
+      onDrop={(e) => { e.preventDefault(); setOver(false); if (dragId && dragId !== laneId) onDropOn(laneId); }}
+    >
+      {children}
+    </div>
+  );
+}
+
 /* ────────────────────────── ORGANIGRAM ────────────────────────── */
 
+// The card's fact row (CRAFT §5: "health chip · bucket chips · rule count ·
+// last report" — the four things that matter, replacing a role line that
+// used to just repeat the name). Reach comes from the same orgBootSlice the
+// dossier already uses, so a card and its dossier never disagree.
+const HEALTH_WORD: Record<Light, string> = { ok: "Healthy", warn: "Needs a look", fail: "Failing", none: "No reports yet" };
+
+/** Everything that FLOWS OUT of this node.
+ *  The board is not a picture of the org — it is the source the org is
+ *  generated from: `booboo_boot` reads it, rules inherit down it, bucket reach
+ *  derives from it. So a card has to state its consequence, not just its
+ *  attributes. A node with children shows what it EMITS downward (rules it
+ *  declares, agents bound by them); a leaf shows what it RECEIVES (its own boot
+ *  slice). Same question — "what does this node do to the system" — answered in
+ *  whichever direction actually carries weight for that rank. */
+function consequenceOf(a: BOrgAgent, org: BOrg, slice: ReturnType<typeof orgBootSlice>): string {
+  if (!slice) return "";
+  const descendants = (id: string): number => {
+    const kids = org.agents.filter((x) => x.parent === id);
+    return kids.reduce((n, k) => n + 1 + descendants(k.id), 0);
+  };
+  const declares = a.rules?.length ?? 0;
+  const below = descendants(a.id);
+  // LEAVES GET NOTHING HERE. They previously read "boots on 2 rules · reaches 3
+  // buckets" — identical on all 52, because in this org every staff role
+  // inherits exactly the same slice. A fact that never varies across a column
+  // is texture pretending to be data. A leaf's "what" is its duty line; its
+  // consequence is genuinely upward, and the dossier already tells that story.
+  if (below === 0) return "";
+  const parts = [];
+  if (declares) parts.push(`declares ${declares} rule${declares === 1 ? "" : "s"}`);
+  parts.push(`binds ${below} below`);
+  return parts.join(" · ");
+}
+
+function AgentFacts({ a, org, health, showLaw }: { a: BOrgAgent; org: BOrg; health: HealthMap | null; showLaw?: boolean }) {
+  const slice = useMemo(() => orgBootSlice(org, a.id), [org, a.id]);
+  const consequence = useMemo(() => consequenceOf(a, org, slice), [a, org, slice]);
+  const pulse = pulseFor(a, health);
+  const light = lightFor(a, health);
+  if (!slice) return null;
+  return (
+    <>
+      {/* what this node does to the system, in plain English. Empty on leaves —
+          see consequenceOf: a line identical across 52 cards is not a fact. */}
+      {consequence && <span className="ag-flows" title="what flows out of this node — the org file is the source booboo_boot reads">{consequence}</span>}
+      <span className="ag-facts">
+        <em className={`ag-fact ag-fact-health ${light}`}>{HEALTH_WORD[light]}</em>
+        {/* "reported 4d ago" alone is an oracle: the lamp knows whether that is
+            fine and the reader does not. Naming the expected beat next to it
+            makes the judgement checkable — 4d against weekly is obviously ok,
+            4d against daily is obviously not. */}
+        <em className="ag-fact ag-fact-report" title={typeof a.cadence === "number"
+          ? `${pulse?.lastAt ? `last report filed ${relTime(pulse.lastAt)}` : "no report filed yet"} · expected ${everyN(a.cadence)}; amber past about twice that`
+          : pulse?.lastAt ? `last report filed ${relTime(pulse.lastAt)}` : "no report filed yet"}>
+          {pulse?.lastAt ? `reported ${relTime(pulse.lastAt)}` : ""}
+          {typeof a.cadence === "number" && a.kind !== "automation" && (
+            <b className="ag-cadence"> · {everyN(a.cadence)}</b>
+          )}
+        </em>
+      </span>
+      {/* the law, made visible: the boot-order chain that binds this card —
+          House Standard → SOP → role — only drawn while the toggle is on. */}
+      {showLaw && (
+        <span className="ag-law" title="inheritance in boot order">
+          {slice.chain.map((c, i) => (
+            <span key={c.id}>{i > 0 && <i className="ag-law-arrow">↓</i>}{c.name}</span>
+          ))}
+        </span>
+      )}
+    </>
+  );
+}
+
 function AgentCard({
-  a, isRoot, depth, order, selected, dragId, onSelect, onDragStart, onDropOn, childCount, light = "none",
+  a, org, isRoot, depth, order, selected, dragId, onSelect, onDragStart, onDropOn, childCount, light = "none", health = null, onHover, showLaw = false,
 }: {
   a: BOrgAgent;
+  org: BOrg;
   isRoot: boolean;
   depth: number;
   order: number;
@@ -237,14 +540,20 @@ function AgentCard({
   onDropOn: (id: string) => void;
   childCount: number;
   light?: Light;
+  health?: HealthMap | null;
+  /** reports this card's own id on hover-in, null on hover-out — the ledger
+   *  shelf uses it to light the buckets this role can reach. */
+  onHover?: (id: string | null) => void;
+  showLaw?: boolean;
 }) {
   const [over, setOver] = useState(false);
-  const nBuckets = a.buckets?.length ?? 0;
   const nSkills = a.skills?.length ?? 0;
+  const parentName = a.parent ? org.agents.find((x) => x.id === a.parent)?.name : null;
   return (
     <div
-      className={`ag${isRoot ? " root" : ""}${selected ? " sel" : ""}${over ? " over" : ""}${dragId === a.id ? " dragging" : ""}`}
-      style={{ ["--h" as string]: bucketHue(a.id), ["--d" as string]: depth, animationDelay: `${Math.min(depth * 70 + order * 45, 600)}ms` }}
+      className={`ag${isRoot ? " root" : ""}${depth >= 2 ? " staff" : ""}${selected ? " sel" : ""}${over ? " over" : ""}${dragId === a.id ? " dragging" : ""}${showLaw ? " law-on" : ""}${light !== "none" ? " h-" + light : ""}`}
+      /* no --h: rank reads through brass FINISH, never through hash-hue */
+      style={{ ["--d" as string]: depth, animationDelay: `${Math.min(depth * 70 + order * 45, 600)}ms` }}
       draggable={!isRoot}
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(a.id); } }}
@@ -253,16 +562,44 @@ function AgentCard({
       onDragOver={(e) => { if (dragId && dragId !== a.id) { e.preventDefault(); setOver(true); } }}
       onDragLeave={() => setOver(false)}
       onDrop={(e) => { e.preventDefault(); setOver(false); onDropOn(a.id); }}
+      onMouseEnter={() => onHover?.(a.id)}
+      onMouseLeave={() => onHover?.(null)}
+      /* rail anchors: CascadeRails measures these to draw the brass elbows */
+      data-rail={isRoot ? "gm" : depth === 1 ? "dept" : "staff"}
+      data-id={a.id}
+      data-parent={a.parent ?? ""}
     >
-      {light !== "none" && <i className={`ag-light ${light}`} title={`fleet health: ${light}`} />}
-      <span className="ag-ava">{a.emoji || "🤖"}</span>
-      <span className="ag-name">{a.name}</span>
-      <span className="ag-role">{a.role || " "}</span>
-      <span className="ag-meta">
-        {nBuckets > 0 && <em title="memory buckets">▤ {nBuckets}</em>}
-        {nSkills > 0 && <em title="skills">✦ {nSkills}</em>}
-        {childCount > 0 && <span className="ag-kids" title="direct reports">{childCount} reports</span>}
+      {/* the lamp's breath is offset per bubble so the board never blinks in
+          unison — a synchronised pulse reads as a screensaver, a staggered one
+          reads as a building with people in it. Deterministic off the id. */}
+      {light !== "none" && (
+        <i
+          className={`ag-light ${light}`}
+          style={{ ["--lamp-delay" as string]: `${(bucketHue(a.id) % 26) / 10}s` }}
+          title={`health: ${light === "ok" ? "healthy" : light === "warn" ? "needs a look" : "failing"}`}
+        />
+      )}
+      {/* WHERE IT BELONGS, first — a staff card lifted out of its lane used to
+          be orphaned: "Lift Engineer" with no way to know it was Engineering's.
+          Rank is named too, so the card carries its own place in the cascade. */}
+      <span className="ag-eyebrow">
+        {depth === 0 ? "The house · rank II" : depth === 1 ? "Department · rank III" : (parentName ?? "Staff")}
       </span>
+      <div className="ag-head">
+        {/* the mark is earned by rank. Staff plates carry none — 51 identical
+            🤖 avatars were the cheapest visual token on the board, and a
+            brass name plate does not have a cartoon on it. */}
+        {depth <= 1 && a.emoji && <span className="ag-ava">{a.emoji}</span>}
+        <span className="ag-name">{a.name}</span>
+      </div>
+      {a.role && <span className="ag-role">{a.role}</span>}
+      <AgentFacts a={a} org={org} health={health} showLaw={showLaw} />
+      {(nSkills > 0 || childCount > 0) && (
+        <span className="ag-meta">
+          {nSkills > 0 && <em title="skills">✦ {nSkills}</em>}
+          {childCount > 0 && <span className="ag-kids" title="direct reports">{childCount} reports</span>}
+        </span>
+      )}
     </div>
   );
 }
@@ -282,11 +619,22 @@ function ChartNode({
   onSelect: (id: string) => void;
   onDragStart: (id: string) => void;
   onDropOn: (id: string) => void;
+  onHover?: (id: string | null) => void;
+  /** "show the law": traces House Standard → SOP → role on every rail + card */
+  showLaw?: boolean;
+  /** semantic zoom (house → department → role): department ids collapsed to
+   *  head-only. Click a department's rail to fold or unfold its staff. */
+  collapsed?: Set<string>;
+  onToggleCollapse?: (id: string) => void;
 }) {
   // Automations are machines this node OPERATES, not org units — they render
   // as a compact TRAY of chips under the owner's card (with health lights),
   // never as full org cards.
-  const kids = org.agents.filter((c) => c.parent === a.id && c.kind !== "automation");
+  // Root's children are the departments: sorted by id so the board's column
+  // order matches the cosmos viewer's sector enumeration (the one-ordering law
+  // in design/CRAFT.md — sectors in SEE, columns in GOVERN, always identical).
+  const kidsRaw = org.agents.filter((c) => c.parent === a.id && c.kind !== "automation");
+  const kids = depth === 0 ? [...kidsRaw].sort((x, y) => x.id.localeCompare(y.id)) : kidsRaw;
   const machines = (() => {
     const out: BOrgAgent[] = [];
     const walk = (pid: string) => {
@@ -301,16 +649,22 @@ function ChartNode({
   })();
   const lights = machines.map((m) => lightFor(m, cardProps.health));
   const trayLight = worst(lights);
+  // semantic zoom lever: department-level nodes (depth 1) fold their staff
+  // behind a click on their own rail — house → department → role, one level
+  // at a time, without leaving the board.
+  const isDept = depth === 1 && kids.length > 0;
+  const folded = isDept && cardProps.collapsed?.has(a.id);
   const TRAY_MAX = 8;
   const hidden = machines.length - TRAY_MAX;
   const hiddenBad = machines.slice(TRAY_MAX).reduce(
     (n, m) => n + (lightFor(m, cardProps.health) !== "ok" && lightFor(m, cardProps.health) !== "none" ? 1 : 0),
     0,
   );
-  return (
-    <div className="ocn">
+  const cardAndRack = (
+    <>
       <AgentCard
         a={a}
+        org={org}
         isRoot={a.id === org.root}
         depth={depth}
         order={order}
@@ -321,6 +675,9 @@ function ChartNode({
         onDropOn={cardProps.onDropOn}
         childCount={kids.length}
         light={trayLight}
+        health={cardProps.health}
+        onHover={cardProps.onHover}
+        showLaw={cardProps.showLaw}
       />
       {machines.length > 0 && (
         <div className={`oc-tray ${trayLight}`}>
@@ -335,7 +692,7 @@ function ChartNode({
               onClick={(e) => { e.stopPropagation(); cardProps.onSelect(m.id); }}
             >
               <i className={`mac-dot ${lightFor(m, cardProps.health)}${unstableFor(m, cardProps.health) ? " unstable" : ""}`} />
-              <span className="mac-emoji">{m.emoji || "⚙️"}</span>
+              <BrandMark agent={m} />
               <span className="mac-name">{m.name}</span>
             </button>
           ))}
@@ -351,21 +708,85 @@ function ChartNode({
           )}
         </div>
       )}
+    </>
+  );
+  return (
+    <div className="ocn">
+      {/* At the root, the plate + its rack occupy ONE cascade cell so the GM
+          centres against the whole lane stack. Left as two grid items they
+          fell into separate rows and the GM pinned to the top while the lanes
+          spanned both — measured, not guessed. */}
+      {depth === 0 ? <div className="casc-head">{cardAndRack}</div> : cardAndRack}
       {kids.length > 0 && (
         <>
-          <div className="oc-down" />
-          {/* ≤4 children: the classic fan with connector bars. More: a compact
-              grid block that grows DOWN instead of spreading the page sideways. */}
-          <div className={`oc-row${kids.length > 3 ? " wrap" : ""}`}>
+          <div
+            className={`oc-down${isDept ? " foldable" : ""}${folded ? " folded" : ""}`}
+            role={isDept ? "button" : undefined}
+            tabIndex={isDept ? 0 : undefined}
+            title={isDept ? (folded ? `${kids.length} staff — click to expand (semantic zoom: department → role)` : "click to fold this department to head-only (semantic zoom: role → department)") : undefined}
+            onClick={isDept ? (e) => { e.stopPropagation(); cardProps.onToggleCollapse?.(a.id); } : undefined}
+            onKeyDown={isDept ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); cardProps.onToggleCollapse?.(a.id); } } : undefined}
+          >
+            {isDept && <i className="oc-fold-glyph">{folded ? "▸" : "▾"}</i>}
+          </div>
+          {/* The staff-board law: departments are LANES that stack DOWNWARD.
+              Nine of them fanned sideways forced a 17%-zoom canvas nobody
+              could read. Each lane is a self-contained row — head on the left,
+              its people flowing right — so the board reads like a document and
+              every card stays legible. Deeper generations keep the old rule
+              (≤4 fan, more → a compact grid that grows down). */}
+          {folded ? (
+            <button
+              type="button"
+              className="oc-folded-summary"
+              onClick={(e) => { e.stopPropagation(); cardProps.onToggleCollapse?.(a.id); }}
+              title="click to expand — semantic zoom: department → role"
+            >
+              {kids.length} staff · folded to department level — click to expand
+            </button>
+          ) : (
+          <div className={`oc-row${depth > 0 && kids.length > 3 ? " wrap" : ""}${depth === 0 ? " lanes" : ""}`}>
             {kids.map((k, i) => (
-              <div className="oc-child" key={k.id} style={{ ["--h" as string]: bucketHue(k.id) }}>
+              <Lane
+                key={k.id}
+                laneId={k.id}
+                isLane={depth === 0}
+                dragId={cardProps.dragId}
+                onDropOn={cardProps.onDropOn}
+              >
                 <ChartNode org={org} a={k} depth={depth + 1} order={i} {...cardProps} />
-              </div>
+              </Lane>
             ))}
           </div>
+          )}
         </>
       )}
     </div>
+  );
+}
+
+/* The real mark of a real service. `data.brand` is a simpleicons slug; the CDN
+   returns a single-colour SVG we tint to the house palette so twelve vendors
+   don't turn the board into a sticker album. Falls back to the emoji when a
+   vendor isn't in the set (or the CDN is unreachable) — a missing logo must
+   never leave an empty square. */
+function BrandMark({ agent }: { agent: BOrgAgent }) {
+  const brand = ((agent.data ?? {}) as Record<string, unknown>).brand;
+  const [failed, setFailed] = useState(false);
+  if (typeof brand !== "string" || !brand || failed) {
+    return <span className="mac-emoji">{agent.emoji || "⚙️"}</span>;
+  }
+  return (
+    <img
+      className="mac-brand"
+      /* /000 = black glyph, which is what a white chip needs. Untinted brand
+         colour across a dozen vendors turns the rack into a sticker album. */
+      src={`https://cdn.simpleicons.org/${brand}/000`}
+      alt=""
+      loading="lazy"
+      draggable={false}
+      onError={() => setFailed(true)}
+    />
   );
 }
 
@@ -430,10 +851,18 @@ function Dossier({
         api(`/nodes?type=memory&cluster=${encodeURIComponent(b)}&limit=1`).then((j) => j.total as number).catch(() => 0),
       ),
     ).then((counts) => setMemCount(counts.reduce((s, n) => s + n, 0)));
+    // Fetch by cluster first (cheap, server-side). House-level filers like the
+    // Executive carry cluster null, so that query returns nothing and the
+    // dossier claimed "0 reports filed" while holding three years of them —
+    // fall back to a full pull matched on the report's own `data.agent`.
     fetchReports(api, id, 100).then(({ total, nodes }) => {
-      setRepCount(total);
-      setReports(nodes.slice(0, 4));
-    });
+      if (total > 0) { setRepCount(total); setReports(nodes.slice(0, 4)); return; }
+      return fetchReports(api, null, 2000).then(({ nodes: all }) => {
+        const mine = all.filter((n) => reportAgentId(n) === id);
+        setRepCount(mine.length);
+        setReports(mine.slice(0, 4));
+      });
+    }).catch(() => { setRepCount(0); setReports([]); });
   }, [id, hasSnapshot, slice, api]);
 
   const mem = useCountUp(memCount ?? 0);
@@ -475,12 +904,13 @@ function Dossier({
 
   return (
     <aside className="doss" onClick={(e) => e.stopPropagation()}>
+      {/* The role sits OUTSIDE this flex row. Inside it, the action buttons
+          claimed their width first and the role took what was left, so The
+          Executive's four seats wrapped into a 7-line ribbon down one side of
+          the panel. Name and controls share the row; the role gets the panel. */}
       <div className="doss-head">
         <span className="doss-emoji">{a.emoji || "🤖"}</span>
-        <div>
-          <h2>{a.name} {a.kind === "automation" && <span className="auto-badge">automation</span>}</h2>
-          {a.role && <p className="doss-role">{a.role}</p>}
-        </div>
+        <h2>{a.name} {a.kind === "automation" && <span className="auto-badge">automation</span>}</h2>
         <div className="doss-head-actions">
           {!edit && (
             <button className="doss-3d" title="edit this agent" onClick={startEdit}>✎ edit</button>
@@ -491,6 +921,7 @@ function Dossier({
           <button className="doss-close" title="close the dossier" aria-label="close the dossier" onClick={onClose}>✕</button>
         </div>
       </div>
+      {a.role && <p className="doss-role">{a.role}</p>}
 
       {edit && (
         <div className="doss-edit">
@@ -527,7 +958,7 @@ function Dossier({
             </b>
             {p?.lastAt && <span>last run {relTime(p.lastAt)}</span>}
             {p && p.n > 0 && <span>{Math.round(((p.n - p.fails) / p.n) * 100)}% ok of {p.n}</span>}
-            {typeof a.cadence === "number" && <span>expected every {a.cadence}h</span>}
+            {typeof a.cadence === "number" && <span>reports {everyN(a.cadence)}</span>}
           </div>
         );
       })()}
@@ -705,7 +1136,7 @@ function Dossier({
 }
 
 function OrgScreen({
-  draft, selected, dragId, setSelected, setDragId, dropOn, hasSnapshot, onUpdate, onAdd, onRemove,
+  draft, selected, dragId, setSelected, setDragId, dropOn, hasSnapshot, onUpdate, onAdd, onRemove, showLaw,
 }: {
   draft: BOrg;
   selected: string | null;
@@ -717,6 +1148,7 @@ function OrgScreen({
   onUpdate: (id: string, patch: Partial<BOrgAgent>) => void;
   onAdd: (parentId: string) => void;
   onRemove: (id: string) => void;
+  showLaw: boolean;
 }) {
   const api = useApi();
   // The heartbeat: one fetch of every report powers all the lights.
@@ -725,6 +1157,25 @@ function OrgScreen({
     if (!hasSnapshot) return;
     fetchReports(api, null, 10000).then(({ nodes }) => setHealth(buildHealthMap(nodes))).catch(() => {});
   }, [hasSnapshot, api]);
+
+  // The ledger shelf: hovering a role's card lights the buckets it can reach.
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const litBuckets = useMemo(
+    () => new Set(hoverId ? (orgBootSlice(draft, hoverId)?.buckets ?? []) : []),
+    [hoverId, draft],
+  );
+
+  // Semantic zoom: house → department → role. Each department folds to
+  // head-only on a rail click; these two controls fold/unfold every
+  // department at once — house-level and role-level in one press.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const depts = useMemo(() => draft.agents.filter((a) => a.parent === draft.root), [draft]);
+  const toggleCollapse = useCallback((id: string) => {
+    setCollapsed((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }, []);
+  const allFolded = depts.length > 0 && depts.every((d) => collapsed.has(d.id));
+  // anything that moves a plate must re-measure the rails
+  const railVersion = `${draft.agents.length}:${[...collapsed].sort().join(",")}:${showLaw}:${health ? 1 : 0}:${selected ?? ""}`;
 
   // Measured fit-to-viewport: scale the whole chart so the full org is always
   // visible on both axes with no page scroll. We read the chart's NATURAL
@@ -740,6 +1191,9 @@ function OrgScreen({
   // the −/＋ controls or ctrl+wheel; "fit" resets. When zoomed, the wrapper
   // scrolls natively (top-left origin so the overflow is fully reachable).
   const [zoom, setZoom] = useState<number | null>(null);
+  // natural (unscaled) size of the chart, so the scroll spacer can be sized to
+  // the visual footprint after scaling
+  const [nat, setNat] = useState({ w: 0, h: 0 });
   const eff = zoom ?? fit;
   useLayoutEffect(() => {
     const vp = fitRef.current, chart = chartRef.current;
@@ -749,15 +1203,22 @@ function OrgScreen({
       const natW = chart.scrollWidth, natH = chart.scrollHeight;
       const availW = vp.clientWidth - PAD * 2, availH = vp.clientHeight - PAD * 2;
       if (natW <= 0 || natH <= 0) return;
-      const k = Math.min(1, availW / natW, availH / natH);
-      setFit(k > 0 ? k : 1);
+      // Fit WIDTH, then scroll. Fitting height too crushed a lane board — a
+      // document that grows downward — to 17-33% to force it onto one screen,
+      // which is unreadable and defeats the point. Height only constrains when
+      // the board is nearly square (a wide fan), where a tall shrink is mild.
+      setNat((p) => (p.w === natW && p.h === natH ? p : { w: natW, h: natH }));
+      const kW = availW / natW;
+      const kH = availH / natH;
+      const k = natH > availH * 1.35 ? kW : Math.min(kW, kH);
+      setFit(Math.min(1, k > 0 ? k : 1));
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(vp);
     ro.observe(chart);
     return () => ro.disconnect();
-  }, [draft, health, selected]);
+  }, [draft, health, selected, collapsed]);
 
   // ctrl/⌘ + wheel zooms (native listener — React's delegated wheel is passive,
   // so preventDefault would be ignored there). Plain wheel keeps scrolling.
@@ -779,32 +1240,76 @@ function OrgScreen({
   const root = draft.agents.find((a) => a.id === draft.root);
   return (
     <div className="body" onClick={() => setSelected(null)}>
-      <main className="tree" onClick={(e) => e.stopPropagation()}>
-        <p className="tree-hint">drag an agent — or a tray machine — onto its new parent · click for its dossier · machine trays show live health</p>
+      <main className={`tree${showLaw ? " law-on" : ""}`} onClick={(e) => e.stopPropagation()}>
+        <p className="tree-hint">
+          {showLaw
+            ? "the rails now trace authority — brass flows from the House Standard through every SOP to every role"
+            : "drag a plate — or a machine — onto its new parent · click for its dossier · machine racks show live health"}
+        </p>
+        {/* rank grammar, borrowed from the ministry organigram: name the rank,
+            never make the reader infer it from indentation. */}
+        <div className="ranks">
+          <div className="rank"><b>I</b>The standard</div>
+          <div className="rank"><b>II</b>The executive</div>
+          <div className="rank"><b>III</b>Departments</div>
+          <div className="rank"><b>IV</b>Staff &amp; machines</div>
+        </div>
         <div className={`chart-fit${zoom !== null ? " zoomed" : ""}`} ref={fitRef}>
-          <div className="chart" ref={chartRef} style={{ ["--fit" as string]: eff }}>
-            {root && (
-              <ChartNode
-                org={draft}
-                a={root}
-                depth={0}
-                order={0}
-                selected={selected}
-                dragId={dragId}
-                health={health}
-                onSelect={setSelected}
-                onDragStart={setDragId}
-                onDropOn={dropOn}
-              />
-            )}
+          {/* spacer sized to the SCALED footprint so the scroll extent matches
+              what you can actually see (transform doesn't resize the layout box) */}
+          <div className="chart-scaled" style={{ width: nat.w * eff, height: nat.h * eff }}>
+          {/* transform applied inline, not via a CSS var: the var indirection
+              silently resolved to scale(1) here, leaving the board unscaled
+              inside a spacer sized for the scaled footprint (dead scroll). */}
+          <div
+            className="chart"
+            ref={chartRef}
+            style={{
+              ["--fit" as string]: eff,
+              transform: zoom !== null ? `scale(${eff})` : `translateX(-50%) scale(${eff})`,
+            }}
+          >
+            <CascadeRails chartRef={chartRef} version={railVersion} />
+            <div className="cascade">
+              <LawPlate org={draft} selected={selected === draft.root} onSelect={setSelected} />
+              {root && (
+                <ChartNode
+                  org={draft}
+                  a={root}
+                  depth={0}
+                  order={0}
+                  selected={selected}
+                  dragId={dragId}
+                  health={health}
+                  onSelect={setSelected}
+                  onDragStart={setDragId}
+                  onDropOn={dropOn}
+                  onHover={setHoverId}
+                  showLaw={showLaw}
+                  collapsed={collapsed}
+                  onToggleCollapse={toggleCollapse}
+                />
+              )}
+            </div>
+          </div>
           </div>
         </div>
         <div className="zoomer">
+          <button
+            type="button"
+            className={allFolded ? "on" : ""}
+            title={allFolded ? "unfold every department — see roles again" : "fold every department to head-only — house → department"}
+            onClick={() => setCollapsed(allFolded ? new Set() : new Set(depts.map((d) => d.id)))}
+          >
+            {allFolded ? "⌂ house" : "▾ roles"}
+          </button>
+          <span className="zoomer-sep" />
           <button type="button" title="zoom out (ctrl+wheel)" onClick={() => setZoom(Math.max(0.2, eff / 1.25))}>−</button>
           <span className="zoomer-pct">{Math.round(eff * 100)}%</span>
           <button type="button" title="zoom in (ctrl+wheel)" onClick={() => setZoom(Math.min(2.5, eff * 1.25))}>＋</button>
           <button type="button" className={zoom === null ? "on" : ""} title="fit the whole org in view" onClick={() => setZoom(null)}>fit</button>
         </div>
+        <LedgerShelf org={draft} lit={litBuckets} />
       </main>
       {selected && (
         <Dossier
@@ -966,8 +1471,8 @@ function ReportsScreen({ org, hasSnapshot }: { org: BOrg; hasSnapshot: boolean }
       .catch(() => setRows([]));
   }, [hasSnapshot, api]);
 
-  const agents = useMemo(() => [...new Set((rows ?? []).map((r) => r.cluster ?? ""))].filter(Boolean), [rows]);
-  const shown = (rows ?? []).filter((r) => !who || r.cluster === who);
+  const agents = useMemo(() => [...new Set((rows ?? []).map(reportAgentId))].filter(Boolean), [rows]);
+  const shown = (rows ?? []).filter((r) => !who || reportAgentId(r) === who);
   const total = useCountUp(shown.length);
 
   if (!hasSnapshot)
@@ -994,16 +1499,17 @@ function ReportsScreen({ org, hasSnapshot }: { org: BOrg; hasSnapshot: boolean }
       ) : (
         <div className="timeline">
           {shown.slice(0, 100).map((r) => {
-            const a = r.cluster ? nameOf.get(r.cluster) : undefined;
+            const filer = reportAgentId(r);
+            const a = filer ? nameOf.get(filer) : undefined;
             const when = relTime(nodeAt(r));
             const sum = nodeSummary(r);
             return (
-              <div className="tl-row" key={r.id} style={{ ["--h" as string]: bucketHue(r.cluster ?? "x") }}>
+              <div className="tl-row" key={r.id} style={{ ["--h" as string]: bucketHue(filer || "x") }}>
                 <div className="tl-dot" />
                 <div className="tl-body">
                   <div className="tl-top">
                     <span className="tl-ava">{a?.emoji ?? "🤖"}</span>
-                    <span className="tl-agent">{a?.name ?? r.cluster ?? "unknown"}</span>
+                    <span className="tl-agent">{a?.name ?? filer ?? "unknown"}</span>
                     {when && <span className="tl-when">{when}</span>}
                   </div>
                   <p className="tl-sum">{sum || r.label}</p>
@@ -1093,7 +1599,7 @@ function GraphScreen({ hasSnapshot }: { hasSnapshot: boolean }) {
 
 /* ────────────────────────── APP ────────────────────────── */
 
-function App() {
+function App({ theme: pinnedTheme }: { theme?: "dark" | "light" }) {
   const api = useApi();
   const [tab, param] = useRoute();
   const [saved, setSaved] = useState<BOrg | null>(null);
@@ -1108,7 +1614,15 @@ function App() {
 
   useEffect(() => {
     api("/org")
-      .then((o: BOrg) => { setSaved(o); setDraft(o); setSelected(o.root); })
+      .then((o: BOrg) => {
+        setSaved(o); setDraft(o);
+        // ?embed=1 opens with NOTHING selected. Auto-selecting the root is right
+        // for the full-screen tool (you land on something), but inside the
+        // landing page it costs a quarter of the frame to a dossier nobody
+        // asked for, hiding the cascade that is the reason it is embedded.
+        const embed = new URLSearchParams(window.location.search).get("embed");
+        if (!embed) setSelected(o.root);
+      })
       .catch(() => setErr("Can't load the organigram — is `booboo panel --org` running?"));
     api("/stats").then(setStats).catch(() => setStats(null));
     Promise.all([
@@ -1119,21 +1633,45 @@ function App() {
       .catch(() => setTotals(null));
   }, [api]);
 
-  const changes = useMemo(() => {
+  // Structured, not strings: every pending change has to be revertible ON ITS
+  // OWN. The only undo used to be a global "discard", which makes a single
+  // mis-drop cost you every other edit you had made, so people stop dragging.
+  const changes = useMemo<Change[]>(() => {
     if (!saved || !draft) return [];
     const before = new Map(saved.agents.map((a) => [a.id, a]));
     const after = new Map(draft.agents.map((a) => [a.id, a]));
     const name = (id: string) => after.get(id)?.name ?? before.get(id)?.name ?? id;
     const noParent = ({ parent: _p, ...rest }: BOrgAgent) => rest;
-    const out: string[] = [];
+    const out: Change[] = [];
     for (const a of draft.agents) {
       const b = before.get(a.id);
-      if (!b) { out.push(`＋ ${a.name} under ${a.parent ? name(a.parent) : "root"}`); continue; }
-      if ((b.parent ?? null) !== (a.parent ?? null)) out.push(`${a.name} → now under ${a.parent ? name(a.parent) : "root"}`);
-      if (JSON.stringify(noParent(b)) !== JSON.stringify(noParent(a))) out.push(`✎ ${a.name} edited`);
+      if (!b) { out.push({ key: `add:${a.id}`, id: a.id, kind: "added", label: `＋ ${a.name} under ${a.parent ? name(a.parent) : "root"}` }); continue; }
+      if ((b.parent ?? null) !== (a.parent ?? null)) out.push({ key: `move:${a.id}`, id: a.id, kind: "moved", label: `${a.name} → now under ${a.parent ? name(a.parent) : "root"}` });
+      if (JSON.stringify(noParent(b)) !== JSON.stringify(noParent(a))) out.push({ key: `edit:${a.id}`, id: a.id, kind: "edited", label: `✎ ${a.name} edited` });
     }
-    for (const b of saved.agents) if (!after.has(b.id)) out.push(`− ${b.name} removed`);
+    for (const b of saved.agents) if (!after.has(b.id)) out.push({ key: `rm:${b.id}`, id: b.id, kind: "removed", label: `− ${b.name} removed` });
     return out;
+  }, [saved, draft]);
+
+  /** Undo ONE pending change, leaving every other edit intact. */
+  const revertOne = useCallback((c: Change) => {
+    if (!saved || !draft) return;
+    const was = saved.agents.find((a) => a.id === c.id);
+    setDraft((d) => {
+      if (!d) return d;
+      if (c.kind === "added") return { ...d, agents: d.agents.filter((a) => a.id !== c.id) };
+      if (c.kind === "removed" && was) return { ...d, agents: [...d.agents, was] };
+      if (!was) return d;
+      return {
+        ...d,
+        agents: d.agents.map((a) => {
+          if (a.id !== c.id) return a;
+          // a move restores only the parent; an edit restores everything else,
+          // so reverting one does not silently undo the other.
+          return c.kind === "moved" ? { ...a, parent: was.parent } : { ...was, parent: a.parent };
+        }),
+      };
+    });
   }, [saved, draft]);
 
   // Tweakability — every field of every agent, plus add/remove, all draft-side.
@@ -1214,14 +1752,22 @@ function App() {
   const nodeCount = useCountUp(stats?.nodes ?? 0, 1200);
   const memTotal = useCountUp(totals?.mem ?? 0, 1100);
   const repTotal = useCountUp(totals?.rep ?? 0, 1300);
-  const [theme, toggleTheme] = useTheme();
+  const [theme, toggleTheme] = useTheme(pinnedTheme);
+  // "Show the law": the product's core idea, made visible on demand — rule
+  // inheritance (House Standard → SOP → role) traced as a second reading of
+  // the same rails, gold on dim, plus the boot-order chain on every card.
+  const [showLaw, setShowLaw] = useState(false);
 
-  if (err && !draft) return <div className="pnl-fatal">{err}</div>;
-  if (!draft) return <div className="pnl-fatal calm">waking the organigram…</div>;
+  // data-theme sits on the panel's own root — the tokens are declared here too
+  // (see panel.css), so theme and palette can never be resolved by different
+  // elements, which is what let a host's shell shadow half the board.
+  if (err && !draft) return <div className="pnl-fatal" data-theme={theme}>{err}</div>;
+  if (!draft) return <div className="pnl-fatal calm" data-theme={theme}>waking the organigram…</div>;
 
   return (
-    <div className="pnl">
+    <div className="pnl" data-theme={theme}>
       <div className="pnl-aurora" aria-hidden />
+      <Constellation />
       <header className="bar">
         <div className="bar-brand">🐾 <b>{draft.title || "the organigram"}</b></div>
         <div className="bar-stats">
@@ -1231,7 +1777,17 @@ function App() {
           {totals && <span onClick={() => nav("/reports")} className="tap"><b>{repTotal.toLocaleString()}</b> reports</span>}
         </div>
         <div className="bar-actions">
-          <button className="btn ghost theme-toggle" title="light / dark" aria-label="toggle light or dark theme" onClick={toggleTheme}>{theme === "dark" ? "☀" : "☾"}</button>
+          {tab === "org" && (
+            <button
+              className={`btn ghost law-toggle${showLaw ? " on" : ""}`}
+              title="trace rule inheritance — House Standard → SOP → role"
+              aria-pressed={showLaw}
+              onClick={() => setShowLaw((v) => !v)}
+            >
+              ⚖ show the law
+            </button>
+          )}
+          {toggleTheme && <button className="btn ghost theme-toggle" title="light / dark" aria-label="toggle light or dark theme" onClick={toggleTheme}>{theme === "dark" ? "☀" : "☾"}</button>}
           {changes.length > 0 ? (
             <>
               <span className="bar-draft">{changes.length} unapplied change{changes.length > 1 ? "s" : ""}</span>
@@ -1256,7 +1812,18 @@ function App() {
 
       {changes.length > 0 && tab === "org" && (
         <div className="pending">
-          {changes.map((c) => <span key={c} className="pending-item">{c}</span>)}
+          <span className="pending-lead">unapplied</span>
+          {changes.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              className="pending-item"
+              title="undo just this change"
+              onClick={() => revertOne(c)}
+            >
+              {c.label}<i aria-hidden="true">undo</i>
+            </button>
+          ))}
         </div>
       )}
       {err && <div className="pnl-err">{err}</div>}
@@ -1274,6 +1841,7 @@ function App() {
             onUpdate={updateAgent}
             onAdd={addAgent}
             onRemove={removeAgent}
+            showLaw={showLaw}
           />
         )}
         {tab === "buckets" && <BucketsScreen org={draft} param={param} hasSnapshot={!!stats} />}
@@ -1290,11 +1858,19 @@ function App() {
 // The mountable component. Standalone: <Panel /> talks to same-origin /api/*.
 // Embedded in a host: pass `api` to inject a backend (auth, base URL, proxy).
 // The panel carries its own styles via <style>, so a host needs no CSS import.
-export function Panel({ api = defaultApi }: { api?: ApiFn } = {}) {
+//
+// `theme` pins the palette for hosts that have a ground colour of their own —
+// a dark cockpit should not get a white slab dropped into it, and before this
+// existed a host had no way to say so (localStorage and ?embed were the only
+// levers, and neither is a host's to pull). Pinned means pinned: the in-panel
+// toggle is not rendered, so the host's choice cannot drift out from under it.
+// Left unset, the panel keeps its own behaviour: light by default, dark if the
+// visitor has explicitly toggled it.
+export function Panel({ api = defaultApi, theme }: { api?: ApiFn; theme?: "dark" | "light" } = {}) {
   return (
     <ApiCtx.Provider value={api}>
       <style>{PANEL_CSS}</style>
-      <App />
+      <App theme={theme} />
     </ApiCtx.Provider>
   );
 }

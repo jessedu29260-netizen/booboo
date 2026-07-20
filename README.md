@@ -1,6 +1,14 @@
 # 🐾 Booboo — the unified operational brain
 
+[![npm](https://img.shields.io/npm/v/@booboo-brain/cli?label=%40booboo-brain%2Fcli&color=c9a04a)](https://www.npmjs.com/package/@booboo-brain/cli)
+[![spec](https://img.shields.io/npm/v/@booboo-brain/spec?label=spec&color=c9a04a)](https://www.npmjs.com/package/@booboo-brain/spec)
+[![license](https://img.shields.io/badge/license-MIT-c9a04a)](#license)
+[![MCP](https://img.shields.io/badge/MCP-native-4ECDC4)](#connect-it-to-claude--cursor-mcp)
+[![node](https://img.shields.io/badge/node-%E2%89%A518-5d8a6e)](#quickstart)
+
 > Turn any AI system's data into one living, rooted 3D brain — **structure + knowledge + memory + agents + automations** fused into a single graph. Query it by **REST or MCP**, view it in your **browser or as a desktop wallpaper**, and **boot your agents from it in one call**.
+
+**See it before you install it → [booboo-black.vercel.app](https://booboo-black.vercel.app)** · a live brain in your browser, no signup, nothing to clone.
 
 Named after a dachshund who never forgets where the treats are buried. Fitting, because Booboo is about exactly that: **memory and recall** — seeing the whole system at once, fetching what's buried, never losing the thread.
 
@@ -28,6 +36,16 @@ Emit the JSON → get the viewer, the API, and the MCP server **for free**. Weir
 
 ## Quickstart
 
+**One command. No database, no config, no signup.** A synthetic brain, running on your machine:
+
+```bash
+npx @booboo-brain/cli view --demo --nodes 1000000
+```
+
+That's the headline flex: **a million nodes at 60fps in a browser tab.** Drop the count to `--nodes 50000` on a modest laptop. See [SCALE.md](SCALE.md) for how it holds up (one draw call over a single point cloud with a custom shader, plus tier-LOD on labels).
+
+**Then point it at your own stack:**
+
 ```bash
 # scaffold a project (json starter + postgres upgrade path)
 npx create-booboo my-brain
@@ -40,9 +58,7 @@ npm run mcp                      # MCP over stdio — point Claude / Cursor / Cl
 
 Edit `booboo.config.yaml` to point at your own Postgres/Supabase (a commented example ships in the scaffold). Full reference: [docs/CONFIG.md](docs/CONFIG.md) · stuck? [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
-> The headline flex: **Booboo renders a million-node brain at 60fps in your browser.** Try it with `booboo view --demo --nodes 1000000` (or the viewer playground: `pnpm -F @booboo-brain/viewer dev`, then open with `?n=1000000`). See `SCALE.md` for how (instanced GPU field + tier-LOD).
-
-> **Roadmap:** a single all-in-one command bundling build + REST + MCP + the 3D viewer together, an interactive scaffold wizard, and a `--demo` mega-graph generator — tracked in [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
+> **Roadmap:** a single all-in-one command bundling build + REST + MCP + the 3D viewer together, and an interactive scaffold wizard — tracked in [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
 
 ## What works today
 

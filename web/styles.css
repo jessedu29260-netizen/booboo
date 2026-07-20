@@ -1,0 +1,347 @@
+/* Booboo — landing.
+   NARRATIVE: hook → convince → prove (ruled with Jesse 2026-07-19).
+   Act I is a dark, cinematic hero whose only job is to stop the scroll —
+   legibility is deliberately not its concern. Everything after it turns LIGHT,
+   because the thing that actually sells this is a working control surface and
+   nobody should have to read an operating tool in a terminal. The transition
+   from dark to light IS the argument: wonder, then clarity.
+
+   Palette comes from tokens.css (generated from design/tokens.json, linked
+   first). The light values here are the panel's own, so the landing and the
+   board are literally the same object. */
+
+:root {
+  --sans: var(--ui);
+  --pad: clamp(1.25rem, 5vw, 5.5rem);
+  --gutter: min(1180px, 100% - var(--pad) * 2);
+
+  /* the light register — matches packages/panel exactly */
+  --paper: #fcfbf9;
+  --paper-2: #f6f4f0;
+  --card-l: #fffefb;   /* tinted, never flat #fff */
+  --ink: #1b1815;
+  --ink-2: #6b6459;
+  --ink-3: #9a9287;
+  --rule: #e9e5df;
+  --rule-2: #d9d3c9;
+  --brass-l: #a9753a;
+  --brass-l-hi: #c9954f;
+  --brass-wash: #f7f0e4;
+  --ok-l: #3f9c6d;
+
+  --sh-1: 0 1px 2px rgba(27,24,21,.04), 0 1px 1px rgba(27,24,21,.03);
+  --sh-2: 0 2px 4px rgba(27,24,21,.04), 0 6px 16px -6px rgba(27,24,21,.10);
+  --sh-3: 0 4px 10px rgba(27,24,21,.05), 0 18px 36px -14px rgba(27,24,21,.18);
+
+  --ease: cubic-bezier(.2,.7,.25,1);
+  --settle: cubic-bezier(.16,1,.3,1);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: clamp(1rem, .95rem + .2vw, 1.0625rem);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection { background: var(--brass-wash); color: var(--ink); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--brass-l); outline-offset: 3px; border-radius: 3px; }
+
+/* ── entrance + scroll reveal ────────────────────────────────── */
+.r { animation: rise 1s var(--ease) both; animation-delay: var(--d, 0ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity .8s var(--settle), transform .8s var(--settle); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .r, .reveal { animation: none !important; opacity: 1 !important; transform: none !important; transition: none !important; }
+}
+
+/* ═══════════════  ACT I — THE HOOK (dark)  ═══════════════ */
+.hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex; flex-direction: column;
+  padding: 0 var(--pad) clamp(3rem, 8vh, 6rem);
+  background: var(--bg);
+  color: var(--text);
+  isolation: isolate;
+  overflow: hidden;
+}
+.stage { position: absolute; inset: 0; z-index: -2; background: var(--bg); }
+.stage iframe {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  border: 0; opacity: 0; transition: opacity 1.6s ease;
+  pointer-events: none;
+}
+.stage iframe.ready { opacity: 1; }
+.stage-fallback, .stage.nogl::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(50% 55% at 50% 45%, rgba(201,160,74,.14), transparent 70%),
+    radial-gradient(40% 45% at 78% 68%, rgba(167,139,208,.10), transparent 70%),
+    var(--bg);
+}
+.vignette {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(6,8,14,.72) 0%, rgba(6,8,14,.28) 34%, rgba(6,8,14,.52) 72%, var(--paper) 100%),
+    radial-gradient(120% 80% at 20% 40%, rgba(6,8,14,.55), transparent 70%);
+}
+
+.topbar {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: clamp(1.4rem, 3vh, 2.2rem) 0;
+  font-family: var(--mono); font-size: .78rem; letter-spacing: .1em;
+}
+.wordmark {
+  font-family: var(--display); font-size: 1.5rem; font-weight: 600;
+  letter-spacing: -.02em; color: var(--text); text-decoration: none;
+}
+.topbar-links { display: flex; gap: clamp(1rem, 2.5vw, 1.7rem); }
+.topbar-links a { color: var(--dim); text-decoration: none; transition: color .25s; }
+.topbar-links a:hover { color: var(--gold-hi); }
+
+.hero-copy { position: relative; z-index: 2; margin: auto 0; max-width: 44rem; }
+.eyebrow {
+  font-family: var(--mono); font-size: .74rem; letter-spacing: .22em;
+  text-transform: uppercase; color: var(--gold); margin: 0 0 1.4rem;
+}
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(2.6rem, 1.6rem + 4.6vw, 5.4rem);
+  font-weight: 400; line-height: 1.02; letter-spacing: -.028em;
+  margin: 0 0 1.6rem;
+}
+.hero h1 .line { display: block; }
+.hero h1 .em { font-style: italic; font-weight: 500; color: var(--gold-hi); }
+.lede { max-width: 34rem; color: var(--dim); font-size: clamp(1rem,.95rem + .35vw,1.16rem); margin: 0 0 2.2rem; }
+
+.cta { display: flex; flex-wrap: wrap; gap: .85rem; }
+.btn-primary, .btn-ghost {
+  display: inline-flex; align-items: center; gap: .6rem;
+  padding: .85rem 1.5rem; border-radius: 100px;
+  font-size: .93rem; font-weight: 500; text-decoration: none;
+  transition: transform .2s var(--ease), box-shadow .25s var(--ease), background .2s, border-color .2s;
+}
+.btn-primary { background: var(--gold); color: #14100a; box-shadow: 0 10px 30px -12px rgba(201,160,74,.6); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 38px -12px rgba(201,160,74,.7); }
+.btn-ghost { border: 1px solid rgba(232,220,196,.32); color: var(--text); }
+.btn-ghost:hover { border-color: var(--gold); transform: translateY(-2px); }
+.arr { transition: transform .25s var(--ease); }
+.btn-primary:hover .arr { transform: translateX(3px); }
+
+.scroll-cue {
+  position: relative; z-index: 2; display: flex; align-items: center; gap: .8rem;
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .24em;
+  text-transform: uppercase; color: var(--faint);
+}
+.scroll-cue i { display: block; width: 3.5rem; height: 1px; background: linear-gradient(90deg, var(--faint), transparent); }
+
+/* ═══════════════  THE LIGHT BODY  ═══════════════ */
+main { position: relative; background: var(--paper); }
+section { width: var(--gutter); margin-inline: auto; padding: clamp(4.5rem, 11vh, 8.5rem) 0; }
+
+.tag {
+  font-family: var(--mono); font-size: .72rem; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--brass-l); margin: 0 0 1.1rem;
+}
+h2.display {
+  font-family: var(--display);
+  font-size: clamp(1.9rem, 1.3rem + 2.4vw, 3.2rem);
+  font-weight: 400; line-height: 1.1; letter-spacing: -.024em;
+  margin: 0 0 1.3rem; max-width: 22ch;
+}
+h2.display em { font-style: italic; color: var(--brass-l); }
+.body { color: var(--ink-2); margin: 0 0 1rem; max-width: 40rem; }
+.body.wide { max-width: 46rem; }
+.body.muted { color: var(--ink-3); font-size: .95rem; }
+.body code, .board-head code {
+  font-family: var(--mono); font-size: .88em;
+  background: var(--paper-2); border: 1px solid var(--rule);
+  padding: .1em .4em; border-radius: 4px; color: var(--ink);
+}
+.body strong { color: var(--ink); font-weight: 600; }
+
+/* ── 01 the one idea ───────────────────────────────────────────
+   Three rule-separated equal columns is the literal fingerprint of the
+   saturated editorial-typographic lane, and identical repeated cards are a
+   ban. This is a staggered definition run instead: the first term carries
+   real weight and full measure, the next two indent and step down. Rhythm
+   from variation, not from a repeated module. */
+.defs { margin: clamp(2.2rem, 5vh, 3.4rem) 0 0; display: flex; flex-direction: column; gap: clamp(1.4rem, 3vh, 2.2rem); }
+.def { display: grid; grid-template-columns: minmax(6.5rem, 9rem) minmax(0, 1fr); gap: 0 clamp(1.2rem, 3vw, 2.4rem); align-items: baseline; max-width: 50rem; }
+.def dt { font-family: var(--display); font-weight: 500; font-size: 1.15rem; letter-spacing: -.01em; color: var(--ink); }
+.def dd { margin: 0; color: var(--ink-2); font-size: .96rem; line-height: 1.62; }
+/* the lead term is bigger and unindented; the followers step in behind it */
+.def-lead { max-width: 54rem; }
+.def-lead dt { font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); }
+.def-lead dd { font-size: 1.06rem; color: var(--ink); }
+.def:not(.def-lead) { margin-left: clamp(0rem, 4vw, 3.5rem); }
+
+/* ── 02 the board: the convince ──────────────────────────────── */
+.board { padding-bottom: clamp(3rem, 7vh, 5rem); }
+/* the instrument runs wider than the prose that introduces it: the page
+   opens up around the thing it is selling instead of boxing it in a column */
+@media (min-width: 1100px) {
+  /* 100vw INCLUDES the scrollbar, so it overflowed by its width on any page
+     tall enough to scroll. Percentages resolve against the gutter, which is
+     already scrollbar-aware, so widening by the padding is exact. */
+  .board-frame, .board-cap { width: min(1440px, calc(100% + var(--pad) * 2)); margin-left: 50%; transform: translateX(-50%); }
+}
+.board-frame {
+  margin: clamp(2.2rem, 5vh, 3.4rem) 0 0;
+  border: 1px solid var(--rule-2); border-radius: 16px;
+  background: var(--card-l); box-shadow: var(--sh-3);
+  overflow: hidden;
+}
+.board-chrome {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .75rem 1rem; border-bottom: 1px solid var(--rule);
+  background: var(--paper-2);
+}
+.board-chrome .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--rule-2); }
+.board-title {
+  margin-left: .6rem; font-family: var(--mono); font-size: .72rem;
+  letter-spacing: .06em; color: var(--ink-3);
+}
+.board-frame iframe {
+  display: block; width: 100%; height: clamp(30rem, 74vh, 46rem); border: 0; background: var(--paper);
+}
+.board-cap {
+  display: flex; flex-wrap: wrap; gap: .5rem 1.4rem; align-items: baseline;
+  margin-top: .9rem; font-family: var(--mono); font-size: .76rem; color: var(--ink-3);
+}
+.board-cap a { color: var(--brass-l); text-decoration: none; }
+.board-cap a:hover { color: var(--brass-l-hi); }
+
+/* three identical cards was a banned module. These are claims, not objects:
+   no chrome, a bold lead-in doing the work a heading used to, widths that
+   vary so the run reads as prose rather than a grid. */
+.board-notes { margin-top: clamp(2.4rem, 5vh, 3.4rem); max-width: 52rem; }
+.board-notes p { margin: 0 0 .85rem; color: var(--ink-2); font-size: .96rem; line-height: 1.6; }
+.board-notes p:nth-child(2) { padding-left: clamp(0rem, 3vw, 2.5rem); }
+.board-notes p:nth-child(3) { padding-left: clamp(0rem, 6vw, 5rem); }
+.board-notes b { color: var(--ink); font-weight: 600; }
+
+/* ── 03 the proof: DRENCHED ──────────────────────────────────────
+   Full-bleed dark with the product's own photograph behind it, at low
+   opacity so type stays the brightest thing. This is where the page stops
+   being a document and becomes the thing again. */
+.ask-wrap {
+  width: 100%; max-width: none; margin: 0; padding: 0;
+  position: relative; isolation: isolate;
+  background: var(--bg); color: var(--text);
+}
+.ask-wrap::before {
+  content: ""; position: absolute; inset: 0; z-index: -2;
+  background-image: url("./img/cosmos.png");
+  background-size: cover; background-position: 62% 45%;
+  opacity: .38;
+}
+.ask-wrap::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(to bottom, var(--paper) 0%, rgba(6,8,14,.86) 9%, rgba(6,8,14,.72) 42%, rgba(6,8,14,.92) 88%, var(--paper) 100%),
+    radial-gradient(70% 60% at 22% 46%, rgba(6,8,14,.80), transparent 72%);
+}
+.ask-wrap .ask { width: var(--gutter); margin-inline: auto; padding: clamp(6rem, 15vh, 11rem) 0; }
+.ask-wrap .tag { color: var(--gold); }
+.ask-wrap h2.display { color: var(--text); }
+.ask-wrap h2.display em { color: var(--gold-hi); }
+.ask-wrap .body { color: var(--dim); }
+.ask-wrap .body code { background: rgba(232,220,196,.08); border-color: rgba(232,220,196,.18); color: var(--text); }
+.ask-wrap .body.muted { color: var(--faint); }
+
+/* ── 03 the proof ────────────────────────────────────────────── */
+.chips { display: flex; flex-wrap: wrap; gap: .6rem; margin: clamp(1.6rem,4vh,2.4rem) 0 1.2rem; }
+.chips button {
+  font-family: var(--sans); font-size: .87rem;
+  padding: .62rem 1.05rem; border-radius: 100px; cursor: pointer;
+  background: rgba(232,220,196,.05); border: 1px solid rgba(232,220,196,.2); color: var(--dim);
+  transition: border-color .2s, color .2s, transform .18s var(--ease), background .2s;
+}
+.chips button:hover { border-color: var(--gold); color: var(--text); transform: translateY(-1px); background: rgba(201,160,74,.12); }
+.chips button.on { background: rgba(201,160,74,.18); border-color: var(--gold); color: var(--gold-hi); font-weight: 500; }
+.answer {
+  margin: 0; padding: 1.3rem 1.5rem; border-radius: 13px;
+  background: rgba(4,6,10,.72); color: #e9e4da;
+  border: 1px solid rgba(232,220,196,.14);
+  backdrop-filter: blur(6px);
+  font-family: var(--mono); font-size: .82rem; line-height: 1.7;
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 26rem; overflow: auto;
+}
+.answer code { font: inherit; color: inherit; background: none; border: 0; padding: 0; }
+.connect { margin-top: clamp(2rem, 4vh, 2.8rem); }
+
+/* ── commands ────────────────────────────────────────────────── */
+.cmd {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  padding: 1rem 1.2rem; border-radius: 13px;
+  background: var(--card-l); border: 1px solid var(--rule-2); box-shadow: var(--sh-1);
+  margin: 1rem 0;
+}
+.cmd code { font-family: var(--mono); font-size: .92rem; color: var(--ink); flex: 1; min-width: 0; overflow-x: auto; }
+.cmd.big code { font-size: clamp(.95rem, .9rem + .35vw, 1.15rem); }
+.cmd.secondary { background: var(--paper-2); box-shadow: none; }
+.cmd.secondary code { color: var(--ink-2); font-size: .85rem; }
+.ask-wrap .cmd { background: rgba(232,220,196,.05); border-color: rgba(232,220,196,.18); }
+.ask-wrap .cmd code { color: var(--text); }
+.ask-wrap .copy { border-color: rgba(232,220,196,.24); color: var(--dim); }
+.ask-wrap .copy:hover { border-color: var(--gold); color: var(--gold-hi); background: rgba(201,160,74,.12); }
+.copy {
+  font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
+  padding: .5rem .9rem; border-radius: 100px; cursor: pointer;
+  background: transparent; border: 1px solid var(--rule-2); color: var(--ink-3);
+  transition: border-color .2s, color .2s, background .2s;
+}
+.copy:hover { border-color: var(--brass-l); color: var(--brass-l); background: var(--brass-wash); }
+
+/* ── close ───────────────────────────────────────────────────── */
+.close { text-align: center; padding-bottom: clamp(4rem, 10vh, 7rem); }
+.close-h { margin-inline: auto; max-width: 24ch; }
+.close-cta { display: flex; justify-content: center; flex-wrap: wrap; gap: .85rem; margin-top: 2rem; }
+.close .btn-primary { background: var(--brass-l); color: #fff; box-shadow: 0 10px 30px -12px rgba(169,117,58,.55); }
+.close .btn-ghost { border-color: var(--rule-2); color: var(--ink-2); }
+.close .btn-ghost:hover { border-color: var(--brass-l); color: var(--ink); }
+.foot { margin-top: clamp(3rem, 7vh, 4.5rem); font-family: var(--mono); font-size: .74rem; color: var(--ink-3); }
+.foot a { color: var(--brass-l); text-decoration: none; }
+
+/* ── mobile ──────────────────────────────────────────────────────
+   Never checked below desktop before this build (GAPS C9). The board
+   iframe is the risky element: a 1,500px-wide cascade inside a 375px
+   viewport is unusable, so on small screens it becomes a still frame with
+   an explicit "open it full-screen" hand-off rather than a broken toy. */
+@media (max-width: 760px) {
+  .topbar-links a:not(:last-child):not(:nth-last-child(2)) { display: none; }
+  .hero { min-height: 92svh; }
+  .board-frame iframe { height: 26rem; }
+  .board-cap { font-size: .72rem; }
+  .cmd { align-items: stretch; flex-direction: column; }
+  .cmd code { width: 100%; }
+  .copy { align-self: flex-start; }
+}
+@media (max-width: 560px) {
+  /* a full control surface cannot be operated at this width — show it,
+     then hand off. Better an honest picture than a broken interface. */
+  .board-frame iframe { height: 20rem; pointer-events: none; }
+  .board-frame { position: relative; }
+  .board-frame::after {
+    content: "Tap “open it full-screen” to use the board";
+    position: absolute; inset: auto 0 0 0; padding: .7rem 1rem;
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .04em;
+    text-align: center; color: var(--ink-3);
+    background: linear-gradient(to top, var(--card-l) 60%, transparent);
+  }
+}

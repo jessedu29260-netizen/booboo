@@ -62,5 +62,8 @@ jobs:
           curl -sf http://localhost:8990/api/org | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); if(!Array.isArray(d.agents)) throw new Error('panel /api/org: missing agents[]'); console.log('panel smoke ok:', d.agents.length, 'agents')"
           kill $PANEL_PID
 
+      - name: vendored index agrees with @booboo-brain/serve (GAPS C33)
+        run: node scripts/check-vendored-index.mjs
+
       - name: booboo mcp smoke (boot + initialize handshake over stdio)
         run: node scripts/ci-mcp-smoke.mjs /tmp/smoke/brain.json

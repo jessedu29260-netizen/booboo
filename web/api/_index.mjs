@@ -11,9 +11,19 @@
  * publish-lag risk between the repo and npm. These ~150 lines are pure
  * (no fs/network) and MUST answer identically to the local CLI — if graph.ts or
  * orgBootSlice change, re-copy them here.
- * Vendored 2026-07-18 from serve@0.4.0 / spec (ORG_SPEC_VERSION 1.0).
+ * Vendored 2026-07-18 from serve@0.4.0, re-synced 2026-07-20 from serve@0.4.1 / spec (ORG_SPEC_VERSION 1.0).
  * Only the methods the read-only MCP tools use are kept:
  * counts, node, search, neighbors, path (+ constructor). */
+
+/* Vendored with graph.ts — the memory→observation WIDENING (GAPS C33). A ledger
+   entry is written as `observation` by the generators and asked for as `memory`
+   by every client; a node the JournalWriter wrote is literally `memory`. Both
+   must answer to type=memory, and type=observation must still select only
+   itself. This copy existing at all is why C2 was fixed in panelapi.mjs and
+   nowhere else — keep it in step with packages/serve/src/graph.ts. */
+const TYPE_ALSO = { memory: ["observation"] };
+const typeMatches = (nodeType, want) =>
+  !want || nodeType === want || (TYPE_ALSO[want]?.includes(nodeType) ?? false);
 
 /** In-memory query index over a Booboo snapshot. Pure (no Node/fs/network deps). */
 export class BoobooIndex {
@@ -67,7 +77,7 @@ export class BoobooIndex {
     };
     const hit = (n) =>
       (!o.layer || n.layer === o.layer) &&
-      (!o.type || n.type === o.type) &&
+      typeMatches(n.type, o.type) &&
       (!o.cluster || n.cluster === o.cluster) &&
       (!o.where || Object.entries(o.where).every(([k, v]) => String(get(n, k) ?? "") === String(v))) &&
       (!(o.since || o.until) || inRange(get(n, o.dateField ?? "data.date")));
@@ -89,7 +99,7 @@ export class BoobooIndex {
   clusters(type) {
     const out = {};
     for (const n of this.graph.nodes) {
-      if (type && n.type !== type) continue;
+      if (!typeMatches(n.type, type)) continue;
       if (!n.cluster) continue;
       out[n.cluster] = (out[n.cluster] ?? 0) + 1;
     }
@@ -102,7 +112,7 @@ export class BoobooIndex {
       (n) =>
         (!o.layer || n.layer === o.layer) &&
         (!o.cluster || n.cluster === o.cluster) &&
-        (!o.type || n.type === o.type) &&
+        typeMatches(n.type, o.type) &&
         (!q || n.label.toLowerCase().includes(q) || n.id.toLowerCase().includes(q)),
     );
     const off = Math.max(0, o.offset ?? 0);

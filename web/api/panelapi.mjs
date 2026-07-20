@@ -31,17 +31,16 @@ export function GET(request) {
     }
     if (r === "graph") return J(200, ix.meta());
     if (r === "stats") return J(200, ix.counts());
-    if (r === "clusters") return J(200, { clusters: ix.clusters(s(p, "type") === "memory" ? "observation" : s(p, "type")) });
+    if (r === "clusters") return J(200, { clusters: ix.clusters(s(p, "type")) });
     if (r === "search") return J(200, { nodes: ix.search(p.get("q") ?? "", num(p, "limit", 20)) });
     if (r === "node") {
       const n = ix.node(p.get("id") ?? "");
       return n ? J(200, n) : J(404, { error: `no node '${p.get("id")}'` });
     }
     if (r === "nodes") {
-      // the panel speaks the CLI/journal convention (type=memory); the Pemberton
-      // snapshot's ledger entries are type=observation — translate, don't rename
-      const type = s(p, "type") === "memory" ? "observation" : s(p, "type");
-      return J(200, ix.list({ layer: s(p, "layer"), cluster: s(p, "cluster"), type, q: s(p, "q"), limit: num(p, "limit", 100), offset: num(p, "offset", 0) }));
+      // the memory→observation alias now lives in the index (@booboo-brain/serve
+      // graph.ts), so this adapter and `booboo panel` cannot answer differently
+      return J(200, ix.list({ layer: s(p, "layer"), cluster: s(p, "cluster"), type: s(p, "type"), q: s(p, "q"), limit: num(p, "limit", 100), offset: num(p, "offset", 0) }));
     }
     if (r === "neighbors") return J(200, ix.neighbors(p.get("id") ?? "", num(p, "depth", 1), num(p, "limit", 200)));
     return J(404, { error: "unknown route" });
